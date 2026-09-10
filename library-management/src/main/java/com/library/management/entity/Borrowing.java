@@ -26,6 +26,9 @@ public class Borrowing {
     @Column(nullable = false)
     private String status;
 
+    @Column(name = "renewal_count", nullable = false)
+    private Integer renewalCount = 0;
+
     public Borrowing() {
     }
 
@@ -42,6 +45,14 @@ public class Borrowing {
 
     public Long getId() {
         return id;
+    }
+
+    public Integer getRenewalCount() {
+        return renewalCount;
+    }
+
+    public void setRenewalCount(Integer renewalCount) {
+        this.renewalCount = renewalCount;
     }
 
     public void setId(Long id) {
