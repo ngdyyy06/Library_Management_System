@@ -187,22 +187,56 @@ public class BorrowingService {
 
         Borrowing borrowing = detail.getBorrowing();
 
-        long overdueDays = 0;
+        long unreturnedBooks =
+                borrowingDetailRepository.countUnreturnedBooksByBorrowingId(
+                        borrowing.getId()
+                );
 
-        // kiểm tra hôm nay có sau hạn trả k
-        if (LocalDate.now().isAfter(borrowing.getDueDate())) {
-            overdueDays = java.time.temporal.ChronoUnit.DAYS.between(
-                    borrowing.getDueDate(),
-                    LocalDate.now()
-            );
+        if (unreturnedBooks == 0) {
+            borrowing.setStatus("RETURNED");
+        } else {
+            borrowing.setStatus("PARTIALLY_RETURNED");
         }
 
-        // mỗi ngày trễ hạn phạt 5000
-        detail.setFine((int) (overdueDays * 5000));
-
+        borrowingRepository.save(borrowing);
+        detail.setFine(calculateFine(detail));
         detail.setReturnedAt(LocalDateTime.now());  // ghi thời điểm hiện tại vào database
         borrowingDetailRepository.save(detail);
 
         return detail;
+    }
+
+    // tự động phát hiện quá hạn trả sách
+    public void updateOverdueBorrowings() {
+
+        List<Borrowing> borrowings = borrowingRepository.findAll();
+
+        for (Borrowing borrowing : borrowings) {
+
+            if ("BORROWING".equals(borrowing.getStatus())
+                    && LocalDate.now().isAfter(borrowing.getDueDate())) {
+
+                borrowing.setStatus("OVERDUE");
+
+                borrowingRepository.save(borrowing);
+            }
+        }
+    }
+
+    public int calculateFine(BorrowingDetail detail) {
+
+        Borrowing borrowing = detail.getBorrowing();
+
+        if (!LocalDate.now().isAfter(borrowing.getDueDate())) {
+            return 0;
+        }
+
+        // tính so ngày quá hạn
+        long overdueDays = java.time.temporal.ChronoUnit.DAYS.between(
+                borrowing.getDueDate(),
+                LocalDate.now()
+        );
+
+        return (int) (overdueDays * 5000);
     }
 }

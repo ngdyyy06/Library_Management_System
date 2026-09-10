@@ -30,4 +30,10 @@ public class BorrowingController {
 
         return ResponseEntity.ok(borrowing);
     }
+
+    @PatchMapping("/update-overdue")
+    public ResponseEntity<String> updateOverdueBorrowings() {
+        borrowingService.updateOverdueBorrowings();
+        return ResponseEntity.ok("Overdue borrowings updated");
+    }
 }
