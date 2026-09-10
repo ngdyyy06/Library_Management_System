@@ -239,4 +239,10 @@ public class BorrowingService {
 
         return (int) (overdueDays * 5000);
     }
+
+    // tìm phiếu mượn sách theo id
+    public BorrowingDetail getBorrowingDetailById(Long detailId) {
+        return borrowingDetailRepository.findById(detailId)
+                .orElseThrow(() -> new ResourceNotFoundException("Borrowing detail not found"));
+    }
 }

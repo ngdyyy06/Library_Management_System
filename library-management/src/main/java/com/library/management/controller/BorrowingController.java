@@ -1,6 +1,7 @@
 package com.library.management.controller;
 
 import com.library.management.entity.Borrowing;
+import com.library.management.entity.BorrowingDetail;
 import com.library.management.service.BorrowingService;
 import org.springframework.web.bind.annotation.*;
 import com.library.management.dto.CreateBorrowingRequest;
@@ -31,9 +32,28 @@ public class BorrowingController {
         return ResponseEntity.ok(borrowing);
     }
 
+    @PatchMapping("/details/{detailId}/return")
+    public ResponseEntity<BorrowingDetail> returnBook(
+            @PathVariable Long detailId) {
+
+        BorrowingDetail detail = borrowingService.returnBook(detailId);
+
+        return ResponseEntity.ok(detail);
+    }
+
     @PatchMapping("/update-overdue")
     public ResponseEntity<String> updateOverdueBorrowings() {
         borrowingService.updateOverdueBorrowings();
         return ResponseEntity.ok("Overdue borrowings updated");
+    }
+
+    @GetMapping("/details/{detailId}")
+    public ResponseEntity<BorrowingDetail> getBorrowingDetail(
+            @PathVariable Long detailId) {
+
+        BorrowingDetail detail =
+                borrowingService.getBorrowingDetailById(detailId);
+
+        return ResponseEntity.ok(detail);
     }
 }

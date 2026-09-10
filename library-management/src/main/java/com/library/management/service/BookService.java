@@ -3,6 +3,7 @@ package com.library.management.service;
 import com.library.management.dto.CreateBookRequest;
 import com.library.management.entity.Author;
 import com.library.management.entity.Book;
+import com.library.management.entity.BorrowingDetail;
 import com.library.management.exception.ResourceNotFoundException;
 import com.library.management.repository.AuthorRepository;
 import com.library.management.repository.BookRepository;
