@@ -25,4 +25,17 @@ public class RoleService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Role not found"));
     }
+
+    public Role createRole(String name) {
+
+        if (roleRepository.findAll().stream()
+                .anyMatch(role -> role.getName().equalsIgnoreCase(name))) {
+            throw new RuntimeException("Role already exists");
+        }
+
+        Role role = new Role();
+        role.setName(name);
+
+        return roleRepository.save(role);
+    }
 }

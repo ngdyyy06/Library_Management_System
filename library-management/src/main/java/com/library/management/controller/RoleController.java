@@ -25,4 +25,9 @@ public class RoleController {
     public Role getRoleById(@PathVariable Long id) {
         return roleService.getRoleById(id);
     }
+
+    @PostMapping
+    public Role createRole(@RequestBody String name) {
+        return roleService.createRole(name);
+    }
 }

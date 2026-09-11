@@ -6,6 +6,7 @@ import com.library.management.entity.User;
 import com.library.management.exception.ResourceNotFoundException;
 import com.library.management.repository.RoleRepository;
 import com.library.management.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,13 +16,16 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public UserService(
             UserRepository userRepository,
-            RoleRepository roleRepository) {
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder) {
 
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public User createUser(CreateUserRequest request) {
@@ -42,7 +46,7 @@ public class UserService {
         User user = new User();
 
         user.setUsername(request.getUsername());
-        user.setPassword(request.getPassword());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setFullName(request.getFullName());
         user.setEmail(request.getEmail());
         user.setRole(role);
