@@ -12,13 +12,15 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
-    public User login(LoginRequest request) {
+    public String login(LoginRequest request) {
 
         // kiểm tra tên tài khoản tồn tại
         User user = userRepository.findAll().stream()
@@ -27,9 +29,28 @@ public class AuthService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Username not found"));
 
-        if (!passwordEncoder.matches(
-                request.getPassword(),
-                user.getPassword())) {
+        boolean passwordMatches;
+        if (user.getPassword().startsWith("$2a$")
+                || user.getPassword().startsWith("$2b$")) {
+
+            passwordMatches = passwordEncoder.matches(
+                    request.getPassword(),
+                    user.getPassword()
+            );
+        } else {
+            passwordMatches = request.getPassword()
+                    .equals(user.getPassword());
+
+            if (passwordMatches) {
+                user.setPassword(
+                        passwordEncoder.encode(request.getPassword())
+                );
+
+                userRepository.save(user);
+            }
+        }
+
+        if (!passwordMatches) {
             throw new RuntimeException("Incorrect password");
         }
 
@@ -37,7 +58,7 @@ public class AuthService {
             throw new RuntimeException("User is inactive");
         }
 
-        return user;
+        return jwtService.generateToken(user);
     }
 
     // phân quyền

@@ -53,7 +53,7 @@ public class ReaderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Reader not found"));
 
 
-        // kiểm tra trùng id
+        // kiểm tra ReaderCode trùng với Reader khác
         if (readerRepository.existsByReaderCodeAndIdNot(
                 request.getReaderCode(), id)) {
 
@@ -74,7 +74,7 @@ public class ReaderService {
     public Reader deactivateReader(Long id) {
 
         Reader reader = readerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Reader not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Reader not found"));
 
         // Reader đã dừng hoạt động r thì k xoá
         if ("INACTIVE".equals(reader.getStatus())) {

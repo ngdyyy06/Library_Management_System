@@ -1,6 +1,7 @@
 package com.library.management.controller;
 
 import com.library.management.dto.CreateUserRequest;
+import com.library.management.dto.UserResponse;
 import com.library.management.entity.User;
 import com.library.management.service.UserService;
 import jakarta.validation.Valid;
@@ -19,22 +20,22 @@ public class UserController {
     }
 
     @PostMapping
-    public User CreateUser(@Valid @RequestBody CreateUserRequest request) {
+    public UserResponse CreateUser(@Valid @RequestBody CreateUserRequest request) {
         return userService.createUser(request);
     }
 
-    @GetMapping("/api/users")
-    public List<User> getAllUsers() {
+    @GetMapping
+    public List<UserResponse> getAllUsers() {
         return userService.getAllUsers();
     }
 
     @GetMapping("/{id}")
-    public User getUserById(@PathVariable Long id) {
+    public UserResponse getUserById(@PathVariable Long id) {
         return userService.getUserById(id);
     }
 
     @PutMapping("/{id}")
-    public User updateUser(
+    public UserResponse updateUser(
             @PathVariable Long id,
             @Valid @RequestBody CreateUserRequest request) {
 
@@ -42,12 +43,12 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/deactivate")
-    public User deactivateUser(@PathVariable Long id) {
+    public UserResponse deactivateUser(@PathVariable Long id) {
         return userService.deactivateUser(id);
     }
 
     @PatchMapping("/{id}/activate")
-    public User activateUser(@PathVariable Long id) {
+    public UserResponse activateUser(@PathVariable Long id) {
         return userService.activateUser(id);
     }
 }

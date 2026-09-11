@@ -1,6 +1,7 @@
 package com.library.management.service;
 
 import com.library.management.dto.CreateUserRequest;
+import com.library.management.dto.UserResponse;
 import com.library.management.entity.Role;
 import com.library.management.entity.User;
 import com.library.management.exception.ResourceNotFoundException;
@@ -28,7 +29,7 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public User createUser(CreateUserRequest request) {
+    public UserResponse createUser(CreateUserRequest request) {
 
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("Username already exists");
@@ -52,20 +53,36 @@ public class UserService {
         user.setRole(role);
         user.setStatus("ACTIVE");
 
-        return userRepository.save(user);
+        return toUserResponse(userRepository.save(user));
     }
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    private UserResponse toUserResponse(User user) {
+        return new UserResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getRole().getName(),
+                user.getStatus()
+        );
     }
 
-    public User getUserById(Long id) {
-        return userRepository.findById(id)
+    public List<UserResponse> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(this::toUserResponse)
+                .toList();
+    }
+
+    public UserResponse getUserById(Long id) {
+        User user = userRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("User not found"));
+
+        return toUserResponse(user);
     }
 
-    public User updateUser(Long id, CreateUserRequest request) {
+    public UserResponse updateUser(Long id, CreateUserRequest request) {
 
         User user = userRepository.findById(id)
                 .orElseThrow(() ->
@@ -93,11 +110,11 @@ public class UserService {
         user.setEmail(request.getEmail());
         user.setRole(role);
 
-        return userRepository.save(user);
+        return toUserResponse(userRepository.save(user));
     }
 
     // vô hiệu hoá user
-    public User deactivateUser(Long id) {
+    public UserResponse deactivateUser(Long id) {
 
         User user = userRepository.findById(id)
                 .orElseThrow(() ->
@@ -109,11 +126,11 @@ public class UserService {
 
         user.setStatus("INACTIVE");
 
-        return userRepository.save(user);
+        return toUserResponse(userRepository.save(user));
     }
 
     // kích hoạt user
-    public User activateUser(Long id) {
+    public UserResponse activateUser(Long id) {
 
         User user = userRepository.findById(id)
                 .orElseThrow(() ->
@@ -125,6 +142,6 @@ public class UserService {
 
         user.setStatus("ACTIVE");
 
-        return userRepository.save(user);
+        return toUserResponse(userRepository.save(user));
     }
 }
