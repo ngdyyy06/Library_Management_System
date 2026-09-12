@@ -77,6 +77,10 @@ export function getRoleFromToken(token: string): string | null {
 
 // lấy role trực tiếp trong token
 export function getCurrentUserRole(): string | null {
+    if (typeof window === "undefined") {
+        return null;
+    }
+
     const token = localStorage.getItem("token");
 
     if (!token) {
@@ -104,6 +108,115 @@ export async function getUsers() {
 
     if (!response.ok) {
         throw new Error("Failed to fetch users");
+    }
+
+    return response.json();
+}
+
+// vô hiệu hoá tài khoản users
+export async function deactivateUser(userId: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/users/${userId}/deactivate`, {
+        method: "PATCH",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to deactivate user");
+    }
+
+    return response.json();
+}
+
+// kích hoạt lại tài khoản users
+export async function activateUser(userId: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/users/${userId}/activate`, {
+        method: "PATCH",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to activate user");
+    }
+
+    return response.json();
+}
+
+export async function updateUser(
+    userId: number,
+    data: {
+        username: string;
+        password: string;
+        fullName: string;
+        email: string;
+        roleId: number;
+    }
+) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/users/${userId}`, {
+        method: "PUT",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update user");
+    }
+
+    return response.json();
+}
+
+export async function createUser(data: {
+    username: string;
+    password: string;
+    fullName: string;
+    email: string;
+    roleId: number;
+}) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/users`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create user");
+    }
+
+    return response.json();
+}
+
+export async function getDashboard() {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/dashboard`, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to get dashboard");
     }
 
     return response.json();

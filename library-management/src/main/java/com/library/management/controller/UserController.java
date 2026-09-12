@@ -1,6 +1,7 @@
 package com.library.management.controller;
 
 import com.library.management.dto.CreateUserRequest;
+import com.library.management.dto.UpdateUserRequest;
 import com.library.management.dto.UserResponse;
 import com.library.management.entity.User;
 import com.library.management.service.UserService;
@@ -37,7 +38,7 @@ public class UserController {
     @PutMapping("/{id}")
     public UserResponse updateUser(
             @PathVariable Long id,
-            @Valid @RequestBody CreateUserRequest request) {
+            @Valid @RequestBody UpdateUserRequest request) {
 
         return userService.updateUser(id, request);
     }

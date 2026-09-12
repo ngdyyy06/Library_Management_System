@@ -19,7 +19,7 @@ export default function AdminNavbar() {
             <nav className="p-4">
                 <div className="space-y-1">
                     <Link
-                        href="/library-management-frontend/public"
+                        href="/dashboard"
                         className="block rounded-lg px-4 py-3 text-gray-700 hover:bg-gray-100"
                     >
                         Dashboard
@@ -75,8 +75,7 @@ export default function AdminNavbar() {
                             logout();
                             window.location.href = "/login";
                         }}
-                        className="mt-1 w-full rounded-lg px-4 py-3 text-left hover:bg-gray-800"
-                    >
+                        className="mt-1 w-full rounded-lg px-4 py-3 text-left text-gray-700 hover:bg-gray-800 hover:text-white"                    >
                         Logout
                     </button>
                 </div>

@@ -1,10 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AdminNavbar from "./admin/AdminNavbar";
 import StaffNavbar from "./staff/StaffNavbar";
 import ReaderNavbar from "./reader/ReaderNavbar";
-import { getCurrentUserRole} from "@/app/lib/api";
+import { getCurrentUserRole } from "@/app/lib/api";
 
 export default function AppLayout({
                                       children,
@@ -12,7 +13,12 @@ export default function AppLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
-    const role = getCurrentUserRole();
+    const [role, setRole] = useState<string | null>(null);
+
+    useEffect(() => {
+        setRole(getCurrentUserRole());
+    }, []);
+
     const isLoginPage = pathname === "/login";
     const isRegisterPage = pathname === "/register";
 

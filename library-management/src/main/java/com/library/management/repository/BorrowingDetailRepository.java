@@ -29,5 +29,24 @@ public interface BorrowingDetailRepository
     // đếm so bản sách mà Reader chưa trả trong 1 phiếu mượn
     long countUnreturnedBooksByBorrowingId(@Param("borrowingId") Long borrowingId);
 
+    @Query("""
+        SELECT COALESCE(SUM(bd.fine), 0)
+        FROM BorrowingDetail bd
+        WHERE bd.returnedAt IS NOT NULL
+        AND FUNCTION('DATE', bd.returnedAt) = CURRENT_DATE
+        """)
+
+    long getTodayFineRevenue();
+
+    @Query("""
+        SELECT COALESCE(SUM(bd.fine), 0)
+        FROM BorrowingDetail bd
+        WHERE bd.returnedAt IS NOT NULL
+        AND YEAR(bd.returnedAt) = YEAR(CURRENT_DATE)
+        AND MONTH(bd.returnedAt) = MONTH(CURRENT_DATE)
+        """)
+
+    long getMonthlyFineRevenue();
+
     Optional<BorrowingDetail> findById(Long id);
 }

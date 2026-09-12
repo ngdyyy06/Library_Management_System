@@ -9,6 +9,7 @@ import com.library.management.repository.RoleRepository;
 import com.library.management.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.library.management.dto.UpdateUserRequest;
 
 import java.util.List;
 
@@ -82,7 +83,7 @@ public class UserService {
         return toUserResponse(user);
     }
 
-    public UserResponse updateUser(Long id, CreateUserRequest request) {
+    public UserResponse updateUser(Long id, UpdateUserRequest request) {
 
         User user = userRepository.findById(id)
                 .orElseThrow(() ->
@@ -105,10 +106,14 @@ public class UserService {
                         new ResourceNotFoundException("Role not found"));
 
         user.setUsername(request.getUsername());
-        user.setPassword(request.getPassword());
         user.setFullName(request.getFullName());
         user.setEmail(request.getEmail());
         user.setRole(role);
+
+        if (request.getPassword() != null
+                && !request.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
 
         return toUserResponse(userRepository.save(user));
     }
