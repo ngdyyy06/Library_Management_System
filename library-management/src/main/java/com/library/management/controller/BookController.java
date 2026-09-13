@@ -48,7 +48,7 @@ public class BookController {
         return bookService.deactivateBook(id);
     }
 
-    @GetMapping("/{id}/activate")
+    @PatchMapping("/{id}/activate")
     public Book activateBook(@PathVariable Long id) {
         return bookService.activateBook(id);
     }

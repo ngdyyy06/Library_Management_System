@@ -22,11 +22,21 @@ public class CreateBookRequest {
 
     private List<Long> authorIds;
 
+    private Integer availableQuantity;
+
     @NotNull
     @Min(0)  // số lượng k dc nhỏ hơn 0
     private Integer totalQuantity;
 
     public CreateBookRequest() {
+    }
+
+    public Integer getAvailableQuantity() {
+        return availableQuantity;
+    }
+
+    public void setAvailableQuantity(Integer availableQuantity) {
+        this.availableQuantity = availableQuantity;
     }
 
     public String getTitle() {

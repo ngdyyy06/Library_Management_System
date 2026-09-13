@@ -6,6 +6,7 @@ public class DashboardResponse {
     private long totalBookCopies;
     private long totalReaders;
     private long totalAuthors;
+    private long totalBorrowings;
     private long totalUsers;
 
     private long activeUsers;
@@ -26,7 +27,8 @@ public class DashboardResponse {
             long activeUsers,
             long inactiveUsers,
             long todayFineRevenue,
-            long monthlyFineRevenue
+            long monthlyFineRevenue,
+            long totalBorrowings
     ) {
         this.totalBooks = totalBooks;
         this.totalBookCopies = totalBookCopies;
@@ -37,6 +39,15 @@ public class DashboardResponse {
         this.inactiveUsers = inactiveUsers;
         this.todayFineRevenue = todayFineRevenue;
         this.monthlyFineRevenue = monthlyFineRevenue;
+        this.totalBorrowings = totalBorrowings;
+    }
+
+    public long getTotalBorrowings() {
+        return totalBorrowings;
+    }
+
+    public void setTotalBorrowings(long totalBorrowings) {
+        this.totalBorrowings = totalBorrowings;
     }
 
     public long getTotalBooks() {

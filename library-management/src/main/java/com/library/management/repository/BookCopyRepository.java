@@ -5,4 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface BookCopyRepository extends JpaRepository<BookCopy, Long> {
     boolean existsByBarcode(String barcode);
+
+    long countByBookIdAndStatus(Long bookId, String status);
 }

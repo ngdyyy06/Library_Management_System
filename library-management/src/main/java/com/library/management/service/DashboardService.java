@@ -8,6 +8,7 @@ import com.library.management.repository.BorrowingDetailRepository;
 import com.library.management.repository.ReaderRepository;
 import com.library.management.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import com.library.management.repository.BorrowingRepository;
 
 @Service
 public class DashboardService {
@@ -18,6 +19,7 @@ public class DashboardService {
     private final AuthorRepository authorRepository;
     private final UserRepository userRepository;
     private final BorrowingDetailRepository borrowingDetailRepository;
+    private final BorrowingRepository borrowingRepository;
 
     public DashboardService(
             BookRepository bookRepository,
@@ -25,7 +27,8 @@ public class DashboardService {
             ReaderRepository readerRepository,
             AuthorRepository authorRepository,
             UserRepository userRepository,
-            BorrowingDetailRepository borrowingDetailRepository
+            BorrowingDetailRepository borrowingDetailRepository,
+            BorrowingRepository borrowingRepository
     ) {
         this.bookRepository = bookRepository;
         this.bookCopyRepository = bookCopyRepository;
@@ -33,6 +36,7 @@ public class DashboardService {
         this.authorRepository = authorRepository;
         this.userRepository = userRepository;
         this.borrowingDetailRepository = borrowingDetailRepository;
+        this.borrowingRepository = borrowingRepository;
     }
 
     public DashboardResponse getDashboard() {
@@ -44,6 +48,8 @@ public class DashboardService {
         long totalReaders = readerRepository.count();
 
         long totalAuthors = authorRepository.count();
+
+        long totalBorrowings = borrowingRepository.count();
 
         long totalUsers = userRepository.count();
 
@@ -72,7 +78,8 @@ public class DashboardService {
                 activeUsers,
                 inactiveUsers,
                 todayFineRevenue,
-                monthlyFineRevenue
+                monthlyFineRevenue,
+                totalBorrowings
         );
     }
 }

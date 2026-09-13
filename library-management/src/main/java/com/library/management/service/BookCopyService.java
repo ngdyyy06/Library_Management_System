@@ -33,6 +33,12 @@ public class BookCopyService {
         Book book = bookRepository.findById(request.getBookId())
                 .orElseThrow(() -> new ResourceNotFoundException("Book not found"));
 
+        if (!"ACTIVE".equals(book.getStatus())) {
+            throw new RuntimeException(
+                    "Cannot create book copy because the book is inactive"
+            );
+        }
+
         BookCopy bookCopy = new BookCopy();
 
         bookCopy.setBarcode(request.getBarcode());

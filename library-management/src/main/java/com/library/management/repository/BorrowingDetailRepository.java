@@ -4,6 +4,7 @@ import com.library.management.entity.BorrowingDetail;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import java.util.List;
 
 import java.util.Optional;
 
@@ -48,5 +49,5 @@ public interface BorrowingDetailRepository
 
     long getMonthlyFineRevenue();
 
-    Optional<BorrowingDetail> findById(Long id);
+    List<BorrowingDetail> findByBorrowingId(Long borrowingId);
 }

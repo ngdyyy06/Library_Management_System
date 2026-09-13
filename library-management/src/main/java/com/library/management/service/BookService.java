@@ -3,7 +3,7 @@ package com.library.management.service;
 import com.library.management.dto.CreateBookRequest;
 import com.library.management.entity.Author;
 import com.library.management.entity.Book;
-import com.library.management.entity.BorrowingDetail;
+import com.library.management.repository.BookCopyRepository;
 import com.library.management.exception.ResourceNotFoundException;
 import com.library.management.repository.AuthorRepository;
 import com.library.management.repository.BookRepository;
@@ -16,10 +16,12 @@ public class BookService {
 
     private final BookRepository bookRepository;
     private final AuthorRepository authorRepository;
+    private final BookCopyRepository bookCopyRepository;
 
-    public BookService(BookRepository bookRepository, AuthorRepository authorRepository) {
+    public BookService(BookRepository bookRepository, AuthorRepository authorRepository, BookCopyRepository bookCopyRepository) {
         this.bookRepository = bookRepository;
         this.authorRepository = authorRepository;
+        this.bookCopyRepository = bookCopyRepository;
     }
 
     public Book createBook(CreateBookRequest request) {
@@ -87,6 +89,37 @@ public class BookService {
         book.setPublishYear(request.getPublishYear());
         book.setDescription(request.getDescription());
 
+        int oldTotalQuantity = book.getTotalQuantity();
+        int oldAvailableQuantity = book.getAvailableQuantity();
+
+        int borrowedQuantity = oldTotalQuantity - oldAvailableQuantity;
+
+        int newTotalQuantity = request.getTotalQuantity();
+        int newAvailableQuantity = request.getAvailableQuantity();
+
+        if (newTotalQuantity < 0) {
+            throw new RuntimeException("Total quantity cannot be negative");
+        }
+
+        if (newAvailableQuantity < 0) {
+            throw new RuntimeException("Available quantity cannot be negative");
+        }
+
+        if (newAvailableQuantity > newTotalQuantity) {
+            throw new RuntimeException(
+                    "Available quantity cannot be greater than total quantity"
+            );
+        }
+
+        if (newTotalQuantity < borrowedQuantity) {
+            throw new RuntimeException(
+                    "Total quantity cannot be less than borrowed quantity"
+            );
+        }
+
+        book.setTotalQuantity(newTotalQuantity);
+        book.setAvailableQuantity(newAvailableQuantity);
+
         if (request.getAuthorIds() != null) {
 
             book.getAuthors().clear();
@@ -116,6 +149,7 @@ public class BookService {
         }
 
         book.setStatus("INACTIVE");
+        book.setAvailableQuantity(0);
 
         return bookRepository.save(book);
     }
@@ -131,6 +165,11 @@ public class BookService {
         }
 
         book.setStatus("ACTIVE");
+
+        long availableQuantity =
+                bookCopyRepository.countByBookIdAndStatus(id, "AVAILABLE");
+
+        book.setAvailableQuantity((int) availableQuantity);
 
         return bookRepository.save(book);
     }

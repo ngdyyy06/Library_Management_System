@@ -36,10 +36,18 @@ public class BorrowingService {
         this.bookRepository = bookRepository;
     }
 
+    public List<Borrowing> getAllBorrowings() {
+        return borrowingRepository.findAll();
+    }
+
     public Borrowing getBorrowingById(Long id) {
         return borrowingRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Borrowing not found"));
+    }
+
+    public List<BorrowingDetail> getBorrowingDetails(Long borrowingId) {
+        return borrowingDetailRepository.findByBorrowingId(borrowingId);
     }
 
     public Borrowing renewBorrowing(Long id) {
@@ -107,6 +115,12 @@ public class BorrowingService {
             BookCopy bookCopy = bookCopyRepository.findById(bookCopyId)
                     .orElseThrow(() ->
                             new ResourceNotFoundException("Book copy not found: " + bookCopyId));
+
+            if (!"ACTIVE".equals(bookCopy.getBook().getStatus())) {
+                throw new RuntimeException(
+                        "Book is inactive: " + bookCopy.getBook().getTitle()
+                );
+            }
 
             if (!"AVAILABLE".equals(bookCopy.getStatus())) {
                 throw new RuntimeException(
@@ -185,8 +199,14 @@ public class BorrowingService {
         Book book = bookCopy.getBook();
         book.setAvailableQuantity(book.getAvailableQuantity() + 1);
 
+        // Ghi thời điểm trả sách trước
+        detail.setFine(calculateFine(detail));
+        detail.setReturnedAt(LocalDateTime.now());
+        borrowingDetailRepository.save(detail);
+
         Borrowing borrowing = detail.getBorrowing();
 
+        // Sau khi đã ghi returnedAt, mới kiểm tra còn sách chưa trả hay không
         long unreturnedBooks =
                 borrowingDetailRepository.countUnreturnedBooksByBorrowingId(
                         borrowing.getId()
@@ -199,9 +219,6 @@ public class BorrowingService {
         }
 
         borrowingRepository.save(borrowing);
-        detail.setFine(calculateFine(detail));
-        detail.setReturnedAt(LocalDateTime.now());  // ghi thời điểm hiện tại vào database
-        borrowingDetailRepository.save(detail);
 
         return detail;
     }

@@ -8,6 +8,8 @@ import com.library.management.dto.CreateBorrowingRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 
+import java.util.List;
+
 @RestController  // controller này xử lí API
 @RequestMapping("/api/borrowings")
 public class BorrowingController {
@@ -47,6 +49,25 @@ public class BorrowingController {
         return ResponseEntity.ok("Overdue borrowings updated");
     }
 
+    @GetMapping
+    public ResponseEntity<List<Borrowing>> getAllBorrowings() {
+        List<Borrowing> borrowings =
+                borrowingService.getAllBorrowings();
+
+        return ResponseEntity.ok(borrowings);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Borrowing> getBorrowingById(
+            @PathVariable Long id) {
+
+        Borrowing borrowing =
+                borrowingService.getBorrowingById(id);
+
+        return ResponseEntity.ok(borrowing);
+    }
+
+    // lấy 1 borrowingDetail cụ thể
     @GetMapping("/details/{detailId}")
     public ResponseEntity<BorrowingDetail> getBorrowingDetail(
             @PathVariable Long detailId) {
@@ -55,5 +76,16 @@ public class BorrowingController {
                 borrowingService.getBorrowingDetailById(detailId);
 
         return ResponseEntity.ok(detail);
+    }
+
+    // lấy tất cả borrowingDetail thuộc 1 borrowing
+    @GetMapping("/{id}/details")
+    public ResponseEntity<List<BorrowingDetail>> getBorrowingDetails(
+            @PathVariable Long id) {
+
+        List<BorrowingDetail> details =
+                borrowingService.getBorrowingDetails(id);
+
+        return ResponseEntity.ok(details);
     }
 }
