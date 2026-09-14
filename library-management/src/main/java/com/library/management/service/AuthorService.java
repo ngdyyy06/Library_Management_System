@@ -1,8 +1,11 @@
 package com.library.management.service;
 
 import com.library.management.entity.Author;
+import com.library.management.entity.Book;
 import com.library.management.exception.ResourceNotFoundException;
 import com.library.management.repository.AuthorRepository;
+import com.library.management.repository.BookCopyRepository;
+import com.library.management.repository.BookRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,9 +14,13 @@ import java.util.List;
 public class AuthorService {
 
     private final AuthorRepository authorRepository;
+    private final BookRepository bookRepository;
+    private final BookCopyRepository bookCopyRepository;
 
-    public AuthorService(AuthorRepository authorRepository) {
+    public AuthorService(AuthorRepository authorRepository, BookRepository bookRepository, BookCopyRepository bookCopyRepository) {
         this.authorRepository = authorRepository;
+        this.bookRepository = bookRepository;
+        this.bookCopyRepository = bookCopyRepository;
     }
 
     public Author createAuthor(Author author) {
@@ -55,6 +62,15 @@ public class AuthorService {
 
         author.setStatus("INACTIVE");
 
+        List<Book> books = bookRepository.findBooksByAuthorId(id);
+
+        for (Book book : books) {
+            book.setStatus("INACTIVE");
+            book.setAvailableQuantity(0);
+        }
+
+        bookRepository.saveAll(books);
+
         return authorRepository.save(author);
     }
 
@@ -70,6 +86,33 @@ public class AuthorService {
 
         author.setStatus("ACTIVE");
 
+        List<Book> books = bookRepository.findBooksByAuthorId(id);
+
+        // kiểm tra xem tất cả author active k
+        for (Book book : books) {
+            boolean allAuthorsActive = book.getAuthors()
+                    .stream()
+                    .allMatch(a -> "ACTIVE".equals(a.getStatus()));
+
+            if (allAuthorsActive) {
+                book.setStatus("ACTIVE");
+
+                long availableQuantity =
+                        bookCopyRepository.countByBookIdAndStatus(
+                                book.getId(),
+                                "AVAILABLE"
+                        );
+
+                book.setAvailableQuantity((int) availableQuantity);
+            }
+        }
+
+        bookRepository.saveAll(books);
+
         return authorRepository.save(author);
+    }
+
+    public List<Book> getBooksByAuthor(Long id) {
+        return bookRepository.findBooksByAuthorId(id);
     }
 }

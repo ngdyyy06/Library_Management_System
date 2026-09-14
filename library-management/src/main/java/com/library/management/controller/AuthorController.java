@@ -1,7 +1,9 @@
 package com.library.management.controller;
 
 import com.library.management.entity.Author;
+import com.library.management.entity.Book;
 import com.library.management.service.AuthorService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -47,5 +49,14 @@ public class AuthorController {
     @PatchMapping("/{id}/activate")
     public Author activateAuthor(@PathVariable Long id) {
         return authorService.activateAuthor(id);
+    }
+
+    @GetMapping("/{id}/books")
+    public ResponseEntity<List<Book>> getBooksByAuthor(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                authorService.getBooksByAuthor(id)
+        );
     }
 }

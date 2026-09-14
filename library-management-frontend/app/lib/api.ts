@@ -483,3 +483,153 @@ export async function createBookCopy(data: {
 
     return response.json();
 }
+
+export async function getAuthors() {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/authors`, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to get authors");
+    }
+
+    return response.json();
+}
+
+export async function getAuthorById(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/authors/${id}`, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to get author"
+        );
+    }
+
+    return response.json();
+}
+
+export async function getBooksByAuthorId(authorId: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/authors/${authorId}/books`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to get books by author"
+        );
+    }
+
+    return response.json();
+}
+
+export async function createAuthor(data: {
+    name: string;
+    biography?: string;
+}) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/authors`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create author");
+    }
+
+    return response.json();
+}
+
+export async function updateAuthor(
+    id: number,
+    data: {
+        name: string;
+        biography?: string;
+    }
+) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/authors/${id}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update author");
+    }
+
+    return response.json();
+}
+
+export async function activateAuthor(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/authors/${id}/activate`, {
+        method: "PATCH",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to activate author"
+        );
+    }
+
+    return response.json();
+}
+
+export async function deactivateAuthor(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/authors/${id}/deactivate`, {
+        method: "PATCH",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to deactivate author"
+        );
+    }
+
+    return response.json();
+}
