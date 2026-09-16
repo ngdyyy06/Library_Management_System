@@ -9,6 +9,7 @@ public class DashboardResponse {
     private long totalPublishers;
     private long totalCategories;
     private long totalBorrowings;
+    private long totalImportReceipts;
 
     private long totalUsers;
     private long activeUsers;
@@ -28,6 +29,7 @@ public class DashboardResponse {
             long totalPublishers,
             long totalCategories,
             long totalBorrowings,
+            long totalImportReceipts,
             long totalUsers,
             long activeUsers,
             long inactiveUsers,
@@ -41,9 +43,12 @@ public class DashboardResponse {
         this.totalPublishers = totalPublishers;
         this.totalCategories = totalCategories;
         this.totalBorrowings = totalBorrowings;
+        this.totalImportReceipts = totalImportReceipts;
+
         this.totalUsers = totalUsers;
         this.activeUsers = activeUsers;
         this.inactiveUsers = inactiveUsers;
+
         this.todayFineRevenue = todayFineRevenue;
         this.monthlyFineRevenue = monthlyFineRevenue;
     }
@@ -102,6 +107,14 @@ public class DashboardResponse {
 
     public void setTotalBorrowings(long totalBorrowings) {
         this.totalBorrowings = totalBorrowings;
+    }
+
+    public long getTotalImportReceipts() {
+        return totalImportReceipts;
+    }
+
+    public void setTotalImportReceipts(long totalImportReceipts) {
+        this.totalImportReceipts = totalImportReceipts;
     }
 
     public long getTotalUsers() {

@@ -29,15 +29,9 @@ public class CreateBookRequest {
     // New authors entered by user
     private List<String> authorNames;
 
-    private Integer availableQuantity;
-
     private List<Long> categoryIds;
 
     private List<String> categoryNames;
-
-    @NotNull
-    @Min(0)
-    private Integer totalQuantity;
 
     public CreateBookRequest() {
     }
@@ -104,22 +98,6 @@ public class CreateBookRequest {
 
     public void setAuthorNames(List<String> authorNames) {
         this.authorNames = authorNames;
-    }
-
-    public Integer getAvailableQuantity() {
-        return availableQuantity;
-    }
-
-    public void setAvailableQuantity(Integer availableQuantity) {
-        this.availableQuantity = availableQuantity;
-    }
-
-    public Integer getTotalQuantity() {
-        return totalQuantity;
-    }
-
-    public void setTotalQuantity(Integer totalQuantity) {
-        this.totalQuantity = totalQuantity;
     }
 
     public List<Long> getCategoryIds() {

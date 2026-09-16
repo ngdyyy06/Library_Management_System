@@ -7,6 +7,7 @@ import com.library.management.repository.BookRepository;
 import com.library.management.repository.BorrowingDetailRepository;
 import com.library.management.repository.BorrowingRepository;
 import com.library.management.repository.CategoryRepository;
+import com.library.management.repository.ImportReceiptRepository;
 import com.library.management.repository.PublisherRepository;
 import com.library.management.repository.ReaderRepository;
 import com.library.management.repository.UserRepository;
@@ -22,6 +23,7 @@ public class DashboardService {
     private final PublisherRepository publisherRepository;
     private final CategoryRepository categoryRepository;
     private final BorrowingRepository borrowingRepository;
+    private final ImportReceiptRepository importReceiptRepository;
     private final UserRepository userRepository;
     private final BorrowingDetailRepository borrowingDetailRepository;
 
@@ -33,6 +35,7 @@ public class DashboardService {
             PublisherRepository publisherRepository,
             CategoryRepository categoryRepository,
             BorrowingRepository borrowingRepository,
+            ImportReceiptRepository importReceiptRepository,
             UserRepository userRepository,
             BorrowingDetailRepository borrowingDetailRepository) {
 
@@ -43,31 +46,45 @@ public class DashboardService {
         this.publisherRepository = publisherRepository;
         this.categoryRepository = categoryRepository;
         this.borrowingRepository = borrowingRepository;
+        this.importReceiptRepository = importReceiptRepository;
         this.userRepository = userRepository;
         this.borrowingDetailRepository = borrowingDetailRepository;
     }
 
     public DashboardResponse getDashboard() {
 
-        long totalBooks = bookRepository.count();
+        long totalBooks =
+                bookRepository.count();
 
-        long totalBookCopies = bookCopyRepository.count();
+        long totalBookCopies =
+                bookCopyRepository.count();
 
-        long totalReaders = readerRepository.count();
+        long totalReaders =
+                readerRepository.count();
 
-        long totalAuthors = authorRepository.count();
+        long totalAuthors =
+                authorRepository.count();
 
-        long totalPublishers = publisherRepository.count();
+        long totalPublishers =
+                publisherRepository.count();
 
-        long totalCategories = categoryRepository.count();
+        long totalCategories =
+                categoryRepository.count();
 
-        long totalBorrowings = borrowingRepository.count();
+        long totalBorrowings =
+                borrowingRepository.count();
 
-        long totalUsers = userRepository.count();
+        long totalImportReceipts =
+                importReceiptRepository.count();
 
-        long activeUsers = userRepository.countByStatus("ACTIVE");
+        long totalUsers =
+                userRepository.count();
 
-        long inactiveUsers = userRepository.countByStatus("INACTIVE");
+        long activeUsers =
+                userRepository.countByStatus("ACTIVE");
+
+        long inactiveUsers =
+                userRepository.countByStatus("INACTIVE");
 
         long todayFineRevenue =
                 borrowingDetailRepository.getTodayFineRevenue();
@@ -83,6 +100,7 @@ public class DashboardService {
                 totalPublishers,
                 totalCategories,
                 totalBorrowings,
+                totalImportReceipts,
                 totalUsers,
                 activeUsers,
                 inactiveUsers,

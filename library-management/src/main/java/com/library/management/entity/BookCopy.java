@@ -17,16 +17,27 @@ public class BookCopy {
     @JoinColumn(name = "book_id", nullable = false)
     private Book book;
 
+    @ManyToOne
+    @JoinColumn(name = "import_receipt_detail_id")
+    private ImportReceiptDetail importReceiptDetail;
+
     @Column(nullable = false)
     private String status;
 
     public BookCopy() {
     }
 
-    public BookCopy(Long id, String barcode, Book book, String status) {
+    public BookCopy(
+            Long id,
+            String barcode,
+            Book book,
+            ImportReceiptDetail importReceiptDetail,
+            String status) {
+
         this.id = id;
         this.barcode = barcode;
         this.book = book;
+        this.importReceiptDetail = importReceiptDetail;
         this.status = status;
     }
 
@@ -60,5 +71,13 @@ public class BookCopy {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public ImportReceiptDetail getImportReceiptDetail() {
+        return importReceiptDetail;
+    }
+
+    public void setImportReceiptDetail(ImportReceiptDetail importReceiptDetail) {
+        this.importReceiptDetail = importReceiptDetail;
     }
 }

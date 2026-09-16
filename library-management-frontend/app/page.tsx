@@ -282,7 +282,7 @@ export default function Home() {
                     </p>
 
                     <p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-                      0
+                      {dashboard?.totalImportReceipts ?? 0}
                     </p>
 
                     <p className="mt-1 text-xs font-medium text-slate-400">

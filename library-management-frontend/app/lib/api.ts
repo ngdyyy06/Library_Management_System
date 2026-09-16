@@ -1018,3 +1018,199 @@ export async function getBooksByCategory(categoryId: number) {
 
     return response.json();
 }
+
+export async function getImportReceipts() {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/import-receipts`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message || "Failed to get import receipts"
+        );
+    }
+
+    return response.json();
+}
+
+export async function getImportReceiptById(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/import-receipts/${id}`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message || "Failed to get import receipt"
+        );
+    }
+
+    return response.json();
+}
+
+export async function getImportReceiptDetails(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/import-receipts/${id}/details`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message ||
+            "Failed to get import receipt details"
+        );
+    }
+
+    return response.json();
+}
+
+export async function createImportReceipt(data: {
+    publisherId: number;
+    importDate: string;
+    details: {
+        bookId: number;
+        quantity: number;
+        unitPrice: number;
+    }[];
+}) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/import-receipts`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(data),
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message ||
+            "Failed to create import receipt"
+        );
+    }
+
+    return response.json();
+}
+
+export async function updateImportReceipt(
+    id: number,
+    data: {
+        publisherId: number;
+        importDate: string;
+        details: {
+            bookId: number;
+            quantity: number;
+            unitPrice: number;
+        }[];
+    }
+) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/import-receipts/${id}`,
+        {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(data),
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message ||
+            "Failed to update import receipt"
+        );
+    }
+
+    return response.json();
+}
+
+export async function activateImportReceipt(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/import-receipts/${id}/activate`,
+        {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message ||
+            "Failed to activate import receipt"
+        );
+    }
+
+    return response.json();
+}
+
+export async function deactivateImportReceipt(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/import-receipts/${id}/deactivate`,
+        {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message ||
+            "Failed to deactivate import receipt"
+        );
+    }
+
+    return response.json();
+}

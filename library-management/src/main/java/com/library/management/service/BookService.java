@@ -96,11 +96,8 @@ public class BookService {
         book.setDescription(request.getDescription());
         book.setPrice(request.getPrice());
 
-        book.setTotalQuantity(request.getTotalQuantity());
-
-        // Khi tạo Book:
-        // Available = Total
-        book.setAvailableQuantity(request.getTotalQuantity());
+        book.setTotalQuantity(0);
+        book.setAvailableQuantity(0);
 
         book.setStatus("ACTIVE");
 
@@ -116,23 +113,7 @@ public class BookService {
 
         book.setCategories(categories);
 
-        Book savedBook = bookRepository.save(book);
-
-        for (int i = 1; i <= savedBook.getTotalQuantity(); i++) {
-
-            BookCopy bookCopy = new BookCopy();
-
-            bookCopy.setBarcode(
-                    "BOOK-" + savedBook.getId() + "-" + String.format("%03d", i)
-            );
-
-            bookCopy.setBook(savedBook);
-            bookCopy.setStatus("AVAILABLE");
-
-            bookCopyRepository.save(bookCopy);
-        }
-
-        return savedBook;
+        return bookRepository.save(book);
     }
 
     private Set<Author> resolveAuthors(CreateBookRequest request) {
@@ -279,7 +260,7 @@ public class BookService {
         // New quantity
         // =====================================================
 
-        int newTotalQuantity = request.getTotalQuantity();
+        int newTotalQuantity = book.getTotalQuantity();
 
         if (newTotalQuantity < 0) {
 
@@ -451,7 +432,7 @@ public class BookService {
         } else {
 
             book.setAvailableQuantity(
-                    request.getAvailableQuantity()
+                    book.getAvailableQuantity()
             );
         }
 
