@@ -5,10 +5,12 @@ import com.library.management.repository.AuthorRepository;
 import com.library.management.repository.BookCopyRepository;
 import com.library.management.repository.BookRepository;
 import com.library.management.repository.BorrowingDetailRepository;
+import com.library.management.repository.BorrowingRepository;
+import com.library.management.repository.CategoryRepository;
+import com.library.management.repository.PublisherRepository;
 import com.library.management.repository.ReaderRepository;
 import com.library.management.repository.UserRepository;
 import org.springframework.stereotype.Service;
-import com.library.management.repository.BorrowingRepository;
 
 @Service
 public class DashboardService {
@@ -17,26 +19,32 @@ public class DashboardService {
     private final BookCopyRepository bookCopyRepository;
     private final ReaderRepository readerRepository;
     private final AuthorRepository authorRepository;
+    private final PublisherRepository publisherRepository;
+    private final CategoryRepository categoryRepository;
+    private final BorrowingRepository borrowingRepository;
     private final UserRepository userRepository;
     private final BorrowingDetailRepository borrowingDetailRepository;
-    private final BorrowingRepository borrowingRepository;
 
     public DashboardService(
             BookRepository bookRepository,
             BookCopyRepository bookCopyRepository,
             ReaderRepository readerRepository,
             AuthorRepository authorRepository,
+            PublisherRepository publisherRepository,
+            CategoryRepository categoryRepository,
+            BorrowingRepository borrowingRepository,
             UserRepository userRepository,
-            BorrowingDetailRepository borrowingDetailRepository,
-            BorrowingRepository borrowingRepository
-    ) {
+            BorrowingDetailRepository borrowingDetailRepository) {
+
         this.bookRepository = bookRepository;
         this.bookCopyRepository = bookCopyRepository;
         this.readerRepository = readerRepository;
         this.authorRepository = authorRepository;
+        this.publisherRepository = publisherRepository;
+        this.categoryRepository = categoryRepository;
+        this.borrowingRepository = borrowingRepository;
         this.userRepository = userRepository;
         this.borrowingDetailRepository = borrowingDetailRepository;
-        this.borrowingRepository = borrowingRepository;
     }
 
     public DashboardResponse getDashboard() {
@@ -49,19 +57,17 @@ public class DashboardService {
 
         long totalAuthors = authorRepository.count();
 
+        long totalPublishers = publisherRepository.count();
+
+        long totalCategories = categoryRepository.count();
+
         long totalBorrowings = borrowingRepository.count();
 
         long totalUsers = userRepository.count();
 
-        long activeUsers = userRepository.findAll()
-                .stream()
-                .filter(user -> "ACTIVE".equals(user.getStatus()))
-                .count();
+        long activeUsers = userRepository.countByStatus("ACTIVE");
 
-        long inactiveUsers = userRepository.findAll()
-                .stream()
-                .filter(user -> !"ACTIVE".equals(user.getStatus()))
-                .count();
+        long inactiveUsers = userRepository.countByStatus("INACTIVE");
 
         long todayFineRevenue =
                 borrowingDetailRepository.getTodayFineRevenue();
@@ -74,12 +80,14 @@ public class DashboardService {
                 totalBookCopies,
                 totalReaders,
                 totalAuthors,
+                totalPublishers,
+                totalCategories,
+                totalBorrowings,
                 totalUsers,
                 activeUsers,
                 inactiveUsers,
                 todayFineRevenue,
-                monthlyFineRevenue,
-                totalBorrowings
+                monthlyFineRevenue
         );
     }
 }

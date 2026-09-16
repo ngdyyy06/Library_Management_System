@@ -1,9 +1,11 @@
 package com.library.management.entity;
 
 import jakarta.persistence.*;
+
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
-
+import com.library.management.entity.Category;
 
 @Entity
 @Table(name = "books")
@@ -19,44 +21,65 @@ public class Book {
     @Column(nullable = false, unique = true)
     private String isbn;
 
-    private String publisher;
+    @ManyToOne
+    @JoinColumn(name = "publisher_id")
+    private Publisher publisher;
 
     @Column(name = "publish_year")
     private Integer publishYear;
 
-    @Column(columnDefinition = "TEXT")  //description có thể chứa đoạn văn dài
+    @Column(nullable = false)
+    private BigDecimal price;
+
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "total_quantity", nullable = false)
-    private Integer totalQuantity; // dùng Integer thay vì int để có thể biểu diễn trạng thái null
+    private Integer totalQuantity;
 
     @Column(name = "available_quantity", nullable = false)
-    private Integer availableQuantity;  // số lượng còn lại có thể mượn của sách
+    private Integer availableQuantity;
 
     @Column(nullable = false)
     private String status;
 
     @ManyToMany
-    @JoinTable(  // dùng bảng book_authors để kết nối Book với Author
+    @JoinTable(
             name = "book_authors",
             joinColumns = @JoinColumn(name = "book_id"),
             inverseJoinColumns = @JoinColumn(name = "author_id")
     )
-
-    // dùng set thay list để tránh 1 tác giả xuất hiện 2 lần trong collection
     private Set<Author> authors = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(
+            name = "book_categories",
+            joinColumns = @JoinColumn(name = "book_id"),
+            inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    private Set<Category> categories = new HashSet<>();
 
     public Book() {
     }
 
-    public Book(Long id, String title, String isbn, String publisher,
-                Integer publishYear, String description,
-                Integer totalQuantity, Integer availableQuantity, String status) {
+    public Book(
+            Long id,
+            String title,
+            String isbn,
+            Publisher publisher,
+            Integer publishYear,
+            BigDecimal price,
+            String description,
+            Integer totalQuantity,
+            Integer availableQuantity,
+            String status
+    ) {
         this.id = id;
         this.title = title;
         this.isbn = isbn;
         this.publisher = publisher;
         this.publishYear = publishYear;
+        this.price = price;
         this.description = description;
         this.totalQuantity = totalQuantity;
         this.availableQuantity = availableQuantity;
@@ -87,11 +110,11 @@ public class Book {
         this.isbn = isbn;
     }
 
-    public String getPublisher() {
+    public Publisher getPublisher() {
         return publisher;
     }
 
-    public void setPublisher(String publisher) {
+    public void setPublisher(Publisher publisher) {
         this.publisher = publisher;
     }
 
@@ -101,6 +124,14 @@ public class Book {
 
     public void setPublishYear(Integer publishYear) {
         this.publishYear = publishYear;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
     }
 
     public String getDescription() {
@@ -127,6 +158,14 @@ public class Book {
         this.availableQuantity = availableQuantity;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public Set<Author> getAuthors() {
         return authors;
     }
@@ -135,11 +174,11 @@ public class Book {
         this.authors = authors;
     }
 
-    public String getStatus() {
-        return status;
+    public Set<Category> getCategories() {
+        return categories;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void setCategories(Set<Category> categories) {
+        this.categories = categories;
     }
 }

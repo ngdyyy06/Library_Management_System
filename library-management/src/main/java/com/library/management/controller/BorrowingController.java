@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.*;
 import com.library.management.dto.CreateBorrowingRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import com.library.management.dto.ReturnBookRequest;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -36,11 +38,15 @@ public class BorrowingController {
 
     @PatchMapping("/details/{detailId}/return")
     public ResponseEntity<BorrowingDetail> returnBook(
-            @PathVariable Long detailId) {
+            @PathVariable Long detailId,
+            @Valid @RequestBody ReturnBookRequest request) {
 
-        BorrowingDetail detail = borrowingService.returnBook(detailId);
-
-        return ResponseEntity.ok(detail);
+        return ResponseEntity.ok(
+                borrowingService.returnBook(
+                        detailId,
+                        request.getCondition()
+                )
+        );
     }
 
     @PatchMapping("/update-overdue")

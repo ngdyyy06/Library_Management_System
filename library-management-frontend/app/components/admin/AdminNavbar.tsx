@@ -52,6 +52,45 @@ export default function AdminNavbar() {
                         </svg>
                     ),
                 },
+
+                {
+                    name: "Publishers",
+                    href: "/publishers",
+                    icon: (
+                        <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M3 21h18M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16M9 7h2m-2 4h2m-2 4h2m4-8h2m-2 4h2m-2 4h2"
+                            />
+                        </svg>
+                    ),
+                },
+                {
+                    name: "Categories",
+                    href: "/categories",
+                    icon: (
+                        <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 5a2 2 0 012-2h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm4 3h8m-8 4h8m-8 4h5"
+                            />
+                        </svg>
+                    ),
+                },
             ],
         },
         {
@@ -63,6 +102,26 @@ export default function AdminNavbar() {
                     icon: (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
+                    ),
+                },
+
+                {
+                    name: "Import Receipts",
+                    href: "/import-receipts",
+                    icon: (
+                        <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 4h16v16H4zM8 8h8m-8 4h8m-8 4h5"
+                            />
                         </svg>
                     ),
                 },

@@ -278,7 +278,10 @@ export async function getBorrowingDetails(id: number) {
     return response.json();
 }
 
-export async function returnBook(detailId: number) {
+export async function returnBook(
+    detailId: number,
+    condition: string
+) {
     const token = localStorage.getItem("token");
 
     const response = await fetch(
@@ -286,14 +289,21 @@ export async function returnBook(detailId: number) {
         {
             method: "PATCH",
             headers: {
+                "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,
             },
+            body: JSON.stringify({
+                condition,
+            }),
         }
     );
 
     if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to return book");
+
+        throw new Error(
+            errorData.message || "Failed to return book"
+        );
     }
 
     return response.json();
@@ -340,11 +350,13 @@ export async function getBookById(id: number) {
 export async function createBook(data: {
     title: string;
     isbn: string;
-    publisher?: string;
+    publisherId?: number;
     publishYear?: number;
     description?: string;
+    price?: number;
     totalQuantity: number;
     authorIds?: number[];
+    authorNames?: string[];
 }) {
     const token = localStorage.getItem("token");
 
@@ -359,7 +371,10 @@ export async function createBook(data: {
 
     if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create book");
+
+        throw new Error(
+            errorData.message || "Failed to create book"
+        );
     }
 
     return response.json();
@@ -370,11 +385,13 @@ export async function updateBook(
     data: {
         title: string;
         isbn: string;
-        publisher?: string;
+        publisherId?: number;
         publishYear?: number;
         description?: string;
+        price?: number;
         totalQuantity: number;
         authorIds?: number[];
+        authorNames?: string[];
         availableQuantity: number;
     }
 ) {
@@ -391,7 +408,10 @@ export async function updateBook(
 
     if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update book");
+
+        throw new Error(
+            errorData.message || "Failed to update book"
+        );
     }
 
     return response.json();
@@ -628,6 +648,371 @@ export async function deactivateAuthor(id: number) {
         const errorData = await response.json();
         throw new Error(
             errorData.message || "Failed to deactivate author"
+        );
+    }
+
+    return response.json();
+}
+
+export async function getPublishers() {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/publishers`, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to get publishers"
+        );
+    }
+
+    return response.json();
+}
+
+export async function getPublisherById(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/publishers/${id}`, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to get publisher"
+        );
+    }
+
+    return response.json();
+}
+
+export async function createPublisher(data: {
+    name: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+}) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/publishers`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to create publisher"
+        );
+    }
+
+    return response.json();
+}
+
+export async function updatePublisher(
+    id: number,
+    data: {
+        name: string;
+        address?: string;
+        phone?: string;
+        email?: string;
+    }
+) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/publishers/${id}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to update publisher"
+        );
+    }
+
+    return response.json();
+}
+
+export async function activatePublisher(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/publishers/${id}/activate`,
+        {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to activate publisher"
+        );
+    }
+
+    return response.json();
+}
+
+export async function deactivatePublisher(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/publishers/${id}/deactivate`,
+        {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to deactivate publisher"
+        );
+    }
+
+    return response.json();
+}
+
+export async function restoreBookCopy(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/book-copies/${id}/restore`,
+        {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to restore book copy"
+        );
+    }
+
+    return response.json();
+}
+
+export async function getBookCopyById(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/book-copies/${id}`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message || "Failed to get book copy"
+        );
+    }
+
+    return response.json();
+}
+
+export async function updateBookCopy(
+    id: number,
+    data: {
+        barcode: string;
+        bookId: number;
+    }
+) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/book-copies/${id}`,
+        {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(data),
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message || "Failed to update book copy"
+        );
+    }
+
+    return response.json();
+}
+
+export async function getCategories() {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/categories`, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to get categories");
+    }
+
+    return response.json();
+}
+
+export async function getCategoryById(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/categories/${id}`, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to get category");
+    }
+
+    return response.json();
+}
+
+export async function createCategory(name: string) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/categories?name=${encodeURIComponent(name)}`,
+        {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create category");
+    }
+
+    return response.json();
+}
+
+export async function updateCategory(id: number, name: string) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/categories/${id}?name=${encodeURIComponent(name)}`,
+        {
+            method: "PUT",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update category");
+    }
+
+    return response.json();
+}
+
+export async function activateCategory(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/categories/${id}/activate`,
+        {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to activate category");
+    }
+
+    return response.json();
+}
+
+export async function deactivateCategory(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/categories/${id}/deactivate`,
+        {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to deactivate category");
+    }
+
+    return response.json();
+}
+
+export async function getBooksByCategory(categoryId: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/categories/${categoryId}/books`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to get books by category"
         );
     }
 

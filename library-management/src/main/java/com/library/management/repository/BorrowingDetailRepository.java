@@ -31,22 +31,22 @@ public interface BorrowingDetailRepository
     long countUnreturnedBooksByBorrowingId(@Param("borrowingId") Long borrowingId);
 
     @Query("""
-        SELECT COALESCE(SUM(bd.fine), 0)
-        FROM BorrowingDetail bd
-        WHERE bd.returnedAt IS NOT NULL
-        AND FUNCTION('DATE', bd.returnedAt) = CURRENT_DATE
-        """)
-
+    SELECT COALESCE(SUM(bd.fine), 0)
+           + COALESCE(SUM(bd.damageFine), 0)
+    FROM BorrowingDetail bd
+    WHERE bd.returnedAt IS NOT NULL
+    AND FUNCTION('DATE', bd.returnedAt) = CURRENT_DATE
+    """)
     long getTodayFineRevenue();
 
     @Query("""
-        SELECT COALESCE(SUM(bd.fine), 0)
-        FROM BorrowingDetail bd
-        WHERE bd.returnedAt IS NOT NULL
-        AND YEAR(bd.returnedAt) = YEAR(CURRENT_DATE)
-        AND MONTH(bd.returnedAt) = MONTH(CURRENT_DATE)
-        """)
-
+    SELECT COALESCE(SUM(bd.fine), 0)
+           + COALESCE(SUM(bd.damageFine), 0)
+    FROM BorrowingDetail bd
+    WHERE bd.returnedAt IS NOT NULL
+    AND YEAR(bd.returnedAt) = YEAR(CURRENT_DATE)
+    AND MONTH(bd.returnedAt) = MONTH(CURRENT_DATE)
+    """)
     long getMonthlyFineRevenue();
 
     List<BorrowingDetail> findByBorrowingId(Long borrowingId);

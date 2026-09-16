@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public class CreateBookRequest {
@@ -14,29 +15,31 @@ public class CreateBookRequest {
     @NotBlank
     private String isbn;
 
-    private String publisher;
+    private Long publisherId;
 
     private Integer publishYear;
 
+    private BigDecimal price;
+
     private String description;
 
+    // Existing authors
     private List<Long> authorIds;
+
+    // New authors entered by user
+    private List<String> authorNames;
 
     private Integer availableQuantity;
 
+    private List<Long> categoryIds;
+
+    private List<String> categoryNames;
+
     @NotNull
-    @Min(0)  // số lượng k dc nhỏ hơn 0
+    @Min(0)
     private Integer totalQuantity;
 
     public CreateBookRequest() {
-    }
-
-    public Integer getAvailableQuantity() {
-        return availableQuantity;
-    }
-
-    public void setAvailableQuantity(Integer availableQuantity) {
-        this.availableQuantity = availableQuantity;
     }
 
     public String getTitle() {
@@ -55,12 +58,12 @@ public class CreateBookRequest {
         this.isbn = isbn;
     }
 
-    public String getPublisher() {
-        return publisher;
+    public Long getPublisherId() {
+        return publisherId;
     }
 
-    public void setPublisher(String publisher) {
-        this.publisher = publisher;
+    public void setPublisherId(Long publisherId) {
+        this.publisherId = publisherId;
     }
 
     public Integer getPublishYear() {
@@ -71,12 +74,44 @@ public class CreateBookRequest {
         this.publishYear = publishYear;
     }
 
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
+
     public String getDescription() {
         return description;
     }
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public List<Long> getAuthorIds() {
+        return authorIds;
+    }
+
+    public void setAuthorIds(List<Long> authorIds) {
+        this.authorIds = authorIds;
+    }
+
+    public List<String> getAuthorNames() {
+        return authorNames;
+    }
+
+    public void setAuthorNames(List<String> authorNames) {
+        this.authorNames = authorNames;
+    }
+
+    public Integer getAvailableQuantity() {
+        return availableQuantity;
+    }
+
+    public void setAvailableQuantity(Integer availableQuantity) {
+        this.availableQuantity = availableQuantity;
     }
 
     public Integer getTotalQuantity() {
@@ -87,11 +122,19 @@ public class CreateBookRequest {
         this.totalQuantity = totalQuantity;
     }
 
-    public List<Long> getAuthorIds() {
-        return authorIds;
+    public List<Long> getCategoryIds() {
+        return categoryIds;
     }
 
-    public void setAuthorIds(List<Long> authorIds) {
-        this.authorIds = authorIds;
+    public void setCategoryIds(List<Long> categoryIds) {
+        this.categoryIds = categoryIds;
+    }
+
+    public List<String> getCategoryNames() {
+        return categoryNames;
+    }
+
+    public void setCategoryNames(List<String> categoryNames) {
+        this.categoryNames = categoryNames;
     }
 }

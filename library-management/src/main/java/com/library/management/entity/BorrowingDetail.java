@@ -2,6 +2,7 @@ package com.library.management.entity;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -24,7 +25,10 @@ public class BorrowingDetail {
     private LocalDateTime returnedAt;
 
     @Column(nullable = false)
-    private Integer fine = 0;  // tiền phạt mặc định = 0
+    private Integer fine = 0;  // tiền phạt quá hạn
+
+    @Column(name = "damage_fine", nullable = false)
+    private BigDecimal damageFine = BigDecimal.ZERO;  // phí hỏng/mất
 
     public BorrowingDetail() {
     }
@@ -33,12 +37,14 @@ public class BorrowingDetail {
                            Borrowing borrowing,
                            BookCopy bookCopy,
                            LocalDateTime returnedAt,
-                           Integer fine) {
+                           Integer fine,
+                           BigDecimal damageFine) {
         this.id = id;
         this.borrowing = borrowing;
         this.bookCopy = bookCopy;
         this.returnedAt = returnedAt;
         this.fine = fine;
+        this.damageFine = damageFine;
     }
 
     public Long getId() {
@@ -79,5 +85,13 @@ public class BorrowingDetail {
 
     public void setFine(Integer fine) {
         this.fine = fine;
+    }
+
+    public BigDecimal getDamageFine() {
+        return damageFine;
+    }
+
+    public void setDamageFine(BigDecimal damageFine) {
+        this.damageFine = damageFine;
     }
 }

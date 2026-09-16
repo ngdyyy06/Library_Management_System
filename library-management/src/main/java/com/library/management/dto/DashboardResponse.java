@@ -6,9 +6,11 @@ public class DashboardResponse {
     private long totalBookCopies;
     private long totalReaders;
     private long totalAuthors;
+    private long totalPublishers;
+    private long totalCategories;
     private long totalBorrowings;
-    private long totalUsers;
 
+    private long totalUsers;
     private long activeUsers;
     private long inactiveUsers;
 
@@ -23,31 +25,27 @@ public class DashboardResponse {
             long totalBookCopies,
             long totalReaders,
             long totalAuthors,
+            long totalPublishers,
+            long totalCategories,
+            long totalBorrowings,
             long totalUsers,
             long activeUsers,
             long inactiveUsers,
             long todayFineRevenue,
-            long monthlyFineRevenue,
-            long totalBorrowings
-    ) {
+            long monthlyFineRevenue) {
+
         this.totalBooks = totalBooks;
         this.totalBookCopies = totalBookCopies;
         this.totalReaders = totalReaders;
         this.totalAuthors = totalAuthors;
+        this.totalPublishers = totalPublishers;
+        this.totalCategories = totalCategories;
+        this.totalBorrowings = totalBorrowings;
         this.totalUsers = totalUsers;
         this.activeUsers = activeUsers;
         this.inactiveUsers = inactiveUsers;
         this.todayFineRevenue = todayFineRevenue;
         this.monthlyFineRevenue = monthlyFineRevenue;
-        this.totalBorrowings = totalBorrowings;
-    }
-
-    public long getTotalBorrowings() {
-        return totalBorrowings;
-    }
-
-    public void setTotalBorrowings(long totalBorrowings) {
-        this.totalBorrowings = totalBorrowings;
     }
 
     public long getTotalBooks() {
@@ -80,6 +78,30 @@ public class DashboardResponse {
 
     public void setTotalAuthors(long totalAuthors) {
         this.totalAuthors = totalAuthors;
+    }
+
+    public long getTotalPublishers() {
+        return totalPublishers;
+    }
+
+    public void setTotalPublishers(long totalPublishers) {
+        this.totalPublishers = totalPublishers;
+    }
+
+    public long getTotalCategories() {
+        return totalCategories;
+    }
+
+    public void setTotalCategories(long totalCategories) {
+        this.totalCategories = totalCategories;
+    }
+
+    public long getTotalBorrowings() {
+        return totalBorrowings;
+    }
+
+    public void setTotalBorrowings(long totalBorrowings) {
+        this.totalBorrowings = totalBorrowings;
     }
 
     public long getTotalUsers() {

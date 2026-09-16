@@ -1,9 +1,11 @@
 package com.library.management.controller;
 
 import com.library.management.dto.CreateBookCopyRequest;
+import com.library.management.dto.UpdateBookCopyRequest;
 import com.library.management.entity.BookCopy;
 import com.library.management.service.BookCopyService;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,12 +37,20 @@ public class BookCopyController {
         return bookCopyService.getBookCopyById(id);
     }
 
+    @PutMapping("/{id}")
+    public BookCopy updateBookCopy(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateBookCopyRequest request) {
+
+        return bookCopyService.updateBookCopy(id, request);
+    }
+
     @PatchMapping("/{id}/lost")
     public BookCopy markAsLost(@PathVariable Long id) {
         return bookCopyService.markAsLost(id);
     }
 
-    @PatchMapping("/{id}damaged")
+    @PatchMapping("/{id}/damaged")
     public BookCopy markAsDamaged(@PathVariable Long id) {
         return bookCopyService.markAsDamaged(id);
     }
@@ -48,5 +58,14 @@ public class BookCopyController {
     @PatchMapping("/{id}/remove")
     public BookCopy removeBookCopy(@PathVariable Long id) {
         return bookCopyService.removeBookCopy(id);
+    }
+
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<BookCopy> restoreBookCopy(
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(
+                bookCopyService.restoreBookCopy(id)
+        );
     }
 }

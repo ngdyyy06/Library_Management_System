@@ -27,11 +27,14 @@ public class BookController {
 
     @GetMapping
     public List<Book> getAllBooks() {
+
         return bookService.getAllBooks();
     }
 
     @GetMapping("/{id}")
-    public Book getBookById(@PathVariable Long id) {
+    public Book getBookById(
+            @PathVariable Long id) {
+
         return bookService.getBookById(id);
     }
 
@@ -44,12 +47,16 @@ public class BookController {
     }
 
     @PatchMapping("/{id}/deactivate")
-    public Book deactivateBook(@PathVariable Long id) {
+    public Book deactivateBook(
+            @PathVariable Long id) {
+
         return bookService.deactivateBook(id);
     }
 
     @PatchMapping("/{id}/activate")
-    public Book activateBook(@PathVariable Long id) {
+    public Book activateBook(
+            @PathVariable Long id) {
+
         return bookService.activateBook(id);
     }
 }

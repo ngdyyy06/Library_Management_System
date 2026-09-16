@@ -7,6 +7,7 @@ import com.library.management.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -183,7 +184,8 @@ public class BorrowingService {
         return borrowing;
     }
 
-    public BorrowingDetail returnBook(Long detailId) {
+    public BorrowingDetail returnBook(Long detailId, String condition) {
+
         BorrowingDetail detail = borrowingDetailRepository.findById(detailId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Borrowing detail not found"));
@@ -192,21 +194,68 @@ public class BorrowingService {
             throw new RuntimeException("Book has already been returned");
         }
 
+        if (!"GOOD".equals(condition)
+                && !"DAMAGED".equals(condition)
+                && !"LOST".equals(condition)) {
+
+            throw new RuntimeException(
+                    "Invalid return condition. Allowed values: GOOD, DAMAGED, LOST"
+            );
+        }
+
         BookCopy bookCopy = detail.getBookCopy();
-        bookCopy.setStatus("AVAILABLE");
+        Book book = bookCopy.getBook();
+
+        // Xử lý tình trạng sách
+        if ("GOOD".equals(condition)) {
+
+            bookCopy.setStatus("AVAILABLE");
+
+        } else if ("DAMAGED".equals(condition)) {
+
+            bookCopy.setStatus("DAMAGED");
+
+        } else if ("LOST".equals(condition)) {
+
+            bookCopy.setStatus("LOST");
+        }
+
         bookCopyRepository.save(bookCopy);
 
-        Book book = bookCopy.getBook();
-        book.setAvailableQuantity(book.getAvailableQuantity() + 1);
+        // Chỉ sách trả bình thường mới quay lại số lượng có sẵn
+        if ("GOOD".equals(condition)) {
 
-        // Ghi thời điểm trả sách trước
-        detail.setFine(calculateFine(detail));
+            book.setAvailableQuantity(
+                    book.getAvailableQuantity() + 1
+            );
+        }
+
+        // Tính tiền phạt trả muộn
+        int lateFine = calculateFine(detail);
+
+        detail.setFine(lateFine);
+
+        // Tính phí hỏng / mất
+        BigDecimal damageFine = BigDecimal.ZERO;
+
+        if ("DAMAGED".equals(condition)) {
+
+            damageFine = new BigDecimal("50000");
+
+        } else if ("LOST".equals(condition)) {
+
+            damageFine = book.getPrice();
+        }
+
+        detail.setDamageFine(damageFine);
+
         detail.setReturnedAt(LocalDateTime.now());
+
         borrowingDetailRepository.save(detail);
+        bookRepository.save(book);
 
         Borrowing borrowing = detail.getBorrowing();
 
-        // Sau khi đã ghi returnedAt, mới kiểm tra còn sách chưa trả hay không
         long unreturnedBooks =
                 borrowingDetailRepository.countUnreturnedBooksByBorrowingId(
                         borrowing.getId()

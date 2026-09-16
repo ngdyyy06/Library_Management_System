@@ -255,7 +255,7 @@ export default function AuthorDetailPage() {
                                         </td>
 
                                         <td className="px-4 py-4 text-slate-500">
-                                            {book.publisher || "-"}
+                                            {book.publisher?.name || "-"}
                                         </td>
 
                                         <td className="px-4 py-4 text-center">
