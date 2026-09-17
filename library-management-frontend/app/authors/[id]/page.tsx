@@ -41,11 +41,12 @@ export default function AuthorDetailPage() {
 
     if (loading) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-[#f8fafc]">
-                <div className="text-center">
-                    <div className="mx-auto h-8 w-8 animate-spin rounded-full border-3 border-indigo-600 border-t-transparent"></div>
-                    <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                        Loading author...
+            <div className="flex min-h-screen w-full items-center justify-center bg-[#f7f8fa] p-6 font-sans">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900" />
+
+                    <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                        Loading author record...
                     </p>
                 </div>
             </div>
@@ -54,16 +55,49 @@ export default function AuthorDetailPage() {
 
     if (!author) {
         return (
-            <div className="min-h-screen bg-[#f8fafc] p-6 lg:p-8">
-                <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xs">
-                    <h2 className="text-lg font-bold text-slate-900">
-                        Author not found
+            <div className="flex min-h-screen w-full items-center justify-center bg-[#f7f8fa] p-6 font-sans">
+                <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-400">
+                        <svg
+                            className="h-6 w-6"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <circle cx="12" cy="8" r="3.5" />
+                            <path d="M5 21a7 7 0 0 1 14 0" />
+                            <path d="M19 4 4 19" />
+                        </svg>
+                    </div>
+
+                    <h2 className="mt-4 text-lg font-semibold text-slate-900">
+                        Author Not Found
                     </h2>
 
+                    <p className="mt-1 text-sm text-slate-400">
+                        The requested author record could not be found.
+                    </p>
+
                     <button
+                        type="button"
                         onClick={() => router.push("/authors")}
-                        className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
+                        className="mt-6 inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 active:scale-[0.98]"
                     >
+                        <svg
+                            className="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <path d="M19 12H5" />
+                            <path d="m12 19-7-7 7-7" />
+                        </svg>
                         Back to Authors
                     </button>
                 </div>
@@ -75,72 +109,105 @@ export default function AuthorDetailPage() {
         author.status === "ACTIVE" || author.active === true;
 
     return (
-        <div className="min-h-screen w-full bg-[#f8fafc] p-6 font-sans lg:p-8">
-            <div className="w-full space-y-6">
+        <div className="min-h-screen w-full bg-[#f7f8fa] p-6 font-sans lg:p-8">
+            <div className="mx-auto w-full max-w-6xl space-y-6">
 
                 {/* Header */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <button
-                            onClick={() => router.push("/authors")}
-                            className="mb-3 text-xs font-semibold text-slate-500 transition hover:text-indigo-600"
-                        >
-                            ← Back to Authors
-                        </button>
+                        <div className="mb-2 flex items-center gap-2 text-xs font-medium text-slate-400">
+                            <button
+                                type="button"
+                                onClick={() => router.push("/authors")}
+                                className="transition-colors hover:text-slate-900"
+                            >
+                                Authors
+                            </button>
 
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                            Author Details
-                        </h1>
+                            <span>/</span>
+
+                            <span className="font-medium text-slate-700">
+                                {author.name}
+                            </span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3">
+                            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                                Author Details
+                            </h1>
+
+                            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600">
+                                Author Record
+                            </span>
+                        </div>
 
                         <p className="mt-1 text-sm text-slate-500">
                             View author information and associated books.
                         </p>
                     </div>
+
+                    <button
+                        type="button"
+                        onClick={() => router.back()}
+                        className="group inline-flex h-10 items-center gap-2 self-start rounded-lg border border-slate-200 bg-white px-4 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 active:scale-[0.98] sm:self-auto sm:text-sm"
+                    >
+                        <svg
+                            className="h-4 w-4 transition-transform group-hover:-translate-x-0.5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <path d="M19 12H5" />
+                            <path d="m12 19-7-7 7-7" />
+                        </svg>
+                        Back
+                    </button>
                 </div>
 
                 {/* Author Information */}
-                <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs">
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
                     <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
 
-                        {/* Avatar */}
-                        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+                        {/* Author Icon */}
+                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600">
                             <svg
-                                className="h-10 w-10"
+                                className="h-8 w-8"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
                             >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="1.5"
-                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                                />
+                                <circle cx="12" cy="8" r="3.5" />
+                                <path d="M5 21a7 7 0 0 1 14 0" />
                             </svg>
                         </div>
 
-                        {/* Information */}
-                        <div className="flex-1">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0 flex-1">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                                         Author
                                     </p>
 
-                                    <h2 className="mt-1 text-2xl font-bold text-slate-900">
+                                    <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
                                         {author.name}
                                     </h2>
 
-                                    <p className="mt-1 font-mono text-xs text-slate-400">
-                                        Author ID: #{author.id}
+                                    <p className="mt-2 font-mono text-xs text-slate-400">
+                                        Author ID #{author.id}
                                     </p>
                                 </div>
 
                                 <span
                                     className={`inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
                                         isActive
-                                            ? "bg-emerald-50 text-emerald-600"
-                                            : "bg-slate-100 text-slate-500"
+                                            ? "bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-500/20"
+                                            : "bg-slate-100 text-slate-500 ring-1 ring-inset ring-slate-400/20"
                                     }`}
                                 >
                                     <span
@@ -155,81 +222,113 @@ export default function AuthorDetailPage() {
                                 </span>
                             </div>
 
-                            <div className="mt-6">
-                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                            {/* Biography */}
+                            <div className="mt-7 border-t border-slate-100 pt-6">
+                                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                                     Biography
                                 </p>
 
-                                <p className="mt-2 text-sm leading-7 text-slate-600">
-                                    {author.biography || "No biography provided."}
+                                <p className="mt-2 max-w-4xl text-sm leading-7 text-slate-600">
+                                    {author.biography ||
+                                        "No biography provided."}
                                 </p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Books */}
-                <div className="rounded-3xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
+                {/* Associated Books */}
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-                    <div className="border-b border-slate-100 p-5">
-                        <h2 className="text-base font-bold text-slate-900">
-                            Books by this Author
-                        </h2>
+                    {/* Section Header */}
+                    <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                        <div>
+                            <h2 className="text-base font-semibold text-slate-900">
+                                Books by this Author
+                            </h2>
 
-                        <p className="mt-1 text-xs text-slate-400">
-                            {books.length} book{books.length !== 1 ? "s" : ""} associated with this author.
-                        </p>
+                            <p className="mt-0.5 text-xs text-slate-400">
+                                {books.length}{" "}
+                                {books.length === 1
+                                    ? "book"
+                                    : "books"}{" "}
+                                associated with this author.
+                            </p>
+                        </div>
+
+                        <span className="w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                            {books.length}{" "}
+                            {books.length === 1 ? "Book" : "Books"}
+                        </span>
                     </div>
 
+                    {/* Empty State */}
                     {books.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-center">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 text-slate-400">
+                        <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-400">
                                 <svg
-                                    className="h-6 w-6"
+                                    className="h-7 w-7"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
                                 >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="1.5"
-                                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18.477 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                                    />
+                                    <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Z" />
+                                    <path d="M4 5.5A2.5 2.5 0 0 1 6.5 8H20" />
                                 </svg>
                             </div>
 
-                            <h3 className="mt-3 text-sm font-bold text-slate-900">
-                                No books found
+                            <h3 className="mt-4 text-sm font-semibold text-slate-900">
+                                No Books Found
                             </h3>
 
-                            <p className="mt-1 text-xs text-slate-400">
-                                This author is not currently associated with any books.
+                            <p className="mt-1 max-w-sm text-xs text-slate-400">
+                                This author is not currently associated with
+                                any books.
                             </p>
                         </div>
                     ) : (
+
+                        /* Books Table */
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left text-xs">
-                                <thead className="border-b border-slate-100 bg-slate-50/40 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                            <table className="w-full min-w-[800px] text-left text-sm">
+                                <thead className="border-b border-slate-100 bg-slate-50/60">
                                 <tr>
-                                    <th className="py-3.5 pl-6 pr-3">
+                                    <th
+                                        scope="col"
+                                        className="w-20 px-6 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+                                    >
                                         ID
                                     </th>
 
-                                    <th className="px-4 py-3.5">
-                                        TITLE
+                                    <th
+                                        scope="col"
+                                        className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+                                    >
+                                        Title
                                     </th>
 
-                                    <th className="px-4 py-3.5">
+                                    <th
+                                        scope="col"
+                                        className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+                                    >
                                         ISBN
                                     </th>
 
-                                    <th className="px-4 py-3.5">
-                                        PUBLISHER
+                                    <th
+                                        scope="col"
+                                        className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+                                    >
+                                        Publisher
                                     </th>
 
-                                    <th className="px-4 py-3.5 text-center">
-                                        STATUS
+                                    <th
+                                        scope="col"
+                                        className="px-4 py-3.5 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+                                    >
+                                        Status
                                     </th>
                                 </tr>
                                 </thead>
@@ -238,34 +337,77 @@ export default function AuthorDetailPage() {
                                 {books.map((book) => (
                                     <tr
                                         key={book.id}
-                                        className="transition hover:bg-slate-50/60"
+                                        className="transition-colors hover:bg-slate-50/60"
                                     >
-                                        <td className="py-4 pl-6 pr-3 font-mono font-semibold text-slate-400">
-                                            #{book.id}
+                                        {/* ID */}
+                                        <td className="px-6 py-4 align-middle">
+                                                <span className="font-mono text-xs font-medium text-slate-400">
+                                                    #{book.id}
+                                                </span>
                                         </td>
 
-                                        <td className="px-4 py-4">
-                                            <div className="font-bold text-slate-900">
-                                                {book.title}
+                                        {/* Title */}
+                                        <td className="px-4 py-4 align-middle">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-500">
+                                                    <svg
+                                                        className="h-4 w-4"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke="currentColor"
+                                                        strokeWidth="1.5"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                    >
+                                                        <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Z" />
+                                                        <path d="M4 5.5A2.5 2.5 0 0 1 6.5 8H20" />
+                                                    </svg>
+                                                </div>
+
+                                                <div className="min-w-0">
+                                                    <div className="truncate text-sm font-semibold text-slate-900">
+                                                        {book.title}
+                                                    </div>
+
+                                                    <div className="mt-0.5 text-[11px] text-slate-400">
+                                                        Book ID #{book.id}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </td>
 
-                                        <td className="px-4 py-4 font-mono text-slate-500">
-                                            {book.isbn}
+                                        {/* ISBN */}
+                                        <td className="px-4 py-4 align-middle">
+                                                <span className="font-mono text-xs text-slate-500">
+                                                    {book.isbn || "-"}
+                                                </span>
                                         </td>
 
-                                        <td className="px-4 py-4 text-slate-500">
-                                            {book.publisher?.name || "-"}
+                                        {/* Publisher */}
+                                        <td className="px-4 py-4 align-middle">
+                                                <span className="text-xs text-slate-500">
+                                                    {book.publisher?.name || "-"}
+                                                </span>
                                         </td>
 
-                                        <td className="px-4 py-4 text-center">
+                                        {/* Status */}
+                                        <td className="px-4 py-4 text-center align-middle">
                                                 <span
-                                                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                                                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
                                                         book.status === "ACTIVE"
-                                                            ? "bg-emerald-50 text-emerald-600"
-                                                            : "bg-slate-100 text-slate-500"
+                                                            ? "bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-500/20"
+                                                            : "bg-slate-100 text-slate-500 ring-1 ring-inset ring-slate-400/20"
                                                     }`}
                                                 >
+                                                    <span
+                                                        className={`h-1.5 w-1.5 rounded-full ${
+                                                            book.status ===
+                                                            "ACTIVE"
+                                                                ? "bg-emerald-500"
+                                                                : "bg-slate-400"
+                                                        }`}
+                                                    />
+
                                                     {book.status}
                                                 </span>
                                         </td>

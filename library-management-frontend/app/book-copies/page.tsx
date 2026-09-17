@@ -72,6 +72,7 @@ export default function BookCopiesPage() {
 
     const getEffectiveStatus = (copy: any) => {
         const rawStatus = (copy.status || "").toUpperCase();
+
         if (
             rawStatus === "LOST" ||
             rawStatus === "DAMAGED" ||
@@ -111,6 +112,7 @@ export default function BookCopiesPage() {
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
     ) => {
         const { name, value } = e.target;
+
         setFormData((prev) => ({
             ...prev,
             [name]: value,
@@ -145,9 +147,11 @@ export default function BookCopiesPage() {
 
             setShowAddForm(false);
             await loadBookCopies();
+
             alert("Book copy created successfully");
         } catch (error) {
             console.error("Failed to create book copy:", error);
+
             alert(
                 error instanceof Error
                     ? error.message
@@ -162,16 +166,19 @@ export default function BookCopiesPage() {
 
     const handleEditBookCopy = (bookCopy: any) => {
         setSelectedBookCopy(bookCopy);
+
         setFormData({
             barcode: bookCopy.barcode || "",
             bookId: bookCopy.book?.id ? String(bookCopy.book.id) : "",
         });
+
         setShowEditForm(true);
     };
 
     const handleCloseEdit = () => {
         setShowEditForm(false);
         setSelectedBookCopy(null);
+
         setFormData({
             barcode: "",
             bookId: "",
@@ -203,9 +210,11 @@ export default function BookCopiesPage() {
 
             await loadBookCopies();
             handleCloseEdit();
+
             alert("Book copy updated successfully");
         } catch (error) {
             console.error("Failed to update book copy:", error);
+
             alert(
                 error instanceof Error
                     ? error.message
@@ -228,6 +237,7 @@ export default function BookCopiesPage() {
         try {
             await restoreBookCopy(id);
             await loadBookCopies();
+
             alert("Book copy restored successfully");
         } catch (error: any) {
             alert(error.message || "Failed to restore book copy");
@@ -266,18 +276,24 @@ export default function BookCopiesPage() {
     // =========================================================
 
     const totalCopies = bookCopies.length;
+
     const borrowedCopies = bookCopies.filter(
         (copy) => (copy.status || "").toUpperCase() === "BORROWED"
     ).length;
+
     const availableCopies = bookCopies.filter(
         (copy) =>
             (copy.status || "").toUpperCase() === "AVAILABLE" &&
             (copy.book?.status || "").toUpperCase() === "ACTIVE"
     ).length;
 
-    // Helper render status badge
+    // =========================================================
+    // STATUS BADGE
+    // =========================================================
+
     const renderStatusBadge = (status: string) => {
         const s = (status || "").toUpperCase();
+
         if (s === "AVAILABLE") {
             return (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600 ring-1 ring-inset ring-emerald-500/20">
@@ -286,6 +302,7 @@ export default function BookCopiesPage() {
                 </span>
             );
         }
+
         if (s === "BORROWED") {
             return (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-600 ring-1 ring-inset ring-amber-500/20">
@@ -294,6 +311,7 @@ export default function BookCopiesPage() {
                 </span>
             );
         }
+
         if (s === "LOST") {
             return (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600 ring-1 ring-inset ring-rose-500/20">
@@ -302,6 +320,7 @@ export default function BookCopiesPage() {
                 </span>
             );
         }
+
         if (s === "DAMAGED") {
             return (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600 ring-1 ring-inset ring-orange-500/20">
@@ -310,6 +329,7 @@ export default function BookCopiesPage() {
                 </span>
             );
         }
+
         if (s === "REMOVED") {
             return (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-inset ring-slate-400/20">
@@ -318,6 +338,7 @@ export default function BookCopiesPage() {
                 </span>
             );
         }
+
         return (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-inset ring-slate-400/20">
                 <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
@@ -327,112 +348,170 @@ export default function BookCopiesPage() {
     };
 
     return (
-        <div className="min-h-screen w-full bg-[#f8fafc] p-6 lg:p-8 font-sans">
-            <div className="w-full space-y-6">
+        <div className="min-h-screen w-full bg-[#f7f8fa] p-6 font-sans lg:p-8">
+            <div className="mx-auto w-full max-w-[1500px] space-y-6">
 
                 {/* Header */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <div className="flex items-center gap-3">
+                        <div className="mb-2 flex items-center gap-2 text-xs font-medium text-slate-400">
+                            <span>Inventory</span>
+                            <span>/</span>
+                            <span className="text-slate-700">
+                                Book Copies
+                            </span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3">
                             <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
                                 Book Copies
                             </h1>
-                            <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600">
+
+                            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600">
                                 Physical Inventory
                             </span>
                         </div>
+
                         <p className="mt-1 text-sm text-slate-500">
-                            Track individual physical copies, barcodes, and real-time circulation state.
+                            Track individual physical copies, barcodes, and circulation status.
                         </p>
                     </div>
 
+                    {/* Primary Action */}
                     <button
+                        type="button"
                         onClick={() => setShowAddForm(true)}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-black px-4 text-sm font-medium text-white shadow-sm transition hover:bg-[#1f1f1f] focus:outline-none focus:ring-2 focus:ring-black/20 active:scale-[0.98]"
                     >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                        <svg
+                            className="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <path d="M12 5v14" />
+                            <path d="M5 12h14" />
                         </svg>
-                         Add Book Copy
+                        Add Book Copy
                     </button>
                 </div>
 
-                {/* Metric Cards */}
+                {/* Metrics */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <div className="relative rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                TOTAL PHYSICAL COPIES
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                                Total Physical Copies
                             </span>
-                            <span className="h-2 w-2 rounded-full bg-indigo-600" />
+
+                            <span className="h-2 w-2 rounded-full bg-slate-900" />
                         </div>
-                        <p className="mt-2 text-3xl font-bold text-slate-900">{totalCopies}</p>
-                        <p className="mt-1 text-xs text-slate-400">Barcoded physical books</p>
+
+                        <p className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
+                            {totalCopies}
+                        </p>
+
+                        <p className="mt-1 text-xs text-slate-400">
+                            Barcoded physical books
+                        </p>
                     </div>
 
-                    <div className="relative rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">
-                                AVAILABLE COPIES
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-600">
+                                Available Copies
                             </span>
+
                             <span className="h-2 w-2 rounded-full bg-emerald-500" />
                         </div>
-                        <p className="mt-2 text-3xl font-bold text-emerald-600">{availableCopies}</p>
-                        <p className="mt-1 text-xs text-slate-400">Ready on shelves</p>
+
+                        <p className="mt-3 text-3xl font-bold tracking-tight text-emerald-600">
+                            {availableCopies}
+                        </p>
+
+                        <p className="mt-1 text-xs text-slate-400">
+                            Ready for circulation
+                        </p>
                     </div>
 
-                    <div className="relative rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600">
-                                CURRENTLY BORROWED
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-600">
+                                Currently Borrowed
                             </span>
+
                             <span className="h-2 w-2 rounded-full bg-amber-500" />
                         </div>
-                        <p className="mt-2 text-3xl font-bold text-amber-600">{borrowedCopies}</p>
-                        <p className="mt-1 text-xs text-slate-400">In readers possession</p>
+
+                        <p className="mt-3 text-3xl font-bold tracking-tight text-amber-600">
+                            {borrowedCopies}
+                        </p>
+
+                        <p className="mt-1 text-xs text-slate-400">
+                            Currently with readers
+                        </p>
                     </div>
                 </div>
 
-                {/* Main Table Container */}
-                <div className="rounded-3xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
+                {/* Inventory */}
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-                    <div className="flex flex-col gap-4 border-b border-slate-100 p-5 lg:flex-row lg:items-center lg:justify-between">
+                    {/* Toolbar */}
+                    <div className="flex flex-col gap-4 border-b border-slate-100 p-5 lg:flex-row lg:items-center lg:justify-between lg:p-6">
                         <div>
-                            <h2 className="text-base font-bold text-slate-900">
+                            <h2 className="text-base font-semibold text-slate-900">
                                 Physical Copies Inventory
                             </h2>
-                            <p className="text-xs text-slate-400">
-                                Showing {filteredCopies.length} of {bookCopies.length} items
+
+                            <p className="mt-0.5 text-xs text-slate-400">
+                                Showing {filteredCopies.length} of{" "}
+                                {bookCopies.length} items
                             </p>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2.5">
+                        <div className="flex flex-col gap-2.5 sm:flex-row">
+
                             {/* Search */}
-                            <div className="relative min-w-[220px]">
+                            <div className="relative min-w-0 sm:w-[250px]">
                                 <svg
                                     className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
+                                    strokeWidth="1.7"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
                                 >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    <circle cx="11" cy="11" r="7" />
+                                    <path d="m20 20-4-4" />
                                 </svg>
+
                                 <input
                                     type="text"
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="Search barcode/title/author..."
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2 pl-9 pr-4 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/15"
+                                    onChange={(e) =>
+                                        setSearchTerm(e.target.value)
+                                    }
+                                    placeholder="Search barcode, title, author..."
+                                    className="h-10 w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-4 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
                                 />
                             </div>
 
                             {/* Book Filter */}
                             <select
                                 value={selectedBookFilter}
-                                onChange={(e) => setSelectedBookFilter(e.target.value)}
-                                className="max-w-[200px] truncate rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
+                                onChange={(e) =>
+                                    setSelectedBookFilter(e.target.value)
+                                }
+                                className="h-10 max-w-[220px] rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
                             >
-                                <option value="ALL">All Active Books</option>
+                                <option value="ALL">
+                                    All Active Books
+                                </option>
+
                                 {activeBooks.map((book) => (
                                     <option key={book.id} value={book.id}>
                                         {book.title}
@@ -443,149 +522,241 @@ export default function BookCopiesPage() {
                             {/* Status Filter */}
                             <select
                                 value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
+                                onChange={(e) =>
+                                    setStatusFilter(e.target.value)
+                                }
+                                className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
                             >
                                 <option value="ALL">All Status</option>
                                 <option value="AVAILABLE">Available</option>
                                 <option value="BORROWED">Borrowed</option>
                                 <option value="LOST">Lost</option>
                                 <option value="DAMAGED">Damaged</option>
-                                <option value="UNAVAILABLE">Unavailable</option>
+                                <option value="UNAVAILABLE">
+                                    Unavailable
+                                </option>
                                 <option value="REMOVED">Removed</option>
                             </select>
                         </div>
                     </div>
 
-                    {/* Table View */}
+                    {/* Loading */}
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                            <div className="h-8 w-8 animate-spin rounded-full border-3 border-indigo-600 border-t-transparent" />
-                            <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                        <div className="flex flex-col items-center justify-center py-20">
+                            <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900" />
+
+                            <p className="mt-3 text-xs font-medium uppercase tracking-wider text-slate-400">
                                 Loading book copies...
                             </p>
                         </div>
                     ) : filteredCopies.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-20 text-center">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 text-slate-400">
-                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                        /* Empty State */
+                        <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-400">
+                                <svg
+                                    className="h-7 w-7"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M5 4h14v16H5z" />
+                                    <path d="M8 8h8" />
+                                    <path d="M8 12h8" />
+                                    <path d="M8 16h5" />
                                 </svg>
                             </div>
-                            <h3 className="mt-3 text-sm font-bold text-slate-900">No book copies found</h3>
+
+                            <h3 className="mt-4 text-sm font-semibold text-slate-900">
+                                No Book Copies Found
+                            </h3>
+
                             <p className="mt-1 text-xs text-slate-400">
                                 Try adjusting your search criteria or filters.
                             </p>
                         </div>
                     ) : (
+                        /* Table */
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left text-xs">
-                                <thead className="border-b border-slate-100 bg-slate-50/40 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                            <table className="w-full min-w-[1050px] text-left text-xs">
+                                <thead className="border-b border-slate-100 bg-slate-50/60">
                                 <tr>
-                                    <th scope="col" className="py-3.5 pl-6 pr-3">ID</th>
-                                    <th scope="col" className="px-4 py-3.5">BARCODE</th>
-                                    <th scope="col" className="px-4 py-3.5">BOOK</th>
-                                    <th scope="col" className="px-4 py-3.5">AUTHOR</th>
-                                    <th scope="col" className="px-4 py-3.5">PUBLISHER</th>
-                                    <th scope="col" className="px-4 py-3.5 text-center">STATUS</th>
-                                    <th scope="col" className="py-3.5 pl-4 pr-6 text-right">ACTION</th>
+                                    <th className="py-3.5 pl-6 pr-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                                        ID
+                                    </th>
+
+                                    <th className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                                        Barcode
+                                    </th>
+
+                                    <th className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                                        Book
+                                    </th>
+
+                                    <th className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                                        Author
+                                    </th>
+
+                                    <th className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                                        Publisher
+                                    </th>
+
+                                    <th className="px-4 py-3.5 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                                        Status
+                                    </th>
+
+                                    <th className="py-3.5 pl-4 pr-6 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                                        Action
+                                    </th>
                                 </tr>
                                 </thead>
 
                                 <tbody className="divide-y divide-slate-100">
                                 {filteredCopies.map((bookCopy) => {
-                                    const effectiveStatus = getEffectiveStatus(bookCopy);
+                                    const effectiveStatus =
+                                        getEffectiveStatus(bookCopy);
+
                                     const canRestore =
                                         effectiveStatus === "LOST" ||
                                         effectiveStatus === "DAMAGED" ||
                                         effectiveStatus === "REMOVED";
 
-                                    const authors = bookCopy.book?.authors || [];
+                                    const authors =
+                                        bookCopy.book?.authors || [];
 
                                     return (
-                                        <tr key={bookCopy.id} className="transition hover:bg-slate-50/60">
+                                        <tr
+                                            key={bookCopy.id}
+                                            className="transition-colors hover:bg-slate-50/60"
+                                        >
                                             {/* ID */}
-                                            <td className="py-4 pl-6 pr-3 font-mono text-xs font-semibold text-slate-400">
-                                                #{bookCopy.id}
-                                            </td>
-
-                                            {/* Barcode */}
-                                            <td className="px-4 py-4">
-                                                    <span
-                                                        onClick={() => router.push(`/book-copies/${bookCopy.id}`)}
-                                                        className="inline-flex cursor-pointer rounded-lg border border-slate-200/80 bg-slate-100/90 px-3 py-1 font-mono text-xs font-bold text-slate-800 transition hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600"
-                                                    >
-                                                        {bookCopy.barcode}
+                                            <td className="py-4 pl-6 pr-3 align-middle">
+                                                    <span className="font-mono text-xs font-medium text-slate-400">
+                                                        #{bookCopy.id}
                                                     </span>
                                             </td>
 
-                                            {/* Book Title */}
-                                            <td className="px-4 py-4">
+                                            {/* Barcode */}
+                                            <td className="px-4 py-4 align-middle">
                                                 <button
-                                                    onClick={() => router.push(`/book-copies/${bookCopy.id}`)}
+                                                    type="button"
+                                                    onClick={() =>
+                                                        router.push(
+                                                            `/book-copies/${bookCopy.id}`
+                                                        )
+                                                    }
+                                                    className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white hover:text-slate-900"
+                                                >
+                                                    {bookCopy.barcode}
+                                                </button>
+                                            </td>
+
+                                            {/* Book */}
+                                            <td className="px-4 py-4 align-middle">
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        router.push(
+                                                            `/book-copies/${bookCopy.id}`
+                                                        )
+                                                    }
                                                     className="group text-left"
                                                 >
-                                                    <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition">
-                                                        {bookCopy.book?.title || "—"}
+                                                    <p className="text-sm font-semibold text-slate-900 transition group-hover:text-slate-600">
+                                                        {bookCopy.book
+                                                            ?.title || "—"}
                                                     </p>
-                                                    <p className="mt-0.5 font-mono text-[11px] text-slate-400">
-                                                        ISBN: {bookCopy.book?.isbn || "—"}
+
+                                                    <p className="mt-1 font-mono text-[11px] text-slate-400">
+                                                        ISBN:{" "}
+                                                        {bookCopy.book
+                                                            ?.isbn || "—"}
                                                     </p>
                                                 </button>
                                             </td>
 
-                                            {/* Author */}
-                                            <td className="px-4 py-4">
-                                                <div className="max-w-[180px]">
+                                            {/* Authors */}
+                                            <td className="px-4 py-4 align-middle">
+                                                <div className="max-w-[180px] space-y-0.5">
                                                     {authors.length > 0 ? (
-                                                        authors.map((author: any) => (
-                                                            <p
-                                                                key={author.id}
-                                                                className="truncate text-xs font-medium text-slate-700"
-                                                            >
-                                                                {author.name}
-                                                            </p>
-                                                        ))
+                                                        authors.map(
+                                                            (
+                                                                author: any
+                                                            ) => (
+                                                                <p
+                                                                    key={
+                                                                        author.id
+                                                                    }
+                                                                    className="truncate text-xs font-medium text-slate-600"
+                                                                >
+                                                                    {
+                                                                        author.name
+                                                                    }
+                                                                </p>
+                                                            )
+                                                        )
                                                     ) : (
-                                                        <span className="text-xs text-slate-400">—</span>
+                                                        <span className="text-xs text-slate-400">
+                                                                —
+                                                            </span>
                                                     )}
                                                 </div>
                                             </td>
 
                                             {/* Publisher */}
-                                            <td className="px-4 py-4">
-                                                    <span className="text-xs font-medium text-slate-700">
-                                                        {bookCopy.book?.publisher?.name || "—"}
+                                            <td className="px-4 py-4 align-middle">
+                                                    <span className="text-xs font-medium text-slate-600">
+                                                        {bookCopy.book
+                                                                ?.publisher?.name ||
+                                                            "—"}
                                                     </span>
                                             </td>
 
                                             {/* Status */}
-                                            <td className="px-4 py-4 text-center">
-                                                {renderStatusBadge(effectiveStatus)}
+                                            <td className="px-4 py-4 text-center align-middle">
+                                                {renderStatusBadge(
+                                                    effectiveStatus
+                                                )}
                                             </td>
 
-                                            {/* Action Buttons */}
-                                            <td className="py-4 pl-4 pr-6 text-right">
+                                            {/* Actions */}
+                                            <td className="py-4 pl-4 pr-6 text-right align-middle">
                                                 <div className="flex items-center justify-end gap-1.5">
-                                                    {/* Nút sang trang Detail riêng */}
                                                     <button
-                                                        onClick={() => router.push(`/book-copies/${bookCopy.id}`)}
-                                                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-indigo-600"
+                                                        type="button"
+                                                        onClick={() =>
+                                                            router.push(
+                                                                `/book-copies/${bookCopy.id}`
+                                                            )
+                                                        }
+                                                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
                                                     >
                                                         Detail
                                                     </button>
 
                                                     <button
-                                                        onClick={() => handleEditBookCopy(bookCopy)}
-                                                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-indigo-600"
+                                                        type="button"
+                                                        onClick={() =>
+                                                            handleEditBookCopy(
+                                                                bookCopy
+                                                            )
+                                                        }
+                                                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
                                                     >
                                                         Edit
                                                     </button>
 
                                                     {canRestore && (
                                                         <button
-                                                            onClick={() => handleRestoreBookCopy(bookCopy.id)}
-                                                            className="rounded-lg border border-emerald-200 bg-emerald-50/50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 shadow-2xs transition hover:bg-emerald-50"
+                                                            type="button"
+                                                            onClick={() =>
+                                                                handleRestoreBookCopy(
+                                                                    bookCopy.id
+                                                                )
+                                                            }
+                                                            className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100"
                                                         >
                                                             Restore
                                                         </button>
@@ -602,41 +773,68 @@ export default function BookCopiesPage() {
                 </div>
             </div>
 
-            {/* Modal Add Form */}
+            {/* =====================================================
+                ADD BOOK COPY MODAL
+            ====================================================== */}
+
             {showAddForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs">
-                    <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl ring-1 ring-slate-900/5 transition-all">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl">
+
+                        {/* Modal Header */}
+                        <div className="flex items-start justify-between border-b border-slate-100 p-6">
                             <div>
-                                <h3 className="text-base font-bold text-slate-900">Add New Book Copy</h3>
-                                <p className="mt-0.5 text-xs text-slate-400">
+                                <h3 className="text-base font-semibold text-slate-900">
+                                    Add New Book Copy
+                                </h3>
+
+                                <p className="mt-1 text-xs text-slate-400">
                                     Link a physical barcode to an active book.
                                 </p>
                             </div>
+
                             <button
+                                type="button"
                                 onClick={() => setShowAddForm(false)}
-                                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                             >
-                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                <svg
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                    strokeLinecap="round"
+                                >
+                                    <path d="M6 6l12 12" />
+                                    <path d="M18 6 6 18" />
                                 </svg>
                             </button>
                         </div>
 
-                        <div className="mt-4 space-y-4">
+                        {/* Form */}
+                        <div className="space-y-5 p-6">
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700">
-                                    Book Title <span className="text-rose-500">*</span>
+                                    Book Title{" "}
+                                    <span className="text-rose-500">*</span>
                                 </label>
+
                                 <select
                                     name="bookId"
                                     value={formData.bookId}
                                     onChange={handleInputChange}
-                                    className="mt-1 w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs text-slate-800 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
+                                    className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
                                 >
-                                    <option value="">Select an active book</option>
+                                    <option value="">
+                                        Select an active book
+                                    </option>
+
                                     {activeBooks.map((book) => (
-                                        <option key={book.id} value={book.id}>
+                                        <option
+                                            key={book.id}
+                                            value={book.id}
+                                        >
                                             {book.title} (#{book.id})
                                         </option>
                                     ))}
@@ -645,31 +843,35 @@ export default function BookCopiesPage() {
 
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700">
-                                    Physical Barcode <span className="text-rose-500">*</span>
+                                    Physical Barcode{" "}
+                                    <span className="text-rose-500">*</span>
                                 </label>
+
                                 <input
                                     type="text"
                                     name="barcode"
                                     value={formData.barcode}
                                     onChange={handleInputChange}
                                     placeholder="e.g. BC-1002934"
-                                    className="mt-1 w-full rounded-xl border border-slate-200 px-3.5 py-2 font-mono text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
+                                    className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 font-mono text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
                                 />
                             </div>
                         </div>
 
-                        <div className="mt-6 flex justify-end gap-2 border-t border-slate-100 pt-4">
+                        {/* Footer */}
+                        <div className="flex justify-end gap-2 border-t border-slate-100 p-6">
                             <button
                                 type="button"
                                 onClick={() => setShowAddForm(false)}
-                                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                             >
                                 Cancel
                             </button>
+
                             <button
                                 type="button"
                                 onClick={handleCreateBookCopy}
-                                className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-2xs transition hover:bg-indigo-700"
+                                className="rounded-lg bg-black px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#1f1f1f] focus:outline-none focus:ring-2 focus:ring-black/20 active:scale-[0.98]"
                             >
                                 Create Copy
                             </button>
@@ -678,66 +880,96 @@ export default function BookCopiesPage() {
                 </div>
             )}
 
-            {/* Modal Edit Form */}
+            {/* =====================================================
+                EDIT BOOK COPY MODAL
+            ====================================================== */}
+
             {showEditForm && selectedBookCopy && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs">
-                    <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl ring-1 ring-slate-900/5 transition-all">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl">
+
+                        {/* Modal Header */}
+                        <div className="flex items-start justify-between border-b border-slate-100 p-6">
                             <div>
-                                <h3 className="text-base font-bold text-slate-900">Edit Book Copy</h3>
-                                <p className="mt-0.5 text-xs text-slate-400">
+                                <h3 className="text-base font-semibold text-slate-900">
+                                    Edit Book Copy
+                                </h3>
+
+                                <p className="mt-1 text-xs text-slate-400">
                                     Update physical copy information.
                                 </p>
                             </div>
+
                             <button
+                                type="button"
                                 onClick={handleCloseEdit}
-                                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                             >
-                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                <svg
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                    strokeLinecap="round"
+                                >
+                                    <path d="M6 6l12 12" />
+                                    <path d="M18 6 6 18" />
                                 </svg>
                             </button>
                         </div>
 
-                        <div className="mt-4 space-y-4">
+                        {/* Form */}
+                        <div className="space-y-5 p-6">
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Book Copy ID
                                 </label>
+
                                 <input
                                     type="text"
                                     value={`#${selectedBookCopy.id}`}
                                     disabled
-                                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 font-mono text-xs text-slate-400"
+                                    className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 font-mono text-xs text-slate-400"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700">
-                                    Barcode <span className="text-rose-500">*</span>
+                                    Barcode{" "}
+                                    <span className="text-rose-500">*</span>
                                 </label>
+
                                 <input
                                     type="text"
                                     name="barcode"
                                     value={formData.barcode}
                                     onChange={handleInputChange}
-                                    className="mt-1 w-full rounded-xl border border-slate-200 px-3.5 py-2 font-mono text-xs text-slate-800 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
+                                    className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 font-mono text-xs text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700">
-                                    Linked Book Title <span className="text-rose-500">*</span>
+                                    Linked Book Title{" "}
+                                    <span className="text-rose-500">*</span>
                                 </label>
+
                                 <select
                                     name="bookId"
                                     value={formData.bookId}
                                     onChange={handleInputChange}
-                                    className="mt-1 w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs text-slate-800 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
+                                    className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
                                 >
-                                    <option value="">Select an active book</option>
+                                    <option value="">
+                                        Select an active book
+                                    </option>
+
                                     {activeBooks.map((book) => (
-                                        <option key={book.id} value={book.id}>
+                                        <option
+                                            key={book.id}
+                                            value={book.id}
+                                        >
                                             {book.title} (#{book.id})
                                         </option>
                                     ))}
@@ -748,24 +980,31 @@ export default function BookCopiesPage() {
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Current Status
                                 </label>
-                                <div className="mt-1">
-                                    {renderStatusBadge(getEffectiveStatus(selectedBookCopy))}
+
+                                <div className="mt-2">
+                                    {renderStatusBadge(
+                                        getEffectiveStatus(
+                                            selectedBookCopy
+                                        )
+                                    )}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="mt-6 flex justify-end gap-2 border-t border-slate-100 pt-4">
+                        {/* Footer */}
+                        <div className="flex justify-end gap-2 border-t border-slate-100 p-6">
                             <button
                                 type="button"
                                 onClick={handleCloseEdit}
-                                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                             >
                                 Cancel
                             </button>
+
                             <button
                                 type="button"
                                 onClick={handleUpdateBookCopy}
-                                className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-2xs transition hover:bg-indigo-700"
+                                className="rounded-lg bg-black px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#1f1f1f] focus:outline-none focus:ring-2 focus:ring-black/20 active:scale-[0.98]"
                             >
                                 Save Changes
                             </button>

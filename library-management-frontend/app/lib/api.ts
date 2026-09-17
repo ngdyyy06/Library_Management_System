@@ -113,6 +113,155 @@ export async function getUsers() {
     return response.json();
 }
 
+export async function getReaders() {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/readers`, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to fetch readers"
+        );
+    }
+
+    return response.json();
+}
+
+export async function createReader(data: {
+    readerCode: string;
+    fullName: string;
+    email?: string;
+    phone: string;
+    address?: string;
+    dateOfBirth?: string;
+}) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/readers`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to create reader"
+        );
+    }
+
+    return response.json();
+}
+
+export async function updateReader(
+    id: number,
+    data: {
+        readerCode: string;
+        fullName: string;
+        email?: string;
+        phone: string;
+        address?: string;
+        dateOfBirth?: string;
+    }
+) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/readers/${id}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to update reader"
+        );
+    }
+
+    return response.json();
+}
+
+export async function getReaderById(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/readers/${id}`, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to fetch reader"
+        );
+    }
+
+    return response.json();
+}
+
+export async function activateReader(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/readers/${id}/activate`,
+        {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message || "Failed to activate reader"
+        );
+    }
+
+    return response.json();
+}
+
+export async function deactivateReader(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/readers/${id}/deactivate`,
+        {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message || "Failed to deactivate reader"
+        );
+    }
+
+    return response.json();
+}
+
 // vô hiệu hoá tài khoản users
 export async function deactivateUser(userId: number) {
     const token = localStorage.getItem("token");
@@ -217,6 +366,26 @@ export async function getDashboard() {
     if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to get dashboard");
+    }
+
+    return response.json();
+}
+
+export async function getStaffDashboard() {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/staff/dashboard`, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to get staff dashboard"
+        );
     }
 
     return response.json();
@@ -1209,6 +1378,31 @@ export async function deactivateImportReceipt(id: number) {
         throw new Error(
             errorData.message ||
             "Failed to deactivate import receipt"
+        );
+    }
+
+    return response.json();
+}
+
+export async function createBorrowing(data: {
+    readerId: number;
+    bookCopyIds: number[];
+}) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/borrowings`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to create borrowing"
         );
     }
 

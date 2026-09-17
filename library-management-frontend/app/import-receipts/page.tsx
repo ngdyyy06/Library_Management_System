@@ -274,7 +274,11 @@ export default function ImportReceiptsPage() {
     }
 
     async function handleActivate(id: number) {
-        if (!window.confirm("Are you sure you want to activate this import receipt?")) {
+        if (
+            !window.confirm(
+                "Are you sure you want to activate this import receipt?"
+            )
+        ) {
             return;
         }
 
@@ -288,7 +292,11 @@ export default function ImportReceiptsPage() {
     }
 
     async function handleDeactivate(id: number) {
-        if (!window.confirm("Are you sure you want to deactivate this import receipt?")) {
+        if (
+            !window.confirm(
+                "Are you sure you want to deactivate this import receipt?"
+            )
+        ) {
             return;
         }
 
@@ -318,9 +326,11 @@ export default function ImportReceiptsPage() {
     }, [receipts, search, statusFilter]);
 
     const totalReceipts = receipts.length;
+
     const activeReceipts = receipts.filter(
         (receipt) => receipt.status === "COMPLETED"
     ).length;
+
     const inactiveReceipts = receipts.filter(
         (receipt) => receipt.status === "INACTIVE"
     ).length;
@@ -330,306 +340,401 @@ export default function ImportReceiptsPage() {
     }
 
     return (
-        <div className="min-h-screen w-full bg-[#f8fafc] p-6 font-sans lg:p-8">
-            <div className="w-full space-y-6">
-                {/* ── Page Header ── */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-h-screen w-full bg-[#f7f8fa] px-4 py-6 font-sans text-slate-900 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] space-y-6">
+
+                {/* Page Header */}
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                                Import Receipts
-                            </h1>
-                            <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
-                                Procurement Log
-                            </span>
-                        </div>
-                        <p className="mt-1 text-sm text-slate-500">
-                            Track book stock-in orders, publisher shipments, and purchasing costs.
+                        <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-slate-900">
+                            Import Receipts
+                        </h1>
+
+                        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500">
+                            Manage incoming book shipments, publishers, and procurement records.
                         </p>
                     </div>
-
                     <button
                         type="button"
                         onClick={openCreateForm}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm shadow-indigo-200 transition-all hover:bg-indigo-700 active:scale-[0.98] sm:text-sm"
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-black px-4 text-sm font-medium text-white shadow-sm transition hover:bg-[#1f1f1f] focus:outline-none focus:ring-2 focus:ring-black/20 active:scale-[0.98]"
                     >
                         <svg
-                            className="h-4 w-4"
-                            fill="none"
+                            className="h-[17px] w-[17px]"
                             viewBox="0 0 24 24"
+                            fill="none"
                             stroke="currentColor"
+                            strokeWidth="1.7"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
                         >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2.2}
-                                d="M12 4v16m8-8H4"
-                            />
+                            <path d="M12 5v14" />
+                            <path d="M5 12h14" />
                         </svg>
+
                         Create Receipt
                     </button>
                 </div>
 
-                {/* ── Error Banner ── */}
+                {/* Error Message */}
                 {error && (
-                    <div className="flex items-center justify-between rounded-2xl border border-rose-200/80 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                        <div className="flex items-center gap-2">
-                            <svg className="h-5 w-5 shrink-0 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <div className="flex items-start justify-between gap-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        <div className="flex items-center gap-2.5">
+                            <svg
+                                className="h-4 w-4 shrink-0"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.7"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <circle cx="12" cy="12" r="9" />
+                                <path d="M12 8v4" />
+                                <path d="M12 16h.01" />
                             </svg>
+
                             <span>{error}</span>
                         </div>
+
                         <button
                             type="button"
                             onClick={() => setError("")}
-                            className="text-xs font-semibold text-rose-700 hover:text-rose-900"
+                            className="shrink-0 text-xs font-medium text-red-700 transition hover:text-red-900"
                         >
                             Dismiss
                         </button>
                     </div>
                 )}
 
-                {/* ── Metric Strip ── */}
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-                    {/* Total Receipts */}
-                    <div className="relative rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs">
-                        <span className="absolute right-6 top-6 h-2 w-2 rounded-full bg-indigo-500" />
-                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+
+                    <div className="rounded-xl border border-slate-200 bg-white px-5 py-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+                        <p className="text-xs font-medium uppercase tracking-[0.06em] text-slate-400">
                             Total Receipts
                         </p>
-                        <p className="mt-3 text-3xl font-extrabold text-slate-900">
-                            {totalReceipts}
-                        </p>
-                        <p className="mt-1 text-xs font-medium text-slate-400">
-                            Historical procurement records
-                        </p>
+
+                        <div className="mt-2 flex items-end justify-between">
+                            <p className="text-2xl font-semibold tracking-tight text-slate-900">
+                                {totalReceipts}
+                            </p>
+
+                            <span className="text-xs text-slate-400">
+                                All records
+                            </span>
+                        </div>
                     </div>
 
-                    {/* Active / Completed */}
-                    <div className="relative rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs">
-                        <span className="absolute right-6 top-6 h-2 w-2 rounded-full bg-emerald-500" />
-                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                            Completed / Active
+                    <div className="rounded-xl border border-slate-200 bg-white px-5 py-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+                        <p className="text-xs font-medium uppercase tracking-[0.06em] text-slate-400">
+                            Active Receipts
                         </p>
-                        <p className="mt-3 text-3xl font-extrabold text-emerald-600">
-                            {activeReceipts}
-                        </p>
-                        <p className="mt-1 text-xs font-medium text-slate-400">
-                            Fulfilled stock additions
-                        </p>
+
+                        <div className="mt-2 flex items-end justify-between">
+                            <p className="text-2xl font-semibold tracking-tight text-slate-900">
+                                {activeReceipts}
+                            </p>
+
+                            <span className="text-xs text-emerald-600">
+                                Completed
+                            </span>
+                        </div>
                     </div>
 
-                    {/* Inactive */}
-                    <div className="relative rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs">
-                        <span className="absolute right-6 top-6 h-2 w-2 rounded-full bg-rose-500" />
-                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                            Inactive
+                    <div className="rounded-xl border border-slate-200 bg-white px-5 py-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+                        <p className="text-xs font-medium uppercase tracking-[0.06em] text-slate-400">
+                            Inactive Receipts
                         </p>
-                        <p className="mt-3 text-3xl font-extrabold text-rose-600">
-                            {inactiveReceipts}
-                        </p>
-                        <p className="mt-1 text-xs font-medium text-slate-400">
-                            Archived or cancelled receipts
-                        </p>
+
+                        <div className="mt-2 flex items-end justify-between">
+                            <p className="text-2xl font-semibold tracking-tight text-slate-900">
+                                {inactiveReceipts}
+                            </p>
+
+                            <span className="text-xs text-slate-400">
+                                Inactive
+                            </span>
+                        </div>
                     </div>
+
                 </div>
 
-                {/* ── Main Container: Search & Table ── */}
-                <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xs">
-                    {/* Filter Bar */}
-                    <div className="border-b border-slate-100 p-5">
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                            <div className="relative md:col-span-2">
-                                <svg
-                                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                                    />
-                                </svg>
-                                <input
-                                    type="text"
-                                    value={search}
-                                    onChange={(event) => setSearch(event.target.value)}
-                                    placeholder="Search by receipt code or publisher name..."
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                                />
-                            </div>
+                {/* Main Content */}
+                <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+
+                    {/* Toolbar */}
+                    <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+
+                        <div className="relative w-full lg:max-w-md">
+                            <svg
+                                className="pointer-events-none absolute left-3 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-slate-400"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.7"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <circle cx="11" cy="11" r="7" />
+                                <path d="m20 20-4-4" />
+                            </svg>
+
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                                placeholder="Search by receipt code or publisher..."
+                                className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <span className="hidden text-xs font-medium text-slate-400 sm:block">
+                                Filter by status
+                            </span>
 
                             <select
                                 value={statusFilter}
-                                onChange={(event) => setStatusFilter(event.target.value)}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-xs text-slate-700 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                                onChange={(event) =>
+                                    setStatusFilter(event.target.value)
+                                }
+                                className="h-10 min-w-[160px] rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
                             >
                                 <option value="ALL">All Statuses</option>
-                                <option value="COMPLETED">Active (Completed)</option>
-                                <option value="INACTIVE">Inactive</option>
+                                <option value="COMPLETED">
+                                    Active
+                                </option>
+                                <option value="INACTIVE">
+                                    Inactive
+                                </option>
                             </select>
                         </div>
                     </div>
 
-                    {/* Table / List View */}
+                    {/* Loading */}
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center p-12 text-center">
-                            <div className="h-8 w-8 animate-spin rounded-full border-3 border-indigo-600 border-t-transparent" />
-                            <p className="mt-3 text-xs font-semibold text-slate-500">
+                        <div className="flex min-h-[320px] flex-col items-center justify-center">
+                            <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-[#183b63]" />
+
+                            <p className="mt-3 text-sm text-slate-500">
                                 Loading import receipts...
                             </p>
                         </div>
                     ) : filteredReceipts.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center p-12 text-center">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 text-slate-400">
-                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.121 5.121A2 2 0 0118 9.121V19a2 2 0 01-2 2z" />
+
+                        /* Empty State */
+                        <div className="flex min-h-[320px] flex-col items-center justify-center px-6 text-center">
+
+                            <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400">
+                                <svg
+                                    className="h-5 w-5"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <path d="M14 2v6h6" />
+                                    <path d="M8 13h8" />
+                                    <path d="M8 17h5" />
                                 </svg>
                             </div>
-                            <p className="mt-3 text-sm font-bold text-slate-900">
+
+                            <p className="mt-4 text-sm font-medium text-slate-900">
                                 No Import Receipts Found
                             </p>
-                            <p className="mt-1 text-xs text-slate-400">
-                                Try modifying your search keyword or create a new receipt.
+
+                            <p className="mt-1 max-w-sm text-sm text-slate-400">
+                                Try adjusting your search or create a new import receipt.
                             </p>
                         </div>
+
                     ) : (
+
+                        /* Table */
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[950px] border-collapse text-left">
-                                <thead className="border-b border-slate-100 bg-slate-50/75">
-                                <tr>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500">
+
+                                <thead>
+                                <tr className="border-b border-slate-200 bg-slate-50/70">
+                                    <th className="px-5 py-3.5 text-xs font-medium text-slate-500">
                                         Receipt Code
                                     </th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500">
+
+                                    <th className="px-5 py-3.5 text-xs font-medium text-slate-500">
                                         Publisher
                                     </th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500">
+
+                                    <th className="px-5 py-3.5 text-xs font-medium text-slate-500">
                                         Import Date
                                     </th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500">
+
+                                    <th className="px-5 py-3.5 text-xs font-medium text-slate-500">
                                         Total Amount
                                     </th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500">
+
+                                    <th className="px-5 py-3.5 text-xs font-medium text-slate-500">
                                         Status
                                     </th>
-                                    <th className="px-6 py-4 text-right text-xs font-semibold text-slate-500">
+
+                                    <th className="px-5 py-3.5 text-right text-xs font-medium text-slate-500">
                                         Actions
                                     </th>
                                 </tr>
                                 </thead>
 
-                                <tbody className="divide-y divide-slate-100 text-xs sm:text-sm">
+                                <tbody className="divide-y divide-slate-100">
+
                                 {filteredReceipts.map((receipt) => (
                                     <tr
                                         key={receipt.id}
-                                        className="transition-colors hover:bg-slate-50/60"
+                                        className="group transition-colors hover:bg-slate-50/60"
                                     >
-                                        <td className="px-6 py-4">
-                                                <span className="inline-flex items-center rounded-lg bg-indigo-50 px-2.5 py-1 font-mono text-xs font-bold text-indigo-700">
-                                                    {receipt.receiptCode}
+
+                                        <td className="px-5 py-4">
+                                            <span className="font-mono text-sm font-medium text-[#183b63]">
+                                                {receipt.receiptCode}
+                                            </span>
+                                        </td>
+
+                                        <td className="px-5 py-4">
+                                            <span className="text-sm font-medium text-slate-800">
+                                                {receipt.publisher.name}
+                                            </span>
+                                        </td>
+
+                                        <td className="px-5 py-4">
+                                            <span className="text-sm text-slate-500">
+                                                {receipt.importDate}
+                                            </span>
+                                        </td>
+
+                                        <td className="px-5 py-4">
+                                            <span className="text-sm font-medium text-slate-800">
+                                                {formatCurrency(receipt.totalAmount)}
+                                            </span>
+
+                                            <span className="ml-1 text-xs text-slate-400">
+                                                VND
+                                            </span>
+                                        </td>
+
+                                        <td className="px-5 py-4">
+                                            {receipt.status === "COMPLETED" ? (
+                                                <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                                    Active
                                                 </span>
-                                        </td>
-
-                                        <td className="px-6 py-4 font-semibold text-slate-900">
-                                            {receipt.publisher.name}
-                                        </td>
-
-                                        <td className="px-6 py-4 text-slate-600">
-                                            {receipt.importDate}
-                                        </td>
-
-                                        <td className="px-6 py-4 font-bold text-slate-900">
-                                            {formatCurrency(receipt.totalAmount)}{" "}
-                                            <span className="text-xs font-medium text-slate-400">₫</span>
-                                        </td>
-
-                                        <td className="px-6 py-4">
-                                                <span
-                                                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
-                                                        receipt.status === "COMPLETED"
-                                                            ? "bg-emerald-50 text-emerald-600"
-                                                            : "bg-slate-100 text-slate-500"
-                                                    }`}
-                                                >
-                                                    <span
-                                                        className={`h-1.5 w-1.5 rounded-full ${
-                                                            receipt.status === "COMPLETED"
-                                                                ? "bg-emerald-500"
-                                                                : "bg-slate-400"
-                                                        }`}
-                                                    />
-                                                    {receipt.status === "COMPLETED" ? "ACTIVE" : "INACTIVE"}
+                                            ) : (
+                                                <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                                                    <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                                                    Inactive
                                                 </span>
+                                            )}
                                         </td>
 
-                                        <td className="px-6 py-4 text-right">
+                                        <td className="px-5 py-4">
                                             <div className="flex items-center justify-end gap-2">
+
                                                 {/* Detail */}
                                                 <button
                                                     type="button"
                                                     onClick={() =>
-                                                        router.push(`/import-receipts/${receipt.id}`)
+                                                        router.push(
+                                                            `/import-receipts/${receipt.id}`
+                                                        )
                                                     }
-                                                    className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 hover:text-indigo-600 active:scale-95"
+                                                    className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#183b63]"
                                                 >
+                                                    <svg
+                                                        className="h-3.5 w-3.5"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="1.6"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                    >
+                                                        <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" />
+                                                        <circle cx="12" cy="12" r="2.5" />
+                                                    </svg>
+
                                                     Detail
                                                 </button>
 
-                                                {/* Edit (only completed) */}
+                                                {/* Edit */}
                                                 {receipt.status === "COMPLETED" && (
                                                     <button
                                                         type="button"
-                                                        onClick={() => openEditForm(receipt)}
-                                                        className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 hover:text-indigo-600 active:scale-95"
+                                                        onClick={() =>
+                                                            openEditForm(receipt)
+                                                        }
+                                                        className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#183b63]"
                                                     >
                                                         Edit
                                                     </button>
                                                 )}
 
-                                                {/* Activate / Deactivate Toggle */}
+                                                {/* Activate / Deactivate */}
                                                 {receipt.status === "COMPLETED" ? (
                                                     <button
                                                         type="button"
-                                                        onClick={() => handleDeactivate(receipt.id)}
-                                                        className="inline-flex items-center rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 transition-all hover:bg-rose-100 active:scale-95"
+                                                        onClick={() =>
+                                                            handleDeactivate(
+                                                                receipt.id
+                                                            )
+                                                        }
+                                                        className="inline-flex h-8 items-center rounded-md border border-red-200 bg-white px-3 text-xs font-medium text-red-600 transition hover:bg-red-50"
                                                     >
                                                         Deactivate
                                                     </button>
                                                 ) : (
                                                     <button
                                                         type="button"
-                                                        onClick={() => handleActivate(receipt.id)}
-                                                        className="inline-flex items-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600 transition-all hover:bg-emerald-100 active:scale-95"
+                                                        onClick={() =>
+                                                            handleActivate(
+                                                                receipt.id
+                                                            )
+                                                        }
+                                                        className="inline-flex h-8 items-center rounded-md border border-emerald-200 bg-white px-3 text-xs font-medium text-emerald-600 transition hover:bg-emerald-50"
                                                     >
                                                         Activate
                                                     </button>
                                                 )}
+
                                             </div>
                                         </td>
+
                                     </tr>
                                 ))}
+
                                 </tbody>
                             </table>
                         </div>
                     )}
-                </div>
+                </section>
 
-                {/* ── Create / Edit Receipt Modal ── */}
+                {/* Create / Edit Modal */}
                 {showForm && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs">
-                        <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-slate-200/80 bg-white shadow-2xl">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 px-4 py-6 backdrop-blur-[2px]">
+
+                        <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
+
                             {/* Modal Header */}
-                            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
+                            <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-6 py-5">
+
                                 <div>
-                                    <h2 className="text-lg font-bold text-slate-900">
-                                        {editingId ? "Edit Import Receipt" : "Create Import Receipt"}
+                                    <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+                                        {editingId
+                                            ? "Edit Import Receipt"
+                                            : "Create Import Receipt"}
                                     </h2>
-                                    <p className="mt-0.5 text-xs text-slate-400">
-                                        Specify the publishing vendor, procurement date, and line item stock.
+
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        Enter the publisher, import date, and book details.
                                     </p>
                                 </div>
 
@@ -639,195 +744,381 @@ export default function ImportReceiptsPage() {
                                         setShowForm(false);
                                         resetForm();
                                     }}
-                                    className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                                    className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                                    aria-label="Close"
                                 >
-                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    <svg
+                                        className="h-[18px] w-[18px]"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.7"
+                                        strokeLinecap="round"
+                                    >
+                                        <path d="M6 6l12 12" />
+                                        <path d="M18 6L6 18" />
                                     </svg>
                                 </button>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="p-6">
-                                {/* Header Fields */}
-                                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                                    <div>
-                                        <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                                            Publisher <span className="text-rose-500">*</span>
-                                        </label>
-                                        <select
-                                            value={publisherId}
-                                            onChange={(event) => setPublisherId(event.target.value)}
-                                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-xs text-slate-800 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                                        >
-                                            <option value="">Select a publisher...</option>
-                                            {publishers
-                                                .filter((publisher) => publisher.status === "ACTIVE")
-                                                .map((publisher) => (
-                                                    <option key={publisher.id} value={publisher.id}>
-                                                        {publisher.name}
-                                                    </option>
-                                                ))}
-                                        </select>
-                                    </div>
+                            {/* Modal Content */}
+                            <form
+                                onSubmit={handleSubmit}
+                                className="overflow-y-auto"
+                            >
+                                <div className="space-y-7 px-6 py-6">
 
+                                    {/* Receipt Information */}
                                     <div>
-                                        <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                                            Import Date <span className="text-rose-500">*</span>
-                                        </label>
-                                        <input
-                                            type="date"
-                                            value={importDate}
-                                            onChange={(event) => setImportDate(event.target.value)}
-                                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-xs text-slate-800 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Line Items Header */}
-                                <div className="mt-8">
-                                    <div className="mb-3 flex items-center justify-between">
-                                        <div>
-                                            <h3 className="text-sm font-bold text-slate-900">
-                                                Procured Titles
+                                        <div className="mb-4">
+                                            <h3 className="text-sm font-semibold text-slate-900">
+                                                Receipt Information
                                             </h3>
-                                            <p className="text-xs text-slate-400">
-                                                Add books, quantities, and their unit purchase prices.
+
+                                            <p className="mt-1 text-xs text-slate-400">
+                                                Basic information about this import receipt.
                                             </p>
                                         </div>
 
-                                        <button
-                                            type="button"
-                                            onClick={addDetailRow}
-                                            className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3.5 py-1.5 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
-                                        >
-                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M12 4v16m8-8H4" />
-                                            </svg>
-                                            Add Book
-                                        </button>
+                                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+
+                                            <div>
+                                                <label className="mb-2 block text-xs font-medium text-slate-700">
+                                                    Publisher
+                                                    <span className="ml-1 text-red-500">
+                                                        *
+                                                    </span>
+                                                </label>
+
+                                                <select
+                                                    value={publisherId}
+                                                    onChange={(event) =>
+                                                        setPublisherId(
+                                                            event.target.value
+                                                        )
+                                                    }
+                                                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                                                >
+                                                    <option value="">
+                                                        Select a publisher...
+                                                    </option>
+
+                                                    {publishers
+                                                        .filter(
+                                                            (publisher) =>
+                                                                publisher.status ===
+                                                                "ACTIVE"
+                                                        )
+                                                        .map((publisher) => (
+                                                            <option
+                                                                key={publisher.id}
+                                                                value={publisher.id}
+                                                            >
+                                                                {publisher.name}
+                                                            </option>
+                                                        ))}
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label className="mb-2 block text-xs font-medium text-slate-700">
+                                                    Import Date
+                                                    <span className="ml-1 text-red-500">
+                                                        *
+                                                    </span>
+                                                </label>
+
+                                                <input
+                                                    type="date"
+                                                    value={importDate}
+                                                    onChange={(event) =>
+                                                        setImportDate(
+                                                            event.target.value
+                                                        )
+                                                    }
+                                                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                                                />
+                                            </div>
+
+                                        </div>
                                     </div>
 
-                                    {/* Line Items Table */}
-                                    <div className="overflow-x-auto rounded-2xl border border-slate-200/80">
-                                        <table className="w-full min-w-[650px] border-collapse text-left">
-                                            <thead className="bg-slate-50/75">
-                                            <tr>
-                                                <th className="px-4 py-3 text-xs font-semibold text-slate-500">
-                                                    Book Title
-                                                </th>
-                                                <th className="w-32 px-4 py-3 text-xs font-semibold text-slate-500">
-                                                    Quantity
-                                                </th>
-                                                <th className="w-40 px-4 py-3 text-xs font-semibold text-slate-500">
-                                                    Unit Price (VND)
-                                                </th>
-                                                <th className="w-36 px-4 py-3 text-right text-xs font-semibold text-slate-500">
-                                                    Subtotal
-                                                </th>
-                                                <th className="w-16 px-4 py-3 text-center" />
-                                            </tr>
-                                            </thead>
+                                    {/* Book Details */}
+                                    <div>
+                                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 
-                                            <tbody className="divide-y divide-slate-100 text-xs sm:text-sm">
-                                            {details.map((detail, index) => {
-                                                const quantity = Number(detail.quantity) || 0;
-                                                const unitPrice = Number(detail.unitPrice) || 0;
-                                                const amount = quantity * unitPrice;
+                                            <div>
+                                                <h3 className="text-sm font-semibold text-slate-900">
+                                                    Book Details
+                                                </h3>
 
-                                                return (
-                                                    <tr key={index} className="transition-colors hover:bg-slate-50/40">
-                                                        <td className="px-4 py-2.5">
-                                                            <select
-                                                                value={detail.bookId}
-                                                                onChange={(event) =>
-                                                                    updateDetail(index, "bookId", event.target.value)
-                                                                }
-                                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                                                            >
-                                                                <option value="">Select a title...</option>
-                                                                {books
-                                                                    .filter((book) => book.status === "ACTIVE")
-                                                                    .map((book) => (
-                                                                        <option key={book.id} value={book.id}>
-                                                                            {book.title} (ISBN: {book.isbn})
-                                                                        </option>
-                                                                    ))}
-                                                            </select>
-                                                        </td>
+                                                <p className="mt-1 text-xs text-slate-400">
+                                                    Add the books included in this receipt.
+                                                </p>
+                                            </div>
 
-                                                        <td className="px-4 py-2.5">
-                                                            <input
-                                                                type="number"
-                                                                min="1"
-                                                                placeholder="1"
-                                                                value={detail.quantity}
-                                                                onChange={(event) =>
-                                                                    updateDetail(index, "quantity", event.target.value)
-                                                                }
-                                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                                                            />
-                                                        </td>
+                                            <button
+                                                type="button"
+                                                onClick={addDetailRow}
+                                                className="inline-flex h-9 items-center justify-center gap-1.5 self-start rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#183b63] sm:self-auto"
+                                            >
+                                                <svg
+                                                    className="h-3.5 w-3.5"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="1.7"
+                                                    strokeLinecap="round"
+                                                >
+                                                    <path d="M12 5v14" />
+                                                    <path d="M5 12h14" />
+                                                </svg>
 
-                                                        <td className="px-4 py-2.5">
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                placeholder="0"
-                                                                value={detail.unitPrice}
-                                                                onChange={(event) =>
-                                                                    updateDetail(index, "unitPrice", event.target.value)
-                                                                }
-                                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                                                            />
-                                                        </td>
+                                                Add Book
+                                            </button>
 
-                                                        <td className="px-4 py-2.5 text-right font-semibold text-slate-900">
-                                                            {formatCurrency(amount)} ₫
-                                                        </td>
+                                        </div>
 
-                                                        <td className="px-4 py-2.5 text-center">
-                                                            <button
-                                                                type="button"
-                                                                disabled={details.length === 1}
-                                                                onClick={() => removeDetailRow(index)}
-                                                                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-30"
-                                                                title="Remove item"
-                                                            >
-                                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                </svg>
-                                                            </button>
-                                                        </td>
+                                        <div className="overflow-hidden rounded-xl border border-slate-200">
+                                            <div className="overflow-x-auto">
+
+                                                <table className="w-full min-w-[700px] border-collapse text-left">
+
+                                                    <thead>
+                                                    <tr className="border-b border-slate-200 bg-slate-50">
+                                                        <th className="px-4 py-3 text-xs font-medium text-slate-500">
+                                                            Book Title
+                                                        </th>
+
+                                                        <th className="w-28 px-4 py-3 text-xs font-medium text-slate-500">
+                                                            Quantity
+                                                        </th>
+
+                                                        <th className="w-40 px-4 py-3 text-xs font-medium text-slate-500">
+                                                            Unit Price
+                                                        </th>
+
+                                                        <th className="w-36 px-4 py-3 text-right text-xs font-medium text-slate-500">
+                                                            Subtotal
+                                                        </th>
+
+                                                        <th className="w-12 px-4 py-3" />
                                                     </tr>
-                                                );
-                                            })}
-                                            </tbody>
-                                        </table>
+                                                    </thead>
+
+                                                    <tbody className="divide-y divide-slate-100">
+
+                                                    {details.map(
+                                                        (detail, index) => {
+                                                            const quantity =
+                                                                Number(
+                                                                    detail.quantity
+                                                                ) || 0;
+
+                                                            const unitPrice =
+                                                                Number(
+                                                                    detail.unitPrice
+                                                                ) || 0;
+
+                                                            const amount =
+                                                                quantity *
+                                                                unitPrice;
+
+                                                            return (
+                                                                <tr
+                                                                    key={index}
+                                                                    className="bg-white"
+                                                                >
+                                                                    <td className="px-4 py-3">
+                                                                        <select
+                                                                            value={
+                                                                                detail.bookId
+                                                                            }
+                                                                            onChange={(
+                                                                                event
+                                                                            ) =>
+                                                                                updateDetail(
+                                                                                    index,
+                                                                                    "bookId",
+                                                                                    event
+                                                                                        .target
+                                                                                        .value
+                                                                                )
+                                                                            }
+                                                                            className="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs text-slate-800 outline-none transition hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                                                                        >
+                                                                            <option value="">
+                                                                                Select a book...
+                                                                            </option>
+
+                                                                            {books
+                                                                                .filter(
+                                                                                    (
+                                                                                        book
+                                                                                    ) =>
+                                                                                        book.status ===
+                                                                                        "ACTIVE"
+                                                                                )
+                                                                                .map(
+                                                                                    (
+                                                                                        book
+                                                                                    ) => (
+                                                                                        <option
+                                                                                            key={
+                                                                                                book.id
+                                                                                            }
+                                                                                            value={
+                                                                                                book.id
+                                                                                            }
+                                                                                        >
+                                                                                            {
+                                                                                                book.title
+                                                                                            }{" "}
+                                                                                            (ISBN:{" "}
+                                                                                            {
+                                                                                                book.isbn
+                                                                                            }
+                                                                                            )
+                                                                                        </option>
+                                                                                    )
+                                                                                )}
+                                                                        </select>
+                                                                    </td>
+
+                                                                    <td className="px-4 py-3">
+                                                                        <input
+                                                                            type="number"
+                                                                            min="1"
+                                                                            placeholder="1"
+                                                                            value={
+                                                                                detail.quantity
+                                                                            }
+                                                                            onChange={(
+                                                                                event
+                                                                            ) =>
+                                                                                updateDetail(
+                                                                                    index,
+                                                                                    "quantity",
+                                                                                    event
+                                                                                        .target
+                                                                                        .value
+                                                                                )
+                                                                            }
+                                                                            className="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs text-slate-800 outline-none transition hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                                                                        />
+                                                                    </td>
+
+                                                                    <td className="px-4 py-3">
+                                                                        <input
+                                                                            type="number"
+                                                                            min="0"
+                                                                            placeholder="0"
+                                                                            value={
+                                                                                detail.unitPrice
+                                                                            }
+                                                                            onChange={(
+                                                                                event
+                                                                            ) =>
+                                                                                updateDetail(
+                                                                                    index,
+                                                                                    "unitPrice",
+                                                                                    event
+                                                                                        .target
+                                                                                        .value
+                                                                                )
+                                                                            }
+                                                                            className="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs text-slate-800 outline-none transition hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                                                                        />
+                                                                    </td>
+
+                                                                    <td className="px-4 py-3 text-right">
+                                                                        <span className="text-xs font-medium text-slate-800">
+                                                                            {formatCurrency(
+                                                                                amount
+                                                                            )}{" "}
+                                                                            VND
+                                                                        </span>
+                                                                    </td>
+
+                                                                    <td className="px-4 py-3 text-center">
+                                                                        <button
+                                                                            type="button"
+                                                                            disabled={
+                                                                                details.length ===
+                                                                                1
+                                                                            }
+                                                                            onClick={() =>
+                                                                                removeDetailRow(
+                                                                                    index
+                                                                                )
+                                                                            }
+                                                                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-30"
+                                                                            title="Remove item"
+                                                                            aria-label="Remove item"
+                                                                        >
+                                                                            <svg
+                                                                                className="h-4 w-4"
+                                                                                viewBox="0 0 24 24"
+                                                                                fill="none"
+                                                                                stroke="currentColor"
+                                                                                strokeWidth="1.6"
+                                                                                strokeLinecap="round"
+                                                                                strokeLinejoin="round"
+                                                                            >
+                                                                                <path d="M4 7h16" />
+                                                                                <path d="M10 11v6" />
+                                                                                <path d="M14 11v6" />
+                                                                                <path d="M5 7l1 14h10l1-14" />
+                                                                                <path d="M9 7V4h6v3" />
+                                                                            </svg>
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        }
+                                                    )}
+
+                                                    </tbody>
+                                                </table>
+
+                                            </div>
+                                        </div>
                                     </div>
+
+                                    {/* Total */}
+                                    <div className="flex justify-end">
+                                        <div className="min-w-[260px] rounded-xl border border-slate-200 bg-slate-50 px-5 py-4">
+
+                                            <div className="flex items-center justify-between gap-6">
+                                                <span className="text-xs font-medium text-slate-500">
+                                                    Total Amount
+                                                </span>
+
+                                                <span className="text-lg font-semibold tracking-tight text-slate-900">
+                                                    {formatCurrency(
+                                                        calculateTotal()
+                                                    )}{" "}
+                                                    <span className="text-xs font-medium text-slate-400">
+                                                        VND
+                                                    </span>
+                                                </span>
+                                            </div>
+
+                                        </div>
+                                    </div>
+
                                 </div>
 
-                                {/* Total Summary Strip */}
-                                <div className="mt-5 flex justify-end">
-                                    <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-slate-50/75 px-5 py-3">
-                                        <p className="text-xs font-semibold text-slate-500">
-                                            Total Calculated Amount:
-                                        </p>
-                                        <p className="text-lg font-extrabold text-slate-900">
-                                            {formatCurrency(calculateTotal())}{" "}
-                                            <span className="text-xs font-bold text-indigo-600">VND</span>
-                                        </p>
-                                    </div>
-                                </div>
+                                {/* Modal Footer */}
+                                <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-200 bg-slate-50/60 px-6 py-4 sm:flex-row sm:justify-end">
 
-                                {/* Modal Actions */}
-                                <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-5">
                                     <button
                                         type="button"
                                         onClick={() => {
                                             setShowForm(false);
                                             resetForm();
                                         }}
-                                        className="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-semibold text-slate-600 shadow-2xs transition hover:bg-slate-50 active:scale-95"
+                                        className="h-10 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-800"
                                     >
                                         Cancel
                                     </button>
@@ -835,20 +1126,25 @@ export default function ImportReceiptsPage() {
                                     <button
                                         type="submit"
                                         disabled={saving}
-                                        className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm shadow-indigo-200 transition-all hover:bg-indigo-700 disabled:opacity-50"
+                                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-black px-5 text-sm font-medium text-white shadow-sm transition hover:bg-[#1f1f1f] focus:outline-none focus:ring-2 focus:ring-black/20 disabled:cursor-not-allowed disabled:bg-black disabled:opacity-50"
                                     >
-                                        {saving && <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+                                        {saving && (
+                                            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                                        )}
+
                                         {saving
-                                            ? "Saving Receipt..."
+                                            ? "Saving..."
                                             : editingId
                                                 ? "Update Receipt"
                                                 : "Create Receipt"}
                                     </button>
+
                                 </div>
                             </form>
                         </div>
                     </div>
                 )}
+
             </div>
         </div>
     );

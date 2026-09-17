@@ -50,4 +50,6 @@ public class ReaderController {
     public Reader activateReader(@PathVariable Long id) {
         return readerService.activateReader(id);
     }
+
+
 }

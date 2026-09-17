@@ -50,4 +50,6 @@ public interface BorrowingDetailRepository
     long getMonthlyFineRevenue();
 
     List<BorrowingDetail> findByBorrowingId(Long borrowingId);
+
+    long countByReturnedAtIsNotNull();
 }
