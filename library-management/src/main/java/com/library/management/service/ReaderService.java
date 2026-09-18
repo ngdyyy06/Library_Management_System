@@ -1,10 +1,12 @@
 package com.library.management.service;
 
 import com.library.management.dto.CreateReaderRequest;
+import com.library.management.dto.UpdateReaderProfileRequest;
 import com.library.management.entity.Reader;
 import com.library.management.exception.ResourceNotFoundException;
 import com.library.management.repository.ReaderRepository;
 import com.library.management.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import com.library.management.entity.User;
 import java.time.LocalDateTime;
@@ -142,5 +144,50 @@ public class ReaderService {
         return readerRepository.findByUserUsername(username)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Reader not found for this user"));
+    }
+
+    @Transactional
+    public Reader updateMyProfile(
+            String username,
+            UpdateReaderProfileRequest request
+    ) {
+        Reader reader = readerRepository.findByUserUsername(username)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Reader not found for this user"
+                        ));
+
+        User user = reader.getUser();
+
+        if (user == null) {
+            throw new RuntimeException(
+                    "Reader is not linked to a user"
+            );
+        }
+
+        if (request.getEmail() != null
+                && !request.getEmail().isBlank()
+                && !request.getEmail().equals(user.getEmail())
+                && userRepository.existsByEmailAndIdNot(
+                request.getEmail(),
+                user.getId()
+        )) {
+
+            throw new RuntimeException("Email already exists");
+        }
+
+        reader.setFullName(request.getFullName());
+        reader.setEmail(request.getEmail());
+        reader.setPhone(request.getPhone());
+        reader.setAddress(request.getAddress());
+        reader.setDateOfBirth(request.getDateOfBirth());
+
+        // Đồng bộ thông tin tài khoản User
+        user.setFullName(request.getFullName());
+        user.setEmail(request.getEmail());
+
+        userRepository.save(user);
+
+        return readerRepository.save(reader);
     }
 }

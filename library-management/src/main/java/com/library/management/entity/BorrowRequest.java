@@ -29,9 +29,6 @@ public class BorrowRequest {
     @Column(name = "requested_at", nullable = false)
     private LocalDateTime requestedAt;
 
-    @Column(name = "rejection_reason")
-    private String rejectionReason;
-
     public BorrowRequest() {
     }
 
@@ -41,8 +38,7 @@ public class BorrowRequest {
             Book book,
             Integer quantity,
             String status,
-            LocalDateTime requestedAt,
-            String rejectionReason
+            LocalDateTime requestedAt
     ) {
         this.id = id;
         this.reader = reader;
@@ -50,7 +46,6 @@ public class BorrowRequest {
         this.quantity = quantity;
         this.status = status;
         this.requestedAt = requestedAt;
-        this.rejectionReason = rejectionReason;
     }
 
     public Long getId() {
@@ -99,13 +94,5 @@ public class BorrowRequest {
 
     public void setRequestedAt(LocalDateTime requestedAt) {
         this.requestedAt = requestedAt;
-    }
-
-    public String getRejectionReason() {
-        return rejectionReason;
-    }
-
-    public void setRejectionReason(String rejectionReason) {
-        this.rejectionReason = rejectionReason;
     }
 }

@@ -10,6 +10,9 @@ import com.library.management.repository.RoleRepository;
 import com.library.management.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.library.management.entity.Reader;
+import com.library.management.repository.ReaderRepository;
+import java.time.LocalDateTime;
 
 @Service
 public class AuthService {
@@ -18,12 +21,14 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final ReaderRepository readerRepository;
 
-    public AuthService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public AuthService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder, JwtService jwtService, ReaderRepository readerRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.readerRepository = readerRepository;
     }
 
     public UserResponse register(RegisterRequest request) {
@@ -52,6 +57,22 @@ public class AuthService {
         user.setStatus("ACTIVE");
 
         User savedUser = userRepository.save(user);
+
+        Reader reader = new Reader();
+
+        reader.setUser(savedUser);
+        reader.setReaderCode(
+                "RD" + String.format("%03d", savedUser.getId())
+        );
+        reader.setFullName(savedUser.getFullName());
+        reader.setEmail(savedUser.getEmail());
+        reader.setPhone("N/A");
+        reader.setAddress(null);
+        reader.setDateOfBirth(null);
+        reader.setStatus("ACTIVE");
+        reader.setCreatedAt(LocalDateTime.now());
+
+        readerRepository.save(reader);
 
         return new UserResponse(
                 savedUser.getId(),

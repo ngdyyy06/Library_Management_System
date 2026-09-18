@@ -70,6 +70,16 @@ public class BorrowRequestController {
         );
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<BorrowRequest> getRequestById(
+            @PathVariable Long id
+    ) {
+
+        return ResponseEntity.ok(
+                borrowRequestService.getRequestById(id)
+        );
+    }
+
     @PatchMapping("/my/{id}/cancel")
     public ResponseEntity<BorrowRequest> cancelRequest(
             @PathVariable Long id,

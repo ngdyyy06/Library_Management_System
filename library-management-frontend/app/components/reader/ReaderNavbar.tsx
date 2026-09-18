@@ -86,7 +86,7 @@ export default function ReaderNavbar() {
         },
         {
             name: "My Profile",
-            href: "/profile",
+            href: "/reader/profile",
             icon: (
                 <svg
                     className="h-5 w-5"

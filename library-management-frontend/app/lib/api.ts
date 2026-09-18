@@ -60,7 +60,17 @@ export async function loginUser(data: {
     const text = await response.text();
 
     if (!response.ok) {
-        throw new Error(text || "Login failed");
+        try {
+            const errorData = JSON.parse(text);
+
+            throw new Error("Incorrect Username or Password");
+        } catch (error) {
+            if (error instanceof Error) {
+                throw error;
+            }
+
+            throw new Error("Login failed");
+        }
     }
 
     return text;
@@ -1641,4 +1651,156 @@ export async function rejectBorrowRequest(id: number) {
     }
 
     return response.json();
+}
+
+export async function updateMyReaderProfile(data: {
+    fullName: string;
+    email: string;
+    phone: string;
+    address: string;
+    dateOfBirth: string;
+}) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/readers/me`,
+        {
+            method: "PUT",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+
+        throw new Error(
+            errorData?.message ||
+            "Failed to update profile"
+        );
+    }
+
+    return response.json();
+}
+
+export async function getUserById(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/users/${id}`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+
+        throw new Error(
+            errorData?.message ||
+            "Failed to get user"
+        );
+    }
+
+    return response.json();
+}
+
+export async function getMyStaffProfile() {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/staff/me`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+
+        throw new Error(
+            errorData?.message ||
+            "Failed to get staff profile"
+        );
+    }
+
+    return response.json();
+}
+
+export async function updateMyStaffProfile(data: {
+    fullName: string;
+    email: string;
+    phone: string;
+    address: string;
+    dateOfBirth: string;
+}) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/staff/me`,
+        {
+            method: "PUT",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+
+        throw new Error(
+            errorData?.message ||
+            "Failed to update staff profile"
+        );
+    }
+
+    return response.json();
+}
+
+export async function getBorrowRequestById(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/borrow-requests/${id}`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    const text = await response.text();
+
+    let result: any = null;
+
+    if (text) {
+        try {
+            result = JSON.parse(text);
+        } catch {
+            result = null;
+        }
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            result?.message ||
+            text ||
+            `Failed to get borrowing request (${response.status})`
+        );
+    }
+
+    return result;
 }

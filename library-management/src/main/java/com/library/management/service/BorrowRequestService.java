@@ -325,4 +325,14 @@ public class BorrowRequestService {
 
         return borrowRequestRepository.save(borrowRequest);
     }
+
+    public BorrowRequest getRequestById(Long id) {
+
+        return borrowRequestRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Borrow request not found"
+                        )
+                );
+    }
 }

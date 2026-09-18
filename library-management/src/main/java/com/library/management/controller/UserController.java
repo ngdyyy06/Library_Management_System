@@ -2,6 +2,7 @@ package com.library.management.controller;
 
 import com.library.management.dto.CreateUserRequest;
 import com.library.management.dto.UpdateUserRequest;
+import com.library.management.dto.UserDetailResponse;
 import com.library.management.dto.UserResponse;
 import com.library.management.entity.User;
 import com.library.management.service.UserService;
@@ -31,7 +32,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public UserResponse getUserById(@PathVariable Long id) {
+    public UserDetailResponse getUserById(@PathVariable Long id) {
         return userService.getUserById(id);
     }
 

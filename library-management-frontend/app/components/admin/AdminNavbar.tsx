@@ -2,10 +2,57 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { logout } from "@/app/lib/api";
+import { logout, getAllBorrowRequests } from "@/app/lib/api";
+import { useEffect, useState } from "react";
 
 export default function AdminNavbar() {
     const pathname = usePathname();
+
+    const [pendingBorrowRequests, setPendingBorrowRequests] = useState(0);
+
+    useEffect(() => {
+        loadPendingBorrowRequests();
+
+        const handleRequestUpdated = () => {
+            loadPendingBorrowRequests();
+        };
+
+        window.addEventListener(
+            "borrow-request-updated",
+            handleRequestUpdated
+        );
+
+        const interval = setInterval(() => {
+            loadPendingBorrowRequests();
+        }, 30000);
+
+        return () => {
+            window.removeEventListener(
+                "borrow-request-updated",
+                handleRequestUpdated
+            );
+
+            clearInterval(interval);
+        };
+    }, []);
+
+    async function loadPendingBorrowRequests() {
+        try {
+            const data = await getAllBorrowRequests();
+
+            const pendingCount = data.filter(
+                (request: { status: string }) =>
+                    request.status === "PENDING"
+            ).length;
+
+            setPendingBorrowRequests(pendingCount);
+        } catch (error) {
+            console.error(
+                "Failed to load pending borrowing requests:",
+                error
+            );
+        }
+    }
 
     const navSections = [
         {
@@ -155,6 +202,25 @@ export default function AdminNavbar() {
                     ),
                 },
                 {
+                    name: "Borrowing Requests",
+                    href: "/staff/borrow-requests",
+                    icon: (
+                        <svg
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.7}
+                                d="M9 5h6M9 9h6M9 13h4M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"
+                            />
+                        </svg>
+                    ),
+                },
+                {
                     name: "Import Receipts",
                     href: "/import-receipts",
                     icon: (
@@ -277,6 +343,21 @@ export default function AdminNavbar() {
                                             <span className="flex-1">
                                                 {item.name}
                                             </span>
+
+                                            {item.name === "Borrowing Requests" &&
+                                                pendingBorrowRequests > 0 && (
+                                                    <span
+                                                        className={`min-w-5 rounded-full px-1.5 py-0.5 text-center text-[10px] font-bold ${
+                                                            isActive
+                                                                ? "bg-white text-black"
+                                                                : "bg-red-500 text-white"
+                                                        }`}
+                                                    >
+                                                        {pendingBorrowRequests > 99
+                                                            ? "99+"
+                                                            : pendingBorrowRequests}
+                                                    </span>
+                                                )}
 
                                             {isActive && (
                                                 <span className="h-1.5 w-1.5 rounded-full bg-white/80" />

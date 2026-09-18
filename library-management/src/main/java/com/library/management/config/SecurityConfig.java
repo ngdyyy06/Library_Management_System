@@ -68,6 +68,11 @@ public class SecurityConfig {
 
                         .requestMatchers(
                                 HttpMethod.GET,
+                                "/api/borrow-requests/*"
+                        ).hasAnyRole("LIBRARIAN", "ADMIN")
+
+                        .requestMatchers(
+                                HttpMethod.GET,
                                 "/api/borrow-requests/my"
                         ).hasRole("READER")
 

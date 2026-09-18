@@ -176,6 +176,25 @@ export default function StaffNavbar() {
                 </svg>
             ),
         },
+        {
+            name: "My Profile",
+            href: "/staff/profile",
+            icon: (
+                <svg
+                    className="w-[18px] h-[18px]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M15 19a4 4 0 00-6 0m6 0a7 7 0 10-6 0m6 0H9m6-12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                </svg>
+            ),
+        },
     ];
 
     async function loadPendingRequests() {

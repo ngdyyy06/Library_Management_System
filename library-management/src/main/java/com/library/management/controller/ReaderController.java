@@ -1,6 +1,7 @@
 package com.library.management.controller;
 
 import com.library.management.dto.CreateReaderRequest;
+import com.library.management.dto.UpdateReaderProfileRequest;
 import com.library.management.entity.Reader;
 import com.library.management.service.ReaderService;
 import jakarta.validation.Valid;
@@ -69,6 +70,19 @@ public class ReaderController {
         return ResponseEntity.ok(
                 readerService.getReaderByUsername(
                         authentication.getName()
+                )
+        );
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<Reader> updateMyProfile(
+            Authentication authentication,
+            @Valid @RequestBody UpdateReaderProfileRequest request
+    ) {
+        return ResponseEntity.ok(
+                readerService.updateMyProfile(
+                        authentication.getName(),
+                        request
                 )
         );
     }
