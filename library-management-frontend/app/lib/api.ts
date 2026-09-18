@@ -391,6 +391,24 @@ export async function getStaffDashboard() {
     return response.json();
 }
 
+export async function renewBorrowing(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/borrowings/${id}/renew`, {
+        method: "PATCH",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || "Failed to renew borrowing");
+    }
+
+    return response.json();
+}
+
 export async function getBorrowings() {
     const token = localStorage.getItem("token");
 
@@ -404,6 +422,24 @@ export async function getBorrowings() {
     if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to get borrowings");
+    }
+
+    return response.json();
+}
+
+export async function getMyBorrowings() {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/borrowings/my`, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to get my borrowings");
     }
 
     return response.json();
@@ -1403,6 +1439,204 @@ export async function createBorrowing(data: {
         const errorData = await response.json();
         throw new Error(
             errorData.message || "Failed to create borrowing"
+        );
+    }
+
+    return response.json();
+}
+
+export async function createBorrowRequest(
+    bookId: number,
+    quantity: number
+) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/borrow-requests`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            bookId,
+            quantity,
+        }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to create borrowing request"
+        );
+    }
+
+    return response.json();
+}
+
+export async function getMyBorrowRequests() {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/borrow-requests/my`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to get borrowing requests"
+        );
+    }
+
+    return response.json();
+}
+
+export async function cancelBorrowRequest(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/borrow-requests/my/${id}/cancel`,
+        {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message || "Failed to cancel borrowing request"
+        );
+    }
+
+    return response.json();
+}
+
+export async function getMyBorrowRequestById(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/borrow-requests/my/${id}`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+            errorData.message ||
+            "Failed to get borrowing request"
+        );
+    }
+
+    return response.json();
+}
+
+export async function getBorrowRequests() {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/borrow-requests`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message ||
+            "Failed to get borrowing requests"
+        );
+    }
+
+    return response.json();
+}
+
+export async function getAllBorrowRequests() {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/borrow-requests`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message ||
+            "Failed to get all borrowing requests"
+        );
+    }
+
+    return response.json();
+}
+
+export async function approveBorrowRequest(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/borrow-requests/${id}/approve`,
+        {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message ||
+            "Failed to approve borrowing request"
+        );
+    }
+
+    return response.json();
+}
+
+export async function rejectBorrowRequest(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/borrow-requests/${id}/reject`,
+        {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorText = await response.text();
+
+        throw new Error(
+            errorText ||
+            `Failed to reject borrowing request (${response.status})`
         );
     }
 

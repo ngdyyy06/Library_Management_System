@@ -12,26 +12,75 @@ export default function ReaderNavbar() {
             name: "Home",
             href: "/reader",
             icon: (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.7}
+                        d="M3 11.5L12 4l9 7.5M5 10v9a1 1 0 001 1h12a1 1 0 001-1v-9M9 20v-5a3 3 0 016 0v5"
+                    />
                 </svg>
             ),
         },
         {
             name: "Books Catalog",
-            href: "/books",
+            href: "/reader/books",
             icon: (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.7}
+                        d="M5 5.5A2.5 2.5 0 017.5 3H12v17H7.5A2.5 2.5 0 015 17.5v-12zM12 3h4.5A2.5 2.5 0 0119 5.5v12a2.5 2.5 0 01-2.5 2.5H12"
+                    />
+                </svg>
+            ),
+        },
+        {
+            name: "Borrowing Requests",
+            href: "/reader/borrowings/request",
+            icon: (
+                <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.7}
+                        d="M8 5h8a2 2 0 012 2v13H6V7a2 2 0 012-2zM9 5a3 3 0 016 0M9 11h6M9 15h4"
+                    />
                 </svg>
             ),
         },
         {
             name: "My Borrowings",
-            href: "/borrowings",
+            href: "/reader/borrowings",
             icon: (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.7}
+                        d="M8 5h8a2 2 0 012 2v13H6V7a2 2 0 012-2zM9 5a3 3 0 016 0M9 11h6M9 15h4"
+                    />
                 </svg>
             ),
         },
@@ -39,88 +88,133 @@ export default function ReaderNavbar() {
             name: "My Profile",
             href: "/profile",
             icon: (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.7}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
                 </svg>
             ),
         },
     ];
 
     return (
-        <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col justify-between border-r border-slate-200/80 bg-white shadow-[4px_0_24px_-4px_rgba(0,0,0,0.08)]">
+        <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-slate-200 bg-white">
 
-            {/* ── Brand Header ── */}
-            <div className="flex min-h-0 flex-col">
-                <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-sky-500 shadow-md shadow-sky-200/60 text-white">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            {/* Brand Header */}
+            <div className="border-b border-slate-200 px-5 py-5">
+                <div className="flex items-center gap-3">
+
+                    {/* Logo */}
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 shadow-sm">
+                        <svg
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.7}
+                                d="M5 5.5A2.5 2.5 0 017.5 3H12v17H7.5A2.5 2.5 0 015 17.5v-12zM12 3h4.5A2.5 2.5 0 0119 5.5v12a2.5 2.5 0 01-2.5 2.5H12"
+                            />
                         </svg>
                     </div>
+
+                    {/* Brand */}
                     <div className="min-w-0">
-                        <p className="text-[13px] font-extrabold leading-tight tracking-tight text-slate-900">
-                            Library
-                            <span className="text-cyan-500">Management</span>
+                        <p className="text-sm font-bold tracking-tight text-slate-900">
+                            Library Management
                         </p>
-                        <div className="mt-0.5 flex items-center gap-1.5">
-                            <span className="text-[11px] font-medium text-slate-400 leading-none">
+
+                        <div className="mt-1 flex items-center gap-2">
+                            <span className="text-[11px] font-medium text-slate-400">
                                 Reader Portal
                             </span>
-                            <span className="inline-flex items-center rounded-full bg-cyan-50 px-1.5 py-0.5 text-[9px] font-bold text-cyan-600 border border-cyan-100 leading-none">
+
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold tracking-wide text-slate-600">
                                 READER
                             </span>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                {/* ── Nav Links ── */}
-                <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-                    <p className="mb-1.5 px-3 text-[10px] font-bold tracking-widest text-slate-400 uppercase">
-                        Navigation
-                    </p>
+            {/* Navigation */}
+            <nav className="flex-1 overflow-y-auto px-3 py-5">
+                <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                    Navigation
+                </p>
+
+                <div className="space-y-1">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href;
+
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`group relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13px] font-medium transition-all duration-150 ${
+                                className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition ${
                                     isActive
-                                        ? "bg-gradient-to-r from-cyan-500 to-sky-500 text-white shadow-md shadow-sky-200/70"
-                                        : "text-slate-600 hover:bg-slate-50 hover:text-cyan-600"
+                                        ? "bg-black text-white shadow-sm"
+                                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                                 }`}
                             >
-                                {isActive && (
-                                    <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-white/40" />
-                                )}
-                                <span className={`flex-shrink-0 transition-colors duration-150 ${
-                                    isActive ? "text-white/90" : "text-slate-400 group-hover:text-cyan-500"
-                                }`}>
+                                <span
+                                    className={`shrink-0 transition-colors ${
+                                        isActive
+                                            ? "text-white"
+                                            : "text-slate-400 group-hover:text-slate-700"
+                                    }`}
+                                >
                                     {item.icon}
                                 </span>
-                                <span className="flex-1">{item.name}</span>
+
+                                <span className="flex-1">
+                                    {item.name}
+                                </span>
+
                                 {isActive && (
-                                    <span className="h-1.5 w-1.5 rounded-full bg-white/80 shadow-[0_0_6px_rgba(255,255,255,0.8)] animate-pulse" />
+                                    <span className="h-1.5 w-1.5 rounded-full bg-white/80" />
                                 )}
                             </Link>
                         );
                     })}
-                </nav>
-            </div>
+                </div>
+            </nav>
 
-            {/* ── Footer / Logout ── */}
-            <div className="border-t border-slate-100 bg-slate-50/60 px-3 py-3">
+            {/* Logout */}
+            <div className="border-t border-slate-200 bg-white p-3">
                 <button
                     type="button"
                     onClick={() => {
                         logout();
                         window.location.href = "/login";
                     }}
-                    className="group flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13px] font-medium text-slate-500 transition-all duration-150 hover:bg-rose-50 hover:text-rose-600 active:scale-[0.98]"
+                    className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 active:scale-[0.98]"
                 >
-                    <svg className="w-5 h-5 flex-shrink-0 text-slate-400 transition-colors duration-150 group-hover:text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    <svg
+                        className="h-5 w-5 shrink-0 text-slate-400 transition group-hover:text-rose-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.7}
+                            d="M14 8l4 4m0 0l-4 4m4-4H6m5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h2a3 3 0 013 3v1"
+                        />
                     </svg>
+
                     <span>Logout</span>
                 </button>
             </div>

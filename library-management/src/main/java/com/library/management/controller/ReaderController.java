@@ -4,7 +4,9 @@ import com.library.management.dto.CreateReaderRequest;
 import com.library.management.entity.Reader;
 import com.library.management.service.ReaderService;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
@@ -51,5 +53,23 @@ public class ReaderController {
         return readerService.activateReader(id);
     }
 
+    @PatchMapping("/{readerId}/link-user/{userId}")
+    public ResponseEntity<Reader> linkUserToReader(
+            @PathVariable Long readerId,
+            @PathVariable Long userId) {
 
+        return ResponseEntity.ok(
+                readerService.linkUserToReader(readerId, userId)
+        );
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<Reader> getCurrentReader(Authentication authentication) {
+
+        return ResponseEntity.ok(
+                readerService.getReaderByUsername(
+                        authentication.getName()
+                )
+        );
+    }
 }

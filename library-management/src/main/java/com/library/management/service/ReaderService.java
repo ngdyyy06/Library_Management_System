@@ -4,8 +4,9 @@ import com.library.management.dto.CreateReaderRequest;
 import com.library.management.entity.Reader;
 import com.library.management.exception.ResourceNotFoundException;
 import com.library.management.repository.ReaderRepository;
+import com.library.management.repository.UserRepository;
 import org.springframework.stereotype.Service;
-
+import com.library.management.entity.User;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -13,9 +14,11 @@ import java.util.List;
 public class ReaderService {
 
     private final ReaderRepository readerRepository;
+    private final UserRepository userRepository;
 
-    public ReaderService(ReaderRepository readerRepository) {
+    public ReaderService(ReaderRepository readerRepository, UserRepository userRepository) {
         this.readerRepository = readerRepository;
+        this.userRepository = userRepository;
     }
 
     // lấy tất cả dữ liệu database có về Reader
@@ -101,5 +104,43 @@ public class ReaderService {
         return readerRepository.save(reader);
     }
 
-    
+    public Reader linkUserToReader(Long readerId, Long userId) {
+
+        Reader reader = readerRepository.findById(readerId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Reader not found"));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+
+        if (!"READER".equals(user.getRole().getName())) {
+            throw new RuntimeException(
+                    "Only users with READER role can be linked to a Reader"
+            );
+        }
+
+        if (readerRepository.existsByUserId(userId)) {
+            throw new RuntimeException(
+                    "User is already linked to another Reader"
+            );
+        }
+
+        if (reader.getUser() != null) {
+            throw new RuntimeException(
+                    "Reader is already linked to a User"
+            );
+        }
+
+        reader.setUser(user);
+
+        return readerRepository.save(reader);
+    }
+
+    public Reader getReaderByUsername(String username) {
+
+        return readerRepository.findByUserUsername(username)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Reader not found for this user"));
+    }
 }

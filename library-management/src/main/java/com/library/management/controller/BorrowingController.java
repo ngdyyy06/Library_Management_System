@@ -8,7 +8,7 @@ import com.library.management.dto.CreateBorrowingRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import com.library.management.dto.ReturnBookRequest;
-import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
@@ -23,8 +23,14 @@ public class BorrowingController {
     }
 
     @PatchMapping("/{id}/renew")
-    public Borrowing renewBorrowing(@PathVariable Long id) {
-        return borrowingService.renewBorrowing(id);
+    public Borrowing renewBorrowing(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        return borrowingService.renewBorrowing(
+                id,
+                authentication.getName()
+        );
     }
 
     @PostMapping
@@ -93,5 +99,16 @@ public class BorrowingController {
                 borrowingService.getBorrowingDetails(id);
 
         return ResponseEntity.ok(details);
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<List<Borrowing>> getMyBorrowings(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                borrowingService.getMyBorrowings(
+                        authentication.getName()
+                )
+        );
     }
 }

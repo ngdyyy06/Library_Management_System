@@ -51,19 +51,37 @@ public class BorrowingService {
         return borrowingDetailRepository.findByBorrowingId(borrowingId);
     }
 
-    public Borrowing renewBorrowing(Long id) {
+    public Borrowing renewBorrowing(Long id, String username) {
 
         Borrowing borrowing = getBorrowingById(id);
 
+        Reader reader = readerRepository.findByUserUsername(username)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Reader not found for this user"
+                        ));
+
+        if (!borrowing.getReader().getId().equals(reader.getId())) {
+            throw new RuntimeException(
+                    "You are not allowed to renew this borrowing"
+            );
+        }
+
         if ("RETURNED".equals(borrowing.getStatus())) {
-            throw new RuntimeException("Returned borrowing cannot be renewed");
+            throw new RuntimeException(
+                    "Returned borrowing cannot be renewed"
+            );
         }
 
         if ("OVERDUE".equals(borrowing.getStatus())) {
-            throw new RuntimeException("Overdue borrowing cannot be renewed");
+            throw new RuntimeException(
+                    "Overdue borrowing cannot be renewed"
+            );
         }
 
-        borrowing.setDueDate(borrowing.getDueDate().plusDays(7));
+        borrowing.setDueDate(
+                borrowing.getDueDate().plusDays(7)
+        );
 
         borrowing.setRenewalCount(
                 borrowing.getRenewalCount() + 1
@@ -310,5 +328,16 @@ public class BorrowingService {
     public BorrowingDetail getBorrowingDetailById(Long detailId) {
         return borrowingDetailRepository.findById(detailId)
                 .orElseThrow(() -> new ResourceNotFoundException("Borrowing detail not found"));
+    }
+
+    public List<Borrowing> getMyBorrowings(String username) {
+
+        Reader reader = readerRepository.findByUserUsername(username)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Reader not found for this user"
+                        ));
+
+        return borrowingRepository.findByReaderId(reader.getId());
     }
 }

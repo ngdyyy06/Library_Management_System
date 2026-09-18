@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface BookCopyRepository extends JpaRepository<BookCopy, Long> {
+
     boolean existsByBarcode(String barcode);
 
     long countByBookIdAndStatus(Long bookId, String status);
@@ -14,5 +15,10 @@ public interface BookCopyRepository extends JpaRepository<BookCopy, Long> {
 
     List<BookCopy> findByBookIdAndImportReceiptDetailIsNullOrderByIdAsc(
             Long bookId
+    );
+
+    List<BookCopy> findByBookIdAndStatusOrderByIdAsc(
+            Long bookId,
+            String status
     );
 }
