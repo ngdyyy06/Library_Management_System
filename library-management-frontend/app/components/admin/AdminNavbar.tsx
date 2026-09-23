@@ -2,57 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { logout, getAllBorrowRequests } from "@/app/lib/api";
-import { useEffect, useState } from "react";
+import { logout } from "@/app/lib/api";
 
 export default function AdminNavbar() {
     const pathname = usePathname();
-
-    const [pendingBorrowRequests, setPendingBorrowRequests] = useState(0);
-
-    useEffect(() => {
-        loadPendingBorrowRequests();
-
-        const handleRequestUpdated = () => {
-            loadPendingBorrowRequests();
-        };
-
-        window.addEventListener(
-            "borrow-request-updated",
-            handleRequestUpdated
-        );
-
-        const interval = setInterval(() => {
-            loadPendingBorrowRequests();
-        }, 30000);
-
-        return () => {
-            window.removeEventListener(
-                "borrow-request-updated",
-                handleRequestUpdated
-            );
-
-            clearInterval(interval);
-        };
-    }, []);
-
-    async function loadPendingBorrowRequests() {
-        try {
-            const data = await getAllBorrowRequests();
-
-            const pendingCount = data.filter(
-                (request: { status: string }) =>
-                    request.status === "PENDING"
-            ).length;
-
-            setPendingBorrowRequests(pendingCount);
-        } catch (error) {
-            console.error(
-                "Failed to load pending borrowing requests:",
-                error
-            );
-        }
-    }
 
     const navSections = [
         {
@@ -97,25 +50,6 @@ export default function AdminNavbar() {
                                 strokeLinejoin="round"
                                 strokeWidth={1.7}
                                 d="M4 5.5A2.5 2.5 0 016.5 3H20v17H6.5A2.5 2.5 0 014 17.5v-12zM8 7h8M8 11h8M8 15h5"
-                            />
-                        </svg>
-                    ),
-                },
-                {
-                    name: "Book Copies",
-                    href: "/book-copies",
-                    icon: (
-                        <svg
-                            className="h-5 w-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={1.7}
-                                d="M8 7V5a2 2 0 012-2h5l5 5v7a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2M8 7h5V3"
                             />
                         </svg>
                     ),
@@ -197,25 +131,6 @@ export default function AdminNavbar() {
                                 strokeLinejoin="round"
                                 strokeWidth={1.7}
                                 d="M7 7h13M7 7l4-4M7 7l4 4M17 17H4M17 17l-4-4M17 17l-4 4"
-                            />
-                        </svg>
-                    ),
-                },
-                {
-                    name: "Borrowing Requests",
-                    href: "/staff/borrow-requests",
-                    icon: (
-                        <svg
-                            className="h-5 w-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={1.7}
-                                d="M9 5h6M9 9h6M9 13h4M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"
                             />
                         </svg>
                     ),
@@ -318,7 +233,8 @@ export default function AdminNavbar() {
 
                             <div className="space-y-1">
                                 {section.items.map((item) => {
-                                    const isActive = pathname === item.href;
+                                    const isActive =
+                                        pathname === item.href;
 
                                     return (
                                         <Link
@@ -343,21 +259,6 @@ export default function AdminNavbar() {
                                             <span className="flex-1">
                                                 {item.name}
                                             </span>
-
-                                            {item.name === "Borrowing Requests" &&
-                                                pendingBorrowRequests > 0 && (
-                                                    <span
-                                                        className={`min-w-5 rounded-full px-1.5 py-0.5 text-center text-[10px] font-bold ${
-                                                            isActive
-                                                                ? "bg-white text-black"
-                                                                : "bg-red-500 text-white"
-                                                        }`}
-                                                    >
-                                                        {pendingBorrowRequests > 99
-                                                            ? "99+"
-                                                            : pendingBorrowRequests}
-                                                    </span>
-                                                )}
 
                                             {isActive && (
                                                 <span className="h-1.5 w-1.5 rounded-full bg-white/80" />

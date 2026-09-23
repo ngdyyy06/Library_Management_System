@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import RoleGuard from "@/app/components/RoleGuard";
 import { getDashboard } from "@/app/lib/api";
 
 export default function Home() {
+  const router = useRouter();
   const [dashboard, setDashboard] = useState<any>(null);
 
   useEffect(() => {
@@ -61,10 +63,14 @@ export default function Home() {
             </div>
 
             {/* ── Main Statistics ── */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
               {/* Books */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md">
+              <button
+                  type="button"
+                  onClick={() => router.push("/books")}
+                  className="w-full rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
+              >
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -96,10 +102,14 @@ export default function Home() {
                     </svg>
                   </div>
                 </div>
-              </div>
+              </button>
 
               {/* Book Copies */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md">
+              <button
+                  type="button"
+                  onClick={() => router.push("/book-copies")}
+                  className="w-full rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
+              >
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -131,189 +141,18 @@ export default function Home() {
                     </svg>
                   </div>
                 </div>
-              </div>
+              </button>
 
-              {/* Authors */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md">
+              {/* Active Borrowings */}
+              <button
+                  type="button"
+                  onClick={() => router.push("/borrowings")}
+                  className="w-full rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
+              >
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Authors
-                    </p>
-
-                    <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                      {dashboard?.totalAuthors ?? 0}
-                    </p>
-
-                    <p className="mt-1 text-xs text-slate-400">
-                      Cataloged authors
-                    </p>
-                  </div>
-
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                    <svg
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                    >
-                      <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.6}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Readers */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Readers
-                    </p>
-
-                    <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                      {dashboard?.totalReaders ?? 0}
-                    </p>
-
-                    <p className="mt-1 text-xs text-slate-400">
-                      Registered readers
-                    </p>
-                  </div>
-
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                    <svg
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                    >
-                      <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.6}
-                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Publishers */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Publishers
-                    </p>
-
-                    <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                      {dashboard?.totalPublishers ?? 0}
-                    </p>
-
-                    <p className="mt-1 text-xs text-slate-400">
-                      Publishing partners
-                    </p>
-                  </div>
-
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                    <svg
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                    >
-                      <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.6}
-                          d="M19 21H5a2 2 0 01-2-2V7a2 2 0 012-2h4V3h6v2h4a2 2 0 012 2v12a2 2 0 01-2 2zM9 21V9h6v12M7 9h10"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Categories */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Categories
-                    </p>
-
-                    <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                      {dashboard?.totalCategories ?? 0}
-                    </p>
-
-                    <p className="mt-1 text-xs text-slate-400">
-                      Book categories
-                    </p>
-                  </div>
-
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                    <svg
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                    >
-                      <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.6}
-                          d="M7 7h.01M7 3h10a2 2 0 012 2v2l-8 8-4-4 8-8H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Import Receipts */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Import Receipts
-                    </p>
-
-                    <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                      {dashboard?.totalImportReceipts ?? 0}
-                    </p>
-
-                    <p className="mt-1 text-xs text-slate-400">
-                      Book receiving records
-                    </p>
-                  </div>
-
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                    <svg
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                    >
-                      <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.6}
-                          d="M12 4v10m0 0l-4-4m4 4l4-4M5 20h14a2 2 0 002-2v-3a2 2 0 00-2-2h-2m-10 0H5a2 2 0 00-2 2v3a2 2 0 002 2z"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Borrowings */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Borrowings
+                      Active Borrowings
                     </p>
 
                     <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
@@ -321,7 +160,7 @@ export default function Home() {
                     </p>
 
                     <p className="mt-1 text-xs text-slate-400">
-                      Borrowing records
+                      Current borrowing records
                     </p>
                   </div>
 
@@ -341,14 +180,58 @@ export default function Home() {
                     </svg>
                   </div>
                 </div>
-              </div>
+              </button>
+
+              {/* Borrow Requests */}
+              <button
+                  type="button"
+                  onClick={() => router.push("/staff/borrow-requests")}
+                  className="w-full rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                      Borrow Requests
+                    </p>
+
+                    <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                      2
+                    </p>
+
+                    <p className="mt-1 text-xs text-slate-400">
+                      Pending requests
+                    </p>
+                  </div>
+
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                    <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                      <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.6}
+                          d="M9 12h6m-6 4h4m5 5H6a2 2 0 01-2-2V6a2 2 0 012-2h8l4 4v11a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </button>
+
             </div>
 
-            {/* ── Revenue Section ── */}
+            {/* ── Fine Revenue ── */}
             <div className="grid gap-4 lg:grid-cols-2">
 
-              {/* Today Revenue */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              {/* Today's Fine Revenue */}
+              <button
+                  type="button"
+                  onClick={() => router.push("/borrowings")}
+                  className="w-full rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
@@ -378,10 +261,14 @@ export default function Home() {
                     ₫
                   </div>
                 </div>
-              </div>
+              </button>
 
-              {/* Monthly Revenue */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              {/* This Month's Fine Revenue */}
+              <button
+                  type="button"
+                  onClick={() => router.push("/borrowings")}
+                  className="w-full rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
@@ -411,87 +298,8 @@ export default function Home() {
                     ₫
                   </div>
                 </div>
-              </div>
-            </div>
+              </button>
 
-            {/* ── User Overview Section ── */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
-
-              <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">
-                    User Overview
-                  </h2>
-
-                  <p className="mt-0.5 text-xs text-slate-400">
-                    Current status of system user accounts
-                  </p>
-                </div>
-
-                <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                  Accounts
-                </span>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-
-                {/* Total Users */}
-                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-5">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      Total Users
-                    </p>
-
-                    <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-                  </div>
-
-                  <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                    {dashboard?.totalUsers ?? 0}
-                  </p>
-
-                  <p className="mt-1 text-xs text-slate-400">
-                    All registered roles
-                  </p>
-                </div>
-
-                {/* Active Users */}
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
-                      Active Users
-                    </p>
-
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-                  </div>
-
-                  <p className="mt-3 text-2xl font-bold tracking-tight text-emerald-900 sm:text-3xl">
-                    {dashboard?.activeUsers ?? 0}
-                  </p>
-
-                  <p className="mt-1 text-xs text-emerald-600/80">
-                    Normal operations
-                  </p>
-                </div>
-
-                {/* Inactive Users */}
-                <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-5">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-rose-700">
-                      Inactive Users
-                    </p>
-
-                    <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
-                  </div>
-
-                  <p className="mt-3 text-2xl font-bold tracking-tight text-rose-900 sm:text-3xl">
-                    {dashboard?.inactiveUsers ?? 0}
-                  </p>
-
-                  <p className="mt-1 text-xs text-rose-600/80">
-                    Disabled / Suspended
-                  </p>
-                </div>
-              </div>
             </div>
 
           </div>

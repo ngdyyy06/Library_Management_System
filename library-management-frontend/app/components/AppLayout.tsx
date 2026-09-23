@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AdminNavbar from "./admin/AdminNavbar";
 import StaffNavbar from "./staff/StaffNavbar";
-import ReaderNavbar from "./reader/ReaderNavbar";
 import { getCurrentUserRole } from "@/app/lib/api";
 
 export default function AppLayout({
@@ -34,7 +33,6 @@ export default function AppLayout({
         <>
             {role === "ADMIN" && <AdminNavbar />}
             {role === "LIBRARIAN" && <StaffNavbar />}
-            {role === "READER" && <ReaderNavbar />}
 
             <main className="ml-64 min-h-screen">
                 {children}
