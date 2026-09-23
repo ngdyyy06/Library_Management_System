@@ -1,18 +1,15 @@
 package com.library.management.controller;
 
 import com.library.management.dto.CreateReaderRequest;
-import com.library.management.dto.UpdateReaderProfileRequest;
 import com.library.management.entity.Reader;
 import com.library.management.service.ReaderService;
 import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
-@RestController  // Controller xử lý HTTP request và trả dữ liệu trực tiếp về client
-@RequestMapping("/api/readers")  // đặt URL gốc cho Controller
+@RestController
+@RequestMapping("/api/readers")
 public class ReaderController {
 
     private final ReaderService readerService;
@@ -26,8 +23,10 @@ public class ReaderController {
         return readerService.getAllReaders();
     }
 
-    @PostMapping // lấy trong JSON và chuyển thành object Reader
-    public Reader createReader(@Valid @RequestBody CreateReaderRequest request) {
+    @PostMapping
+    public Reader createReader(
+            @Valid @RequestBody CreateReaderRequest request) {
+
         return readerService.createReader(request);
     }
 
@@ -52,38 +51,5 @@ public class ReaderController {
     @PatchMapping("/{id}/activate")
     public Reader activateReader(@PathVariable Long id) {
         return readerService.activateReader(id);
-    }
-
-    @PatchMapping("/{readerId}/link-user/{userId}")
-    public ResponseEntity<Reader> linkUserToReader(
-            @PathVariable Long readerId,
-            @PathVariable Long userId) {
-
-        return ResponseEntity.ok(
-                readerService.linkUserToReader(readerId, userId)
-        );
-    }
-
-    @GetMapping("/me")
-    public ResponseEntity<Reader> getCurrentReader(Authentication authentication) {
-
-        return ResponseEntity.ok(
-                readerService.getReaderByUsername(
-                        authentication.getName()
-                )
-        );
-    }
-
-    @PutMapping("/me")
-    public ResponseEntity<Reader> updateMyProfile(
-            Authentication authentication,
-            @Valid @RequestBody UpdateReaderProfileRequest request
-    ) {
-        return ResponseEntity.ok(
-                readerService.updateMyProfile(
-                        authentication.getName(),
-                        request
-                )
-        );
     }
 }

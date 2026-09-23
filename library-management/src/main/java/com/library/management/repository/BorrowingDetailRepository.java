@@ -4,50 +4,64 @@ import com.library.management.entity.BorrowingDetail;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import java.util.List;
 
-import java.util.Optional;
+import java.util.List;
 
 public interface BorrowingDetailRepository
         extends JpaRepository<BorrowingDetail, Long> {
+
     @Query("""
-            SELECT COUNT(bd)
+            SELECT COALESCE(SUM(bd.quantity), 0)
             FROM BorrowingDetail bd
-            Where bd.borrowing.reader.id = :readerId
-            and bd.returnedAt is null
+            WHERE bd.borrowing.reader.id = :readerId
+            AND bd.returnedAt IS NULL
             """)
-
-    // đếm số bản sách mà Reader đang giữ và chua trả trong tổng phiếu mượn/1 người
-    long countUnreturnedBooksByReaderId(@Param("readerId") Long readerId);
-
-    @Query("""
-        SELECT COUNT(bd)
-        FROM BorrowingDetail bd
-        WHERE bd.borrowing.id = :borrowingId
-        AND bd.returnedAt IS NULL
-        """)
-
-    // đếm so bản sách mà Reader chưa trả trong 1 phiếu mượn
-    long countUnreturnedBooksByBorrowingId(@Param("borrowingId") Long borrowingId);
+    long countUnreturnedBooksByReaderId(
+            @Param("readerId") Long readerId
+    );
 
     @Query("""
-    SELECT COALESCE(SUM(bd.fine), 0)
-           + COALESCE(SUM(bd.damageFine), 0)
+            SELECT COALESCE(SUM(bd.quantity), 0)
+            FROM BorrowingDetail bd
+            WHERE bd.borrowing.id = :borrowingId
+            AND bd.returnedAt IS NULL
+            """)
+    long countUnreturnedBooksByBorrowingId(
+            @Param("borrowingId") Long borrowingId
+    );
+
+    @Query("""
+            SELECT COALESCE(SUM(bd.fine), 0)
+                   + COALESCE(SUM(bd.damageFine), 0)
+            FROM BorrowingDetail bd
+            WHERE bd.returnedAt IS NOT NULL
+            AND FUNCTION('DATE', bd.returnedAt) = CURRENT_DATE
+            """)
+    long getTodayFineRevenue();
+
+    @Query("""
+            SELECT COALESCE(SUM(bd.fine), 0)
+                   + COALESCE(SUM(bd.damageFine), 0)
+            FROM BorrowingDetail bd
+            WHERE bd.returnedAt IS NOT NULL
+            AND YEAR(bd.returnedAt) = YEAR(CURRENT_DATE)
+            AND MONTH(bd.returnedAt) = MONTH(CURRENT_DATE)
+            """)
+    long getMonthlyFineRevenue();
+
+    @Query("""
+    SELECT COALESCE(
+        SUM(
+            bd.goodQuantity
+            + bd.damagedQuantity
+            + bd.lostQuantity
+        ), 0
+    )
     FROM BorrowingDetail bd
     WHERE bd.returnedAt IS NOT NULL
     AND FUNCTION('DATE', bd.returnedAt) = CURRENT_DATE
     """)
-    long getTodayFineRevenue();
-
-    @Query("""
-    SELECT COALESCE(SUM(bd.fine), 0)
-           + COALESCE(SUM(bd.damageFine), 0)
-    FROM BorrowingDetail bd
-    WHERE bd.returnedAt IS NOT NULL
-    AND YEAR(bd.returnedAt) = YEAR(CURRENT_DATE)
-    AND MONTH(bd.returnedAt) = MONTH(CURRENT_DATE)
-    """)
-    long getMonthlyFineRevenue();
+    long getTodayReturnedBooks();
 
     List<BorrowingDetail> findByBorrowingId(Long borrowingId);
 

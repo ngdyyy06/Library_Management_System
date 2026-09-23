@@ -401,22 +401,36 @@ export async function getStaffDashboard() {
     return response.json();
 }
 
-export async function renewBorrowing(id: number) {
+export async function renewBorrowing(
+    id: number,
+    data: {
+        days: number;
+        paymentConfirmed: boolean;
+    }
+) {
     const token = localStorage.getItem("token");
 
-    const response = await fetch(`${API_URL}/borrowings/${id}/renew`, {
-        method: "PATCH",
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    });
+    const response = await fetch(
+        `${API_URL}/borrowings/${id}/renew`,
+        {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(data),
+        }
+    );
+
+    const result = await response.json();
 
     if (!response.ok) {
-        const message = await response.text();
-        throw new Error(message || "Failed to renew borrowing");
+        throw new Error(
+            result.message || "Failed to renew borrowing"
+        );
     }
 
-    return response.json();
+    return result;
 }
 
 export async function getBorrowings() {
@@ -493,35 +507,49 @@ export async function getBorrowingDetails(id: number) {
     return response.json();
 }
 
+export interface ReturnBookRequest {
+    goodQuantity: number;
+    damagedQuantity: number;
+    lostQuantity: number;
+}
+
 export async function returnBook(
     detailId: number,
-    condition: string
+    request: ReturnBookRequest
 ) {
-    const token = localStorage.getItem("token");
-
     const response = await fetch(
         `${API_URL}/borrowings/details/${detailId}/return`,
         {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
-            body: JSON.stringify({
-                condition,
-            }),
+            body: JSON.stringify(request),
         }
     );
 
-    if (!response.ok) {
-        const errorData = await response.json();
+    const text = await response.text();
 
+    let result: any = null;
+
+    if (text) {
+        try {
+            result = JSON.parse(text);
+        } catch {
+            result = null;
+        }
+    }
+
+    if (!response.ok) {
         throw new Error(
-            errorData.message || "Failed to return book"
+            result?.message ||
+            text ||
+            `Failed to return book (${response.status})`
         );
     }
 
-    return response.json();
+    return result;
 }
 
 export async function getBooks() {

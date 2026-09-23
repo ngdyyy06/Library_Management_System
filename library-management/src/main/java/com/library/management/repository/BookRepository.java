@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface BookRepository extends JpaRepository<Book, Long> {
+
     boolean existsByIsbn(String isbn);
 
     List<Book> findByAuthorsId(Long authorId);
@@ -21,4 +22,10 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     List<Book> findBooksByAuthorId(@Param("authorId") Long authorId);
 
     List<Book> findByCategoriesId(Long categoryId);
+
+    @Query("""
+        SELECT COALESCE(SUM(b.totalQuantity), 0)
+        FROM Book b
+        """)
+    long sumTotalQuantity();
 }

@@ -13,40 +13,51 @@ public class Reader {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
-    @JoinColumn(name = "user_id", unique = true)
-    private User user;
-
+    // Mã thẻ thành viên
     @Column(name = "reader_code", nullable = false, unique = true)
     private String readerCode;
 
+    // Họ và tên
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
+    // Email
     @Column(unique = true)
     private String email;
 
+    // Số điện thoại
     @Column(nullable = false)
     private String phone;
 
+    // Địa chỉ
     private String address;
 
+    // Ngày sinh
     @Column(name = "date_of_birth")
-    private LocalDate dateOfBirth;  // LocalDate: k hiện giờ phút giây
+    private LocalDate dateOfBirth;
 
+    // Trạng thái thẻ thành viên
     @Column(nullable = false)
     private String status;
 
+    // Thời điểm tạo thẻ
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     public Reader() {
     }
 
-    public Reader(Long id, String readerCode, String fullName,
-                  String email, String phone, String address,
-                  LocalDate dateOfBirth, String status,
-                  LocalDateTime createdAt) {
+    public Reader(
+            Long id,
+            String readerCode,
+            String fullName,
+            String email,
+            String phone,
+            String address,
+            LocalDate dateOfBirth,
+            String status,
+            LocalDateTime createdAt
+    ) {
         this.id = id;
         this.readerCode = readerCode;
         this.fullName = fullName;
@@ -128,13 +139,5 @@ public class Reader {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
     }
 }

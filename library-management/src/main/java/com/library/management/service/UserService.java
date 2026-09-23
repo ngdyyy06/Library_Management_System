@@ -1,12 +1,10 @@
 package com.library.management.service;
 
 import com.library.management.dto.*;
-import com.library.management.entity.Reader;
 import com.library.management.entity.Role;
 import com.library.management.entity.Staff;
 import com.library.management.entity.User;
 import com.library.management.exception.ResourceNotFoundException;
-import com.library.management.repository.ReaderRepository;
 import com.library.management.repository.RoleRepository;
 import com.library.management.repository.StaffRepository;
 import com.library.management.repository.UserRepository;
@@ -22,18 +20,17 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
-    private final ReaderRepository readerRepository;
     private final StaffRepository staffRepository;
 
     public UserService(
             UserRepository userRepository,
             RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder, ReaderRepository readerRepository, StaffRepository staffRepository) {
+            PasswordEncoder passwordEncoder,
+            StaffRepository staffRepository) {
 
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
-        this.readerRepository = readerRepository;
         this.staffRepository = staffRepository;
     }
 
@@ -63,6 +60,9 @@ public class UserService {
 
         User savedUser = userRepository.save(user);
 
+        /*
+         * Nếu User có role LIBRARIAN thì tạo Staff profile
+         */
         if ("LIBRARIAN".equals(role.getName())) {
 
             Staff staff = new Staff();
@@ -79,6 +79,7 @@ public class UserService {
     }
 
     private UserResponse toUserResponse(User user) {
+
         return new UserResponse(
                 user.getId(),
                 user.getUsername(),
@@ -90,6 +91,7 @@ public class UserService {
     }
 
     public List<UserResponse> getAllUsers() {
+
         return userRepository.findAll()
                 .stream()
                 .map(this::toUserResponse)
@@ -102,31 +104,11 @@ public class UserService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("User not found"));
 
-        Reader reader = readerRepository
-                .findByUserId(user.getId())
-                .orElse(null);
-
         Staff staff = staffRepository
                 .findByUserId(user.getId())
                 .orElse(null);
 
-        UserDetailResponse.ReaderInfo readerInfo = null;
         UserDetailResponse.StaffInfo staffInfo = null;
-
-        if (reader != null) {
-
-            readerInfo = new UserDetailResponse.ReaderInfo(
-                    reader.getId(),
-                    reader.getReaderCode(),
-                    reader.getFullName(),
-                    reader.getEmail(),
-                    reader.getPhone(),
-                    reader.getAddress(),
-                    reader.getDateOfBirth(),
-                    reader.getStatus(),
-                    reader.getCreatedAt()
-            );
-        }
 
         if (staff != null) {
 
@@ -148,26 +130,32 @@ public class UserService {
                 user.getEmail(),
                 user.getRole().getName(),
                 user.getStatus(),
-                readerInfo,
+                null,
                 staffInfo
         );
     }
 
-    public UserResponse updateUser(Long id, UpdateUserRequest request) {
+    public UserResponse updateUser(
+            Long id,
+            UpdateUserRequest request) {
 
         User user = userRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("User not found"));
 
         if (!user.getUsername().equals(request.getUsername())
-                && userRepository.existsByUsername(request.getUsername())) {
+                && userRepository.existsByUsername(
+                request.getUsername())) {
+
             throw new RuntimeException("Username already exists");
         }
 
         if (request.getEmail() != null
                 && !request.getEmail().equals(user.getEmail())
                 && userRepository.existsByEmailAndIdNot(
-                request.getEmail(), id)) {
+                request.getEmail(),
+                id)) {
+
             throw new RuntimeException("Email already exists");
         }
 
@@ -182,13 +170,18 @@ public class UserService {
 
         if (request.getPassword() != null
                 && !request.getPassword().isBlank()) {
-            user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+            user.setPassword(
+                    passwordEncoder.encode(request.getPassword())
+            );
         }
 
-        return toUserResponse(userRepository.save(user));
+        return toUserResponse(
+                userRepository.save(user)
+        );
     }
 
-    // vô hiệu hoá user
+    // Vô hiệu hóa User
     public UserResponse deactivateUser(Long id) {
 
         User user = userRepository.findById(id)
@@ -201,10 +194,12 @@ public class UserService {
 
         user.setStatus("INACTIVE");
 
-        return toUserResponse(userRepository.save(user));
+        return toUserResponse(
+                userRepository.save(user)
+        );
     }
 
-    // kích hoạt user
+    // Kích hoạt User
     public UserResponse activateUser(Long id) {
 
         User user = userRepository.findById(id)
@@ -217,14 +212,16 @@ public class UserService {
 
         user.setStatus("ACTIVE");
 
-        return toUserResponse(userRepository.save(user));
+        return toUserResponse(
+                userRepository.save(user)
+        );
     }
 
     @Transactional
     public Staff updateMyStaffProfile(
             String username,
-            UpdateStaffProfileRequest request
-    ) {
+            UpdateStaffProfileRequest request) {
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("User not found"));
@@ -238,15 +235,15 @@ public class UserService {
         Staff staff = staffRepository.findByUserId(user.getId())
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Staff profile not found"));
+                                "Staff profile not found"
+                        ));
 
         if (request.getEmail() != null
                 && !request.getEmail().isBlank()
                 && !request.getEmail().equals(user.getEmail())
                 && userRepository.existsByEmailAndIdNot(
                 request.getEmail(),
-                user.getId()
-        )) {
+                user.getId())) {
 
             throw new RuntimeException("Email already exists");
         }

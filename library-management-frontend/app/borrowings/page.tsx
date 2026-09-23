@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import RoleGuard from "@/app/components/RoleGuard";
 import {
     getBorrowings,
+    getBorrowingDetails,
     getReaders,
     getBooks,
     createBorrowing,
+    renewBorrowing,
 } from "@/app/lib/api";
 
 type Reader = {
@@ -22,6 +24,7 @@ type Book = {
     id: number;
     title: string;
     isbn: string;
+    price: number;
     totalQuantity: number;
     availableQuantity: number;
     status: string;
@@ -42,9 +45,11 @@ type BorrowingDetail = {
 type Borrowing = {
     id: number;
     reader: Reader;
-    borrowDate: string;
+    borrowedAt: string;
     dueDate: string;
     status: string;
+    renewalCount: number;
+    depositAmount: number;
     details?: BorrowingDetail[];
 };
 
@@ -67,7 +72,7 @@ export default function BorrowingsPage() {
 
     // Search & Filter
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState("ALL");
+    const [statusFilter, setStatusFilter] = useState("BORROWING");
 
     // Create Modal State
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -75,8 +80,18 @@ export default function BorrowingsPage() {
     const [borrowDate, setBorrowDate] = useState("");
     const [dueDate, setDueDate] = useState("");
 
-    const [selectedBooks, setSelectedBooks] = useState<SelectedBook[]>([]);
+    const [selectedBooks, setSelectedBooks] = useState<SelectedBook[]>(
+        []
+    );
     const [bookSearchQuery, setBookSearchQuery] = useState("");
+
+    // Renew Modal State
+    const [showRenewModal, setShowRenewModal] = useState(false);
+    const [selectedBorrowing, setSelectedBorrowing] =
+        useState<Borrowing | null>(null);
+    const [renewDays, setRenewDays] = useState(7);
+    const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+    const [renewing, setRenewing] = useState(false);
 
     useEffect(() => {
         loadInitialData();
@@ -87,27 +102,80 @@ export default function BorrowingsPage() {
             setLoading(true);
             setError("");
 
-            const [borrowingData, readerData, bookData] = await Promise.all([
+            const [
+                borrowingData,
+                readerData,
+                bookData,
+            ] = await Promise.all([
                 getBorrowings().catch(() => []),
                 getReaders().catch(() => []),
                 getBooks().catch(() => []),
             ]);
 
-            setBorrowings(
-                Array.isArray(borrowingData) ? borrowingData : []
-            );
+            const rawBorrowings = Array.isArray(borrowingData)
+                ? borrowingData
+                : [];
+
+            /*
+             * getBorrowings() chỉ trả Borrowing.
+             * Lấy thêm BorrowingDetail cho từng phiếu
+             * để hiển thị tên sách trong bảng.
+             */
+            const borrowingsWithDetails: Borrowing[] =
+                await Promise.all(
+                    rawBorrowings.map(
+                        async (borrowing: Borrowing) => {
+                            try {
+                                const detailData =
+                                    await getBorrowingDetails(
+                                        borrowing.id
+                                    );
+
+                                return {
+                                    ...borrowing,
+                                    details: Array.isArray(
+                                        detailData
+                                    )
+                                        ? detailData
+                                        : [],
+                                };
+                            } catch (error) {
+                                console.error(
+                                    `Failed to load details for borrowing #${borrowing.id}:`,
+                                    error
+                                );
+
+                                return {
+                                    ...borrowing,
+                                    details: [],
+                                };
+                            }
+                        }
+                    )
+                );
+
+            setBorrowings(borrowingsWithDetails);
 
             setReaders(
-                Array.isArray(readerData) ? readerData : []
+                Array.isArray(readerData)
+                    ? readerData
+                    : []
             );
 
             setBooks(
-                Array.isArray(bookData) ? bookData : []
+                Array.isArray(bookData)
+                    ? bookData
+                    : []
             );
         } catch (err: any) {
-            console.error("Failed to load circulation records:", err);
+            console.error(
+                "Failed to load circulation records:",
+                err
+            );
+
             setError(
-                err?.message || "Failed to load circulation records."
+                err?.message ||
+                "Failed to load circulation records."
             );
         } finally {
             setLoading(false);
@@ -121,8 +189,13 @@ export default function BorrowingsPage() {
 
         defaultDue.setDate(today.getDate() + 14);
 
-        setBorrowDate(today.toISOString().split("T")[0]);
-        setDueDate(defaultDue.toISOString().split("T")[0]);
+        setBorrowDate(
+            today.toISOString().split("T")[0]
+        );
+
+        setDueDate(
+            defaultDue.toISOString().split("T")[0]
+        );
 
         setSelectedReaderId("");
         setSelectedBooks([]);
@@ -130,6 +203,7 @@ export default function BorrowingsPage() {
 
         setError("");
         setSuccess("");
+
         setShowCreateModal(true);
     }
 
@@ -166,7 +240,8 @@ export default function BorrowingsPage() {
 
     // Filter books in create modal
     const filteredAvailableBooks = useMemo(() => {
-        const query = bookSearchQuery.trim().toLowerCase();
+        const query =
+            bookSearchQuery.trim().toLowerCase();
 
         if (!query) {
             return availableBooks;
@@ -174,25 +249,58 @@ export default function BorrowingsPage() {
 
         return availableBooks.filter(
             (book) =>
-                book.title?.toLowerCase().includes(query) ||
-                book.isbn?.toLowerCase().includes(query)
+                book.title
+                    ?.toLowerCase()
+                    .includes(query) ||
+                book.isbn
+                    ?.toLowerCase()
+                    .includes(query)
         );
-    }, [availableBooks, bookSearchQuery]);
+    }, [
+        availableBooks,
+        bookSearchQuery,
+    ]);
 
     // Get selected quantity for a book
     function getSelectedQuantity(bookId: number) {
         return (
             selectedBooks.find(
-                (item) => item.bookId === bookId
+                (item) =>
+                    item.bookId === bookId
             )?.quantity || 0
         );
     }
 
+    // Calculate total deposit
+    const totalDeposit = useMemo(() => {
+        return selectedBooks.reduce(
+            (total, selected) => {
+                const book = books.find(
+                    (item) =>
+                        item.id === selected.bookId
+                );
+
+                if (!book) {
+                    return total;
+                }
+
+                return (
+                    total +
+                    Number(book.price || 0) *
+                    selected.quantity
+                );
+            },
+            0
+        );
+    }, [selectedBooks, books]);
+
     // Add book to borrowing list
     function addBook(bookId: number) {
-        const existing = selectedBooks.find(
-            (item) => item.bookId === bookId
-        );
+        const existing =
+            selectedBooks.find(
+                (item) =>
+                    item.bookId === bookId
+            );
 
         if (existing) {
             return;
@@ -211,7 +319,8 @@ export default function BorrowingsPage() {
     function removeBook(bookId: number) {
         setSelectedBooks((prev) =>
             prev.filter(
-                (item) => item.bookId !== bookId
+                (item) =>
+                    item.bookId !== bookId
             )
         );
     }
@@ -222,14 +331,18 @@ export default function BorrowingsPage() {
         quantity: number
     ) {
         const book = books.find(
-            (item) => item.id === bookId
+            (item) =>
+                item.id === bookId
         );
 
         if (!book) return;
 
         const safeQuantity = Math.max(
             1,
-            Math.min(quantity, book.availableQuantity)
+            Math.min(
+                quantity,
+                book.availableQuantity
+            )
         );
 
         setSelectedBooks((prev) =>
@@ -237,7 +350,8 @@ export default function BorrowingsPage() {
                 item.bookId === bookId
                     ? {
                         ...item,
-                        quantity: safeQuantity,
+                        quantity:
+                        safeQuantity,
                     }
                     : item
             )
@@ -278,7 +392,8 @@ export default function BorrowingsPage() {
             setSaving(true);
 
             const payload = {
-                readerId: Number(selectedReaderId),
+                readerId:
+                    Number(selectedReaderId),
                 books: selectedBooks,
             };
 
@@ -309,48 +424,173 @@ export default function BorrowingsPage() {
         }
     }
 
-    // Filter Logic for Main Table
-    const filteredBorrowings = useMemo(() => {
-        return borrowings.filter((borrowing) => {
-            const keyword =
-                searchTerm.trim().toLowerCase();
+    // Open Renew Modal
+    function openRenewModal(
+        borrowing: Borrowing
+    ) {
+        setSelectedBorrowing(borrowing);
+        setRenewDays(7);
+        setPaymentConfirmed(false);
+        setError("");
+        setSuccess("");
+        setShowRenewModal(true);
+    }
 
-            const reader = borrowing.reader;
+    // Close Renew Modal
+    function closeRenewModal() {
+        if (renewing) return;
 
-            const bookTitles =
-                borrowing.details
-                    ?.map(
-                        (detail) =>
-                            detail.book?.title || ""
-                    )
-                    .join(" ")
-                    .toLowerCase() || "";
+        setShowRenewModal(false);
+        setSelectedBorrowing(null);
+        setPaymentConfirmed(false);
+        setError("");
+    }
 
-            const isSearchMatched =
-                !keyword ||
-                String(borrowing.id).includes(keyword) ||
-                reader?.fullName
-                    ?.toLowerCase()
-                    .includes(keyword) ||
-                reader?.readerCode
-                    ?.toLowerCase()
-                    .includes(keyword) ||
-                bookTitles.includes(keyword);
+    // Handle Renew
+    async function handleRenewBorrowing(
+        e: React.FormEvent
+    ) {
+        e.preventDefault();
 
-            const isStatusMatched =
-                statusFilter === "ALL" ||
-                borrowing.status === statusFilter;
+        if (!selectedBorrowing) return;
 
-            return (
-                isSearchMatched &&
-                isStatusMatched
+        setError("");
+        setSuccess("");
+
+        if (
+            renewDays < 3 ||
+            renewDays > 30
+        ) {
+            setError(
+                "Renewal period must be between 3 and 30 days."
             );
-        });
-    }, [
-        borrowings,
-        searchTerm,
-        statusFilter,
-    ]);
+            return;
+        }
+
+        if (
+            selectedBorrowing.status !==
+            "BORROWING"
+        ) {
+            setError(
+                "Only active borrowing records can be renewed."
+            );
+            return;
+        }
+
+        if (
+            selectedBorrowing.renewalCount >= 2
+        ) {
+            setError(
+                "This borrowing ticket has reached the maximum renewal limit."
+            );
+            return;
+        }
+
+        if (!paymentConfirmed) {
+            setError(
+                "Please confirm that the renewal fee has been paid."
+            );
+            return;
+        }
+
+        try {
+            setRenewing(true);
+
+            await renewBorrowing(
+                selectedBorrowing.id,
+                {
+                    days: renewDays,
+                    paymentConfirmed: true,
+                }
+            );
+
+            setSuccess(
+                "Borrowing renewed successfully."
+            );
+
+            await loadInitialData();
+
+            setTimeout(() => {
+                setShowRenewModal(false);
+                setSelectedBorrowing(null);
+                setSuccess("");
+            }, 700);
+        } catch (err: any) {
+            console.error(
+                "Failed to renew borrowing:",
+                err
+            );
+
+            setError(
+                err?.message ||
+                "Failed to renew borrowing."
+            );
+        } finally {
+            setRenewing(false);
+        }
+    }
+
+    // Filter Logic for Main Table
+    const filteredBorrowings =
+        useMemo(() => {
+            return borrowings.filter(
+                (borrowing) => {
+                    const keyword =
+                        searchTerm
+                            .trim()
+                            .toLowerCase();
+
+                    const reader =
+                        borrowing.reader;
+
+                    const bookTitles =
+                        borrowing.details
+                            ?.map(
+                                (detail) =>
+                                    detail.book
+                                        ?.title || ""
+                            )
+                            .join(" ")
+                            .toLowerCase() || "";
+
+                    const isSearchMatched =
+                        !keyword ||
+                        String(
+                            borrowing.id
+                        ).includes(
+                            keyword
+                        ) ||
+                        reader?.fullName
+                            ?.toLowerCase()
+                            .includes(
+                                keyword
+                            ) ||
+                        reader?.readerCode
+                            ?.toLowerCase()
+                            .includes(
+                                keyword
+                            ) ||
+                        bookTitles.includes(
+                            keyword
+                        );
+
+                    const isStatusMatched =
+                        statusFilter ===
+                        "ALL" ||
+                        borrowing.status ===
+                        statusFilter;
+
+                    return (
+                        isSearchMatched &&
+                        isStatusMatched
+                    );
+                }
+            );
+        }, [
+            borrowings,
+            searchTerm,
+            statusFilter,
+        ]);
 
     // Metrics
     const totalBorrowings =
@@ -359,14 +599,15 @@ export default function BorrowingsPage() {
     const activeBorrowings =
         borrowings.filter(
             (borrowing) =>
-                borrowing.status === "BORROWING" ||
-                borrowing.status === "OVERDUE"
+                borrowing.status ===
+                "BORROWING"
         ).length;
 
     const returnedBorrowings =
         borrowings.filter(
             (borrowing) =>
-                borrowing.status === "RETURNED"
+                borrowing.status ===
+                "RETURNED"
         ).length;
 
     return (
@@ -399,7 +640,9 @@ export default function BorrowingsPage() {
 
                         <button
                             type="button"
-                            onClick={openCreateModal}
+                            onClick={
+                                openCreateModal
+                            }
                             className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-slate-800 active:scale-[0.99] sm:text-sm"
                         >
                             <svg
@@ -411,7 +654,9 @@ export default function BorrowingsPage() {
                                 <path
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
-                                    strokeWidth={1.5}
+                                    strokeWidth={
+                                        1.5
+                                    }
                                     d="M12 4v16m8-8H4"
                                 />
                             </svg>
@@ -421,35 +666,45 @@ export default function BorrowingsPage() {
                     </div>
 
                     {/* Error Banner */}
-                    {error && !showCreateModal && (
-                        <div className="flex items-center justify-between rounded-lg border border-rose-200 bg-rose-50/70 px-4 py-3 text-xs text-rose-700 sm:text-sm">
-                            <div className="flex items-center gap-2">
-                                <svg
-                                    className="h-4 w-4 shrink-0 text-rose-500"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
+                    {error &&
+                        !showCreateModal &&
+                        !showRenewModal && (
+                            <div className="flex items-center justify-between rounded-lg border border-rose-200 bg-rose-50/70 px-4 py-3 text-xs text-rose-700 sm:text-sm">
+                                <div className="flex items-center gap-2">
+                                    <svg
+                                        className="h-4 w-4 shrink-0 text-rose-500"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={
+                                                1.5
+                                            }
+                                            d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+                                        />
+                                    </svg>
+
+                                    <span>
+                                        {error}
+                                    </span>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setError(
+                                            ""
+                                        )
+                                    }
+                                    className="text-xs font-medium text-rose-600 hover:text-rose-800"
                                 >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={1.5}
-                                        d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
-                                    />
-                                </svg>
-
-                                <span>{error}</span>
+                                    Dismiss
+                                </button>
                             </div>
-
-                            <button
-                                type="button"
-                                onClick={() => setError("")}
-                                className="text-xs font-medium text-rose-600 hover:text-rose-800"
-                            >
-                                Dismiss
-                            </button>
-                        </div>
-                    )}
+                        )}
 
                     {/* Statistics */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -460,7 +715,9 @@ export default function BorrowingsPage() {
                             </p>
 
                             <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-                                {totalBorrowings}
+                                {
+                                    totalBorrowings
+                                }
                             </p>
 
                             <p className="mt-1 text-[11px] text-slate-400">
@@ -474,11 +731,13 @@ export default function BorrowingsPage() {
                             </p>
 
                             <p className="mt-2 text-2xl font-semibold tracking-tight text-amber-600">
-                                {activeBorrowings}
+                                {
+                                    activeBorrowings
+                                }
                             </p>
 
                             <p className="mt-1 text-[11px] text-slate-400">
-                                Awaiting physical return
+                                Active borrowing records
                             </p>
                         </div>
 
@@ -488,7 +747,9 @@ export default function BorrowingsPage() {
                             </p>
 
                             <p className="mt-2 text-2xl font-semibold tracking-tight text-emerald-600">
-                                {returnedBorrowings}
+                                {
+                                    returnedBorrowings
+                                }
                             </p>
 
                             <p className="mt-1 text-[11px] text-slate-400">
@@ -515,17 +776,25 @@ export default function BorrowingsPage() {
                                         <path
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
-                                            strokeWidth={1.5}
+                                            strokeWidth={
+                                                1.5
+                                            }
                                             d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
                                         />
                                     </svg>
 
                                     <input
                                         type="text"
-                                        value={searchTerm}
-                                        onChange={(e) =>
+                                        value={
+                                            searchTerm
+                                        }
+                                        onChange={(
+                                            e
+                                        ) =>
                                             setSearchTerm(
-                                                e.target.value
+                                                e
+                                                    .target
+                                                    .value
                                             )
                                         }
                                         placeholder="Search by ticket ID, reader name, code, or book title..."
@@ -534,20 +803,26 @@ export default function BorrowingsPage() {
                                 </div>
 
                                 <select
-                                    value={statusFilter}
-                                    onChange={(e) =>
+                                    value={
+                                        statusFilter
+                                    }
+                                    onChange={(
+                                        e
+                                    ) =>
                                         setStatusFilter(
-                                            e.target.value
+                                            e
+                                                .target
+                                                .value
                                         )
                                     }
                                     className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white focus:ring-1 focus:ring-slate-400 sm:text-sm"
                                 >
-                                    <option value="ALL">
-                                        All Statuses
-                                    </option>
-
                                     <option value="BORROWING">
                                         Active Loans (Borrowing)
+                                    </option>
+
+                                    <option value="ALL">
+                                        All Statuses
                                     </option>
 
                                     <option value="OVERDUE">
@@ -571,7 +846,8 @@ export default function BorrowingsPage() {
                                     Loading borrowing tickets...
                                 </p>
                             </div>
-                        ) : filteredBorrowings.length === 0 ? (
+                        ) : filteredBorrowings.length ===
+                        0 ? (
                             <div className="flex flex-col items-center justify-center py-16 text-center">
                                 <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400">
                                     <svg
@@ -583,7 +859,9 @@ export default function BorrowingsPage() {
                                         <path
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
-                                            strokeWidth={1.5}
+                                            strokeWidth={
+                                                1.5
+                                            }
                                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                                         />
                                     </svg>
@@ -624,6 +902,10 @@ export default function BorrowingsPage() {
                                         </th>
 
                                         <th className="px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                                            Deposit
+                                        </th>
+
+                                        <th className="px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-slate-500">
                                             Status
                                         </th>
 
@@ -636,7 +918,9 @@ export default function BorrowingsPage() {
                                     <tbody className="divide-y divide-slate-100 text-xs sm:text-sm">
 
                                     {filteredBorrowings.map(
-                                        (borrowing) => {
+                                        (
+                                            borrowing
+                                        ) => {
                                             const isReturned =
                                                 borrowing.status ===
                                                 "RETURNED";
@@ -656,31 +940,36 @@ export default function BorrowingsPage() {
                                                     }
                                                     className="transition-colors hover:bg-slate-50/70"
                                                 >
+                                                    {/* Ticket ID */}
                                                     <td className="px-5 py-3.5">
-                                                            <span className="font-mono text-xs font-semibold text-slate-700">
-                                                                #
-                                                                {
-                                                                    borrowing.id
-                                                                }
-                                                            </span>
+                                                        <span className="font-mono text-xs font-semibold text-slate-700">
+                                                            #
+                                                            {
+                                                                borrowing.id
+                                                            }
+                                                        </span>
                                                     </td>
 
+                                                    {/* Reader */}
                                                     <td className="px-5 py-3.5">
                                                         <div>
                                                             <p className="font-medium text-slate-900">
-                                                                {borrowing.reader
+                                                                {borrowing
+                                                                        .reader
                                                                         ?.fullName ||
                                                                     "General Patron"}
                                                             </p>
 
                                                             <p className="font-mono text-[11px] text-slate-400">
-                                                                {borrowing.reader
+                                                                {borrowing
+                                                                        .reader
                                                                         ?.readerCode ||
                                                                     "N/A"}
                                                             </p>
                                                         </div>
                                                     </td>
 
+                                                    {/* Books */}
                                                     <td className="px-5 py-3.5">
                                                         <div className="max-w-[280px] space-y-1.5">
 
@@ -699,23 +988,25 @@ export default function BorrowingsPage() {
                                                                             }
                                                                             className="flex items-center justify-between gap-3"
                                                                         >
-                                                                                <span className="truncate font-medium text-slate-800">
-                                                                                    {detail.book
-                                                                                            ?.title ||
-                                                                                        "Untitled Book"}
-                                                                                </span>
+                                                                            <span className="truncate font-medium text-slate-800">
+                                                                                {detail
+                                                                                        .book
+                                                                                        ?.title ||
+                                                                                    "Untitled Book"}
+                                                                            </span>
 
                                                                             <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
-                                                                                    ×
+                                                                                ×
                                                                                 {
                                                                                     detail.quantity
                                                                                 }
-                                                                                </span>
+                                                                            </span>
                                                                         </div>
                                                                     )
                                                                 )}
 
-                                                            {(borrowing.details
+                                                            {(borrowing
+                                                                        .details
                                                                         ?.length ||
                                                                     0) >
                                                                 3 && (
@@ -732,67 +1023,116 @@ export default function BorrowingsPage() {
                                                                     </p>
                                                                 )}
 
-                                                            {!borrowing.details
+                                                            {!borrowing
+                                                                .details
                                                                 ?.length && (
                                                                 <span className="text-slate-400">
-                                                                        No book details
-                                                                    </span>
+                                                                    No book details
+                                                                </span>
                                                             )}
                                                         </div>
                                                     </td>
 
+                                                    {/* Borrow Date */}
                                                     <td className="px-5 py-3.5 text-slate-600">
-                                                        {borrowing.borrowDate ||
-                                                            "—"}
+                                                        {borrowing.borrowedAt
+                                                            ? new Date(
+                                                                borrowing.borrowedAt
+                                                            ).toLocaleString(
+                                                                "vi-VN"
+                                                            )
+                                                            : "—"}
                                                     </td>
 
+                                                    {/* Due Date */}
                                                     <td className="px-5 py-3.5 font-medium text-slate-700">
                                                         {borrowing.dueDate ||
                                                             "—"}
                                                     </td>
 
-                                                    <td className="px-5 py-3.5">
-                                                            <span
-                                                                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                                                    isReturned
-                                                                        ? "bg-emerald-50 text-emerald-700"
-                                                                        : isBorrowing
-                                                                            ? "bg-amber-50 text-amber-700"
-                                                                            : isOverdue
-                                                                                ? "bg-rose-50 text-rose-700"
-                                                                                : "bg-slate-100 text-slate-600"
-                                                                }`}
-                                                            >
-                                                                <span
-                                                                    className={`h-1.5 w-1.5 rounded-full ${
-                                                                        isReturned
-                                                                            ? "bg-emerald-500"
-                                                                            : isBorrowing
-                                                                                ? "bg-amber-500"
-                                                                                : isOverdue
-                                                                                    ? "bg-rose-500"
-                                                                                    : "bg-slate-400"
-                                                                    }`}
-                                                                />
-
-                                                                {
-                                                                    borrowing.status
-                                                                }
-                                                            </span>
+                                                    {/* Deposit */}
+                                                    <td className="px-5 py-3.5 font-medium text-slate-700">
+                                                        {Number(
+                                                            borrowing.depositAmount ||
+                                                            0
+                                                        ).toLocaleString(
+                                                            "vi-VN"
+                                                        )}{" "}
+                                                        VND
                                                     </td>
 
-                                                    <td className="px-5 py-3.5 text-right">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                router.push(
-                                                                    `/borrowings/${borrowing.id}`
-                                                                )
-                                                            }
-                                                            className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
+                                                    {/* Status */}
+                                                    <td className="px-5 py-3.5">
+                                                        <span
+                                                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                                                isReturned
+                                                                    ? "bg-emerald-50 text-emerald-700"
+                                                                    : isBorrowing
+                                                                        ? "bg-amber-50 text-amber-700"
+                                                                        : isOverdue
+                                                                            ? "bg-rose-50 text-rose-700"
+                                                                            : "bg-slate-100 text-slate-600"
+                                                            }`}
                                                         >
-                                                            Detail
-                                                        </button>
+                                                            <span
+                                                                className={`h-1.5 w-1.5 rounded-full ${
+                                                                    isReturned
+                                                                        ? "bg-emerald-500"
+                                                                        : isBorrowing
+                                                                            ? "bg-amber-500"
+                                                                            : isOverdue
+                                                                                ? "bg-rose-500"
+                                                                                : "bg-slate-400"
+                                                                }`}
+                                                            />
+
+                                                            {
+                                                                borrowing.status
+                                                            }
+                                                        </span>
+                                                    </td>
+
+                                                    {/* Action */}
+                                                    <td className="px-5 py-3.5 text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    router.push(
+                                                                        `/borrowings/${borrowing.id}`
+                                                                    )
+                                                                }
+                                                                className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
+                                                            >
+                                                                Detail
+                                                            </button>
+
+                                                            {isBorrowing &&
+                                                                borrowing.renewalCount <
+                                                                2 && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            openRenewModal(
+                                                                                borrowing
+                                                                            )
+                                                                        }
+                                                                        className="rounded-md bg-slate-900 px-2.5 py-1 text-xs font-medium text-white shadow-2xs transition hover:bg-slate-800"
+                                                                    >
+                                                                        Renew
+                                                                    </button>
+                                                                )}
+
+                                                            {isBorrowing &&
+                                                                borrowing.renewalCount >=
+                                                                2 && (
+                                                                    <span className="text-[11px] font-medium text-slate-400">
+                                                                        Renewal limit reached
+                                                                    </span>
+                                                                )}
+
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             );
@@ -826,8 +1166,12 @@ export default function BorrowingsPage() {
 
                                     <button
                                         type="button"
-                                        onClick={closeCreateModal}
-                                        disabled={saving}
+                                        onClick={
+                                            closeCreateModal
+                                        }
+                                        disabled={
+                                            saving
+                                        }
                                         className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
                                     >
                                         <svg
@@ -839,7 +1183,9 @@ export default function BorrowingsPage() {
                                             <path
                                                 strokeLinecap="round"
                                                 strokeLinejoin="round"
-                                                strokeWidth={1.5}
+                                                strokeWidth={
+                                                    1.5
+                                                }
                                                 d="M6 18L18 6M6 6l12 12"
                                             />
                                         </svg>
@@ -867,9 +1213,13 @@ export default function BorrowingsPage() {
                                             value={
                                                 selectedReaderId
                                             }
-                                            onChange={(e) =>
+                                            onChange={(
+                                                e
+                                            ) =>
                                                 setSelectedReaderId(
-                                                    e.target.value
+                                                    e
+                                                        .target
+                                                        .value
                                                 )
                                             }
                                             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 outline-none transition focus:border-slate-400 focus:ring-1 focus:ring-slate-400 sm:text-sm"
@@ -880,7 +1230,9 @@ export default function BorrowingsPage() {
 
                                             {readers
                                                 .filter(
-                                                    (reader) =>
+                                                    (
+                                                        reader
+                                                    ) =>
                                                         reader.status ===
                                                         "ACTIVE"
                                                 )
@@ -926,9 +1278,13 @@ export default function BorrowingsPage() {
                                                 value={
                                                     borrowDate
                                                 }
-                                                onChange={(e) =>
+                                                onChange={(
+                                                    e
+                                                ) =>
                                                     setBorrowDate(
-                                                        e.target.value
+                                                        e
+                                                            .target
+                                                            .value
                                                     )
                                                 }
                                                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 outline-none transition focus:border-slate-400 focus:ring-1 focus:ring-slate-400 sm:text-sm"
@@ -991,9 +1347,13 @@ export default function BorrowingsPage() {
                                                 value={
                                                     dueDate
                                                 }
-                                                onChange={(e) =>
+                                                onChange={(
+                                                    e
+                                                ) =>
                                                     setDueDate(
-                                                        e.target.value
+                                                        e
+                                                            .target
+                                                            .value
                                                     )
                                                 }
                                                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 outline-none transition focus:border-slate-400 focus:ring-1 focus:ring-slate-400 sm:text-sm"
@@ -1030,9 +1390,13 @@ export default function BorrowingsPage() {
                                             value={
                                                 bookSearchQuery
                                             }
-                                            onChange={(e) =>
+                                            onChange={(
+                                                e
+                                            ) =>
                                                 setBookSearchQuery(
-                                                    e.target.value
+                                                    e
+                                                        .target
+                                                        .value
                                                 )
                                             }
                                             placeholder="Filter books by title or ISBN..."
@@ -1049,7 +1413,9 @@ export default function BorrowingsPage() {
                                                 </div>
                                             ) : (
                                                 filteredAvailableBooks.map(
-                                                    (book) => {
+                                                    (
+                                                        book
+                                                    ) => {
                                                         const selectedQuantity =
                                                             getSelectedQuantity(
                                                                 book.id
@@ -1086,6 +1452,16 @@ export default function BorrowingsPage() {
                                                                             {
                                                                                 book.isbn
                                                                             }
+                                                                        </span>
+
+                                                                        <span>
+                                                                            Price:{" "}
+                                                                            {Number(
+                                                                                book.price || 0
+                                                                            ).toLocaleString(
+                                                                                "vi-VN"
+                                                                            )}{" "}
+                                                                            VND
                                                                         </span>
 
                                                                         <span>
@@ -1177,8 +1553,7 @@ export default function BorrowingsPage() {
                                                     </p>
 
                                                     <span className="text-[11px] text-slate-400">
-                                                    {
-                                                        selectedBooks.reduce(
+                                                        {selectedBooks.reduce(
                                                             (
                                                                 total,
                                                                 item
@@ -1186,10 +1561,9 @@ export default function BorrowingsPage() {
                                                                 total +
                                                                 item.quantity,
                                                             0
-                                                        )
-                                                    }{" "}
+                                                        )}{" "}
                                                         total copies
-                                                </span>
+                                                    </span>
 
                                                 </div>
 
@@ -1231,12 +1605,29 @@ export default function BorrowingsPage() {
 
                                                                     </div>
 
-                                                                    <span className="shrink-0 text-xs font-medium text-slate-600">
-                                                                    ×{" "}
-                                                                        {
-                                                                            selected.quantity
-                                                                        }
-                                                                </span>
+                                                                    <div className="shrink-0 text-right">
+
+                                                                        <p className="text-xs font-medium text-slate-600">
+                                                                            ×{" "}
+                                                                            {
+                                                                                selected.quantity
+                                                                            }
+                                                                        </p>
+
+                                                                        <p className="mt-0.5 text-[10px] text-slate-400">
+                                                                            {(
+                                                                                Number(
+                                                                                    book?.price ||
+                                                                                    0
+                                                                                ) *
+                                                                                selected.quantity
+                                                                            ).toLocaleString(
+                                                                                "vi-VN"
+                                                                            )}{" "}
+                                                                            VND
+                                                                        </p>
+
+                                                                    </div>
 
                                                                 </div>
                                                             );
@@ -1244,19 +1635,46 @@ export default function BorrowingsPage() {
                                                     )}
 
                                                 </div>
+
+                                                {/* Total Deposit */}
+                                                <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
+
+                                                    <div>
+                                                        <p className="text-xs font-semibold text-slate-800">
+                                                            Total Deposit
+                                                        </p>
+
+                                                        <p className="mt-0.5 text-[11px] text-slate-400">
+                                                            Total value of all borrowed books
+                                                        </p>
+                                                    </div>
+
+                                                    <p className="text-base font-semibold text-slate-900">
+                                                        {totalDeposit.toLocaleString(
+                                                            "vi-VN"
+                                                        )}{" "}
+                                                        VND
+                                                    </p>
+
+                                                </div>
+
                                             </div>
                                         )}
 
                                     {/* Alert messages */}
                                     {error && (
                                         <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
-                                            {error}
+                                            {
+                                                error
+                                            }
                                         </div>
                                     )}
 
                                     {success && (
                                         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700">
-                                            {success}
+                                            {
+                                                success
+                                            }
                                         </div>
                                     )}
 
@@ -1268,7 +1686,9 @@ export default function BorrowingsPage() {
                                             onClick={
                                                 closeCreateModal
                                             }
-                                            disabled={saving}
+                                            disabled={
+                                                saving
+                                            }
                                             className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50 disabled:opacity-50"
                                         >
                                             Cancel
@@ -1298,6 +1718,290 @@ export default function BorrowingsPage() {
                             </div>
                         </div>
                     )}
+
+                    {/* RENEW BORROWING MODAL */}
+                    {showRenewModal &&
+                        selectedBorrowing && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-[2px]">
+
+                                <div className="w-full max-w-md rounded-xl border border-slate-200/80 bg-white shadow-xl">
+
+                                    {/* Modal Header */}
+                                    <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+
+                                        <div>
+                                            <h2 className="text-base font-semibold text-slate-900">
+                                                Renew Borrowing
+                                            </h2>
+
+                                            <p className="mt-0.5 text-xs text-slate-400">
+                                                Extend the due date for this borrowing ticket.
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={
+                                                closeRenewModal
+                                            }
+                                            disabled={
+                                                renewing
+                                            }
+                                            className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
+                                        >
+                                            <svg
+                                                className="h-4 w-4"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={
+                                                        1.5
+                                                    }
+                                                    d="M6 18L18 6M6 6l12 12"
+                                                />
+                                            </svg>
+                                        </button>
+
+                                    </div>
+
+                                    <form
+                                        onSubmit={
+                                            handleRenewBorrowing
+                                        }
+                                        className="space-y-5 p-6"
+                                    >
+
+                                        {/* Borrowing Info */}
+                                        <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
+
+                                            <div className="grid grid-cols-2 gap-4">
+
+                                                <div>
+                                                    <p className="text-[11px] font-medium text-slate-400">
+                                                        Ticket
+                                                    </p>
+
+                                                    <p className="mt-1 font-mono text-sm font-semibold text-slate-800">
+                                                        #
+                                                        {
+                                                            selectedBorrowing.id
+                                                        }
+                                                    </p>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-[11px] font-medium text-slate-400">
+                                                        Reader
+                                                    </p>
+
+                                                    <p className="mt-1 truncate text-sm font-medium text-slate-800">
+                                                        {selectedBorrowing
+                                                                .reader
+                                                                ?.fullName ||
+                                                            "N/A"}
+                                                    </p>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-[11px] font-medium text-slate-400">
+                                                        Current Due Date
+                                                    </p>
+
+                                                    <p className="mt-1 text-sm font-medium text-slate-800">
+                                                        {
+                                                            selectedBorrowing.dueDate
+                                                        }
+                                                    </p>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-[11px] font-medium text-slate-400">
+                                                        Renewals
+                                                    </p>
+
+                                                    <p className="mt-1 text-sm font-semibold text-slate-800">
+                                                        {
+                                                            selectedBorrowing.renewalCount
+                                                        }{" "}
+                                                        / 2
+                                                    </p>
+                                                </div>
+
+                                            </div>
+
+                                        </div>
+
+                                        {/* Renewal Period */}
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-medium text-slate-700">
+                                                Extension Period
+                                            </label>
+
+                                            <select
+                                                value={
+                                                    renewDays
+                                                }
+                                                onChange={(
+                                                    e
+                                                ) =>
+                                                    setRenewDays(
+                                                        Number(
+                                                            e
+                                                                .target
+                                                                .value
+                                                        )
+                                                    )
+                                                }
+                                                disabled={
+                                                    renewing
+                                                }
+                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-1 focus:ring-slate-400 disabled:bg-slate-50"
+                                            >
+                                                <option value={3}>
+                                                    3 days
+                                                </option>
+
+                                                <option value={7}>
+                                                    7 days
+                                                </option>
+
+                                                <option value={14}>
+                                                    14 days
+                                                </option>
+
+                                                <option value={21}>
+                                                    21 days
+                                                </option>
+
+                                                <option value={30}>
+                                                    30 days
+                                                </option>
+                                            </select>
+
+                                            <p className="mt-1.5 text-[11px] text-slate-400">
+                                                Each renewal can extend the due date by 3–30 days.
+                                            </p>
+                                        </div>
+
+                                        {/* Renewal Fee */}
+                                        <div className="rounded-lg border border-slate-200 bg-white p-4">
+
+                                            <div className="flex items-center justify-between">
+
+                                                <div>
+                                                    <p className="text-xs font-medium text-slate-700">
+                                                        Renewal Fee
+                                                    </p>
+
+                                                    <p className="mt-0.5 text-[11px] text-slate-400">
+                                                        1,000 VND per day
+                                                    </p>
+                                                </div>
+
+                                                <p className="text-sm font-semibold text-slate-900">
+                                                    {(renewDays * 1000).toLocaleString("vi-VN")} VND
+                                                </p>
+
+                                            </div>
+
+                                        </div>
+
+                                        {/* Payment Confirmation */}
+                                        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-slate-50/60 p-4 transition hover:bg-slate-50">
+
+                                            <input
+                                                type="checkbox"
+                                                checked={
+                                                    paymentConfirmed
+                                                }
+                                                onChange={(
+                                                    e
+                                                ) =>
+                                                    setPaymentConfirmed(
+                                                        e
+                                                            .target
+                                                            .checked
+                                                    )
+                                                }
+                                                disabled={
+                                                    renewing
+                                                }
+                                                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
+                                            />
+
+                                            <span>
+                                                <span className="block text-xs font-medium text-slate-800">
+                                                    Payment received
+                                                </span>
+
+                                                <span className="mt-0.5 block text-[11px] leading-5 text-slate-400">
+                                                    I confirm that the renewal fee has been collected from the reader.
+                                                </span>
+                                            </span>
+
+                                        </label>
+
+                                        {/* Modal Error */}
+                                        {error && (
+                                            <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+                                                {
+                                                    error
+                                                }
+                                            </div>
+                                        )}
+
+                                        {/* Modal Success */}
+                                        {success && (
+                                            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700">
+                                                {
+                                                    success
+                                                }
+                                            </div>
+                                        )}
+
+                                        {/* Actions */}
+                                        <div className="flex justify-end gap-2.5 border-t border-slate-100 pt-4">
+
+                                            <button
+                                                type="button"
+                                                onClick={
+                                                    closeRenewModal
+                                                }
+                                                disabled={
+                                                    renewing
+                                                }
+                                                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50 disabled:opacity-50"
+                                            >
+                                                Cancel
+                                            </button>
+
+                                            <button
+                                                type="submit"
+                                                disabled={
+                                                    renewing ||
+                                                    !paymentConfirmed
+                                                }
+                                                className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                {renewing && (
+                                                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                                )}
+
+                                                {renewing
+                                                    ? "Renewing..."
+                                                    : "Confirm Renewal"}
+                                            </button>
+
+                                        </div>
+
+                                    </form>
+                                </div>
+                            </div>
+                        )}
 
                 </div>
             </div>

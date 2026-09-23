@@ -2,7 +2,6 @@ package com.library.management.service;
 
 import com.library.management.dto.DashboardResponse;
 import com.library.management.repository.AuthorRepository;
-import com.library.management.repository.BookCopyRepository;
 import com.library.management.repository.BookRepository;
 import com.library.management.repository.BorrowingDetailRepository;
 import com.library.management.repository.BorrowingRepository;
@@ -17,7 +16,6 @@ import org.springframework.stereotype.Service;
 public class DashboardService {
 
     private final BookRepository bookRepository;
-    private final BookCopyRepository bookCopyRepository;
     private final ReaderRepository readerRepository;
     private final AuthorRepository authorRepository;
     private final PublisherRepository publisherRepository;
@@ -29,7 +27,6 @@ public class DashboardService {
 
     public DashboardService(
             BookRepository bookRepository,
-            BookCopyRepository bookCopyRepository,
             ReaderRepository readerRepository,
             AuthorRepository authorRepository,
             PublisherRepository publisherRepository,
@@ -40,7 +37,6 @@ public class DashboardService {
             BorrowingDetailRepository borrowingDetailRepository) {
 
         this.bookRepository = bookRepository;
-        this.bookCopyRepository = bookCopyRepository;
         this.readerRepository = readerRepository;
         this.authorRepository = authorRepository;
         this.publisherRepository = publisherRepository;
@@ -56,8 +52,8 @@ public class DashboardService {
         long totalBooks =
                 bookRepository.count();
 
-        long totalBookCopies =
-                bookCopyRepository.count();
+        long totalBookQuantity =
+                bookRepository.sumTotalQuantity();
 
         long totalReaders =
                 readerRepository.count();
@@ -70,6 +66,10 @@ public class DashboardService {
 
         long totalCategories =
                 categoryRepository.count();
+
+        // Chỉ đếm các phiếu đang có trạng thái BORROWING
+        long activeBorrowings =
+                borrowingRepository.countByStatus("BORROWING");
 
         long totalBorrowings =
                 borrowingRepository.count();
@@ -86,6 +86,9 @@ public class DashboardService {
         long inactiveUsers =
                 userRepository.countByStatus("INACTIVE");
 
+        long todayReturns =
+                borrowingDetailRepository.getTodayReturnedBooks();
+
         long todayFineRevenue =
                 borrowingDetailRepository.getTodayFineRevenue();
 
@@ -94,16 +97,18 @@ public class DashboardService {
 
         return new DashboardResponse(
                 totalBooks,
-                totalBookCopies,
+                totalBookQuantity,
                 totalReaders,
                 totalAuthors,
                 totalPublishers,
                 totalCategories,
+                activeBorrowings,
                 totalBorrowings,
                 totalImportReceipts,
                 totalUsers,
                 activeUsers,
                 inactiveUsers,
+                todayReturns,
                 todayFineRevenue,
                 monthlyFineRevenue
         );

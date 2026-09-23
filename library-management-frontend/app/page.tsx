@@ -104,24 +104,24 @@ export default function Home() {
                 </div>
               </button>
 
-              {/* Book Copies */}
+              {/* Returns Today */}
               <button
                   type="button"
-                  onClick={() => router.push("/book-copies")}
+                  onClick={() => router.push("/borrowings")}
                   className="w-full rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
               >
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Book Copies
+                      Returns Today
                     </p>
 
                     <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                      {dashboard?.totalBookCopies ?? 0}
+                      {dashboard?.todayReturns ?? 0}
                     </p>
 
                     <p className="mt-1 text-xs text-slate-400">
-                      Physical copies
+                      Books returned today
                     </p>
                   </div>
 
@@ -156,7 +156,7 @@ export default function Home() {
                     </p>
 
                     <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                      {dashboard?.totalBorrowings ?? 0}
+                      {dashboard?.activeBorrowings ?? 0}
                     </p>
 
                     <p className="mt-1 text-xs text-slate-400">
@@ -182,24 +182,24 @@ export default function Home() {
                 </div>
               </button>
 
-              {/* Borrow Requests */}
+              {/* Borrowings */}
               <button
                   type="button"
-                  onClick={() => router.push("/staff/borrow-requests")}
+                  onClick={() => router.push("/borrowings")}
                   className="w-full rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
               >
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Borrow Requests
+                      Borrowings
                     </p>
 
                     <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                      2
+                      {dashboard?.totalBorrowings ?? 0}
                     </p>
 
                     <p className="mt-1 text-xs text-slate-400">
-                      Pending requests
+                      Borrowing records
                     </p>
                   </div>
 

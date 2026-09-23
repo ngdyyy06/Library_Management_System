@@ -45,55 +45,21 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
+
+                        // Public APIs
                         .requestMatchers("/api/test").permitAll()
                         .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers("/api/auth/register").permitAll()
 
-                        // User Management
-                        .requestMatchers("/api/users/**").hasRole("ADMIN")
+                        // User Management - Admin only
+                        .requestMatchers("/api/users/**")
+                        .hasRole("ADMIN")
 
-                        // Staff Dashboard
+                        // Staff Dashboard - Librarian only
                         .requestMatchers("/api/staff/dashboard")
                         .hasRole("LIBRARIAN")
 
-                        .requestMatchers(
-                                HttpMethod.PATCH,
-                                "/api/borrow-requests/my/*/cancel"
-                        ).hasRole("READER")
-
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/borrow-requests"
-                        ).hasAnyRole("LIBRARIAN", "ADMIN")
-
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/borrow-requests/*"
-                        ).hasAnyRole("LIBRARIAN", "ADMIN")
-
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/borrow-requests/my"
-                        ).hasRole("READER")
-
-                        // Reader creates borrowing request
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/borrow-requests"
-                        ).hasRole("READER")
-
-                        // Librarian and Admin approve borrowing request
-                        .requestMatchers(
-                                HttpMethod.PATCH,
-                                "/api/borrow-requests/*/approve"
-                        ).hasAnyRole("LIBRARIAN", "ADMIN")
-
-                        // Librarian and Admin reject borrowing request
-                        .requestMatchers(
-                                HttpMethod.PATCH,
-                                "/api/borrow-requests/*/reject"
-                        ).hasAnyRole("LIBRARIAN", "ADMIN")
-
+                        // All remaining APIs require authentication
                         .anyRequest().authenticated()
                 );
 
@@ -110,11 +76,21 @@ public class SecurityConfig {
         );
 
         configuration.setAllowedMethods(
-                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+                List.of(
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "PATCH",
+                        "DELETE",
+                        "OPTIONS"
+                )
         );
 
         configuration.setAllowedHeaders(
-                List.of("Authorization", "Content-Type")
+                List.of(
+                        "Authorization",
+                        "Content-Type"
+                )
         );
 
         configuration.setAllowCredentials(false);

@@ -147,7 +147,7 @@ export default function StaffHomePage() {
 
                         {/* 5. Returns */}
                         <div
-                            onClick={() => router.push("/staff/returns")}
+                            onClick={() => router.push("/staff/return-history")}
                             className="group flex cursor-pointer flex-col justify-between rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs transition hover:border-slate-300 hover:shadow-sm"
                         >
                             <div className="flex items-start justify-between">

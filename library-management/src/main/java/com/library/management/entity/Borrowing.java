@@ -2,6 +2,7 @@ package com.library.management.entity;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -28,6 +29,9 @@ public class Borrowing {
 
     @Column(name = "renewal_count", nullable = false)
     private Integer renewalCount = 0;
+
+    @Column(name = "deposit_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal depositAmount = BigDecimal.ZERO;
 
     public Borrowing() {
     }
@@ -89,5 +93,13 @@ public class Borrowing {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public BigDecimal getDepositAmount() {
+        return depositAmount;
+    }
+
+    public void setDepositAmount(BigDecimal depositAmount) {
+        this.depositAmount = depositAmount;
     }
 }

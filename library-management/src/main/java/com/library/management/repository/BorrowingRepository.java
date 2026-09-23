@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface BorrowingRepository extends JpaRepository<Borrowing, Long> {
     List<Borrowing> findByReaderId(Long readerId);
+
+    long countByStatus(String status);
 }

@@ -1,33 +1,30 @@
 package com.library.management.service;
 
 import com.library.management.dto.CreateReaderRequest;
-import com.library.management.dto.UpdateReaderProfileRequest;
 import com.library.management.entity.Reader;
 import com.library.management.exception.ResourceNotFoundException;
 import com.library.management.repository.ReaderRepository;
-import com.library.management.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
-import com.library.management.entity.User;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Service  // khi spring boot khởi động, spring sẽ tạo ra ReaderService
+@Service
 public class ReaderService {
 
     private final ReaderRepository readerRepository;
-    private final UserRepository userRepository;
 
-    public ReaderService(ReaderRepository readerRepository, UserRepository userRepository) {
+    public ReaderService(ReaderRepository readerRepository) {
         this.readerRepository = readerRepository;
-        this.userRepository = userRepository;
     }
 
-    // lấy tất cả dữ liệu database có về Reader
+    // Lấy tất cả Reader
     public List<Reader> getAllReaders() {
         return readerRepository.findAll();
     }
 
+    // Tạo Reader mới / cấp thẻ thành viên
     public Reader createReader(CreateReaderRequest request) {
 
         if (readerRepository.existsByReaderCode(request.getReaderCode())) {
@@ -48,17 +45,21 @@ public class ReaderService {
         return readerRepository.save(reader);
     }
 
+    // Lấy Reader theo ID
     public Reader getReaderById(Long id) {
-        return readerRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Reader not found!"));
+        return readerRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Reader not found!"));
     }
 
+    // Cập nhật thông tin Reader
     public Reader updateReader(Long id, CreateReaderRequest request) {
 
         Reader reader = readerRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Reader not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Reader not found"));
 
-
-        // kiểm tra ReaderCode trùng với Reader khác
+        // Kiểm tra ReaderCode trùng với Reader khác
         if (readerRepository.existsByReaderCodeAndIdNot(
                 request.getReaderCode(), id)) {
 
@@ -75,13 +76,13 @@ public class ReaderService {
         return readerRepository.save(reader);
     }
 
-    // khoá tài khoản Reader
+    // Khóa thẻ thành viên
     public Reader deactivateReader(Long id) {
 
         Reader reader = readerRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Reader not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Reader not found"));
 
-        // Reader đã dừng hoạt động r thì k xoá
         if ("INACTIVE".equals(reader.getStatus())) {
             throw new RuntimeException("Reader is already inactive");
         }
@@ -91,102 +92,18 @@ public class ReaderService {
         return readerRepository.save(reader);
     }
 
-    // kích hoạt lại Reader
+    // Kích hoạt lại thẻ thành viên
     public Reader activateReader(Long id) {
 
         Reader reader = readerRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Reader not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Reader not found"));
 
         if ("ACTIVE".equals(reader.getStatus())) {
             throw new RuntimeException("Reader is already active");
         }
 
         reader.setStatus("ACTIVE");
-
-        return readerRepository.save(reader);
-    }
-
-    public Reader linkUserToReader(Long readerId, Long userId) {
-
-        Reader reader = readerRepository.findById(readerId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Reader not found"));
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
-
-        if (!"READER".equals(user.getRole().getName())) {
-            throw new RuntimeException(
-                    "Only users with READER role can be linked to a Reader"
-            );
-        }
-
-        if (readerRepository.existsByUserId(userId)) {
-            throw new RuntimeException(
-                    "User is already linked to another Reader"
-            );
-        }
-
-        if (reader.getUser() != null) {
-            throw new RuntimeException(
-                    "Reader is already linked to a User"
-            );
-        }
-
-        reader.setUser(user);
-
-        return readerRepository.save(reader);
-    }
-
-    public Reader getReaderByUsername(String username) {
-
-        return readerRepository.findByUserUsername(username)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Reader not found for this user"));
-    }
-
-    @Transactional
-    public Reader updateMyProfile(
-            String username,
-            UpdateReaderProfileRequest request
-    ) {
-        Reader reader = readerRepository.findByUserUsername(username)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Reader not found for this user"
-                        ));
-
-        User user = reader.getUser();
-
-        if (user == null) {
-            throw new RuntimeException(
-                    "Reader is not linked to a user"
-            );
-        }
-
-        if (request.getEmail() != null
-                && !request.getEmail().isBlank()
-                && !request.getEmail().equals(user.getEmail())
-                && userRepository.existsByEmailAndIdNot(
-                request.getEmail(),
-                user.getId()
-        )) {
-
-            throw new RuntimeException("Email already exists");
-        }
-
-        reader.setFullName(request.getFullName());
-        reader.setEmail(request.getEmail());
-        reader.setPhone(request.getPhone());
-        reader.setAddress(request.getAddress());
-        reader.setDateOfBirth(request.getDateOfBirth());
-
-        // Đồng bộ thông tin tài khoản User
-        user.setFullName(request.getFullName());
-        user.setEmail(request.getEmail());
-
-        userRepository.save(user);
 
         return readerRepository.save(reader);
     }

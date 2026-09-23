@@ -1,6 +1,8 @@
 package com.library.management.service;
 
 import com.library.management.dto.CreateBorrowingRequest;
+import com.library.management.dto.RenewBorrowingRequest;
+import com.library.management.dto.ReturnBookRequest;
 import com.library.management.entity.*;
 import com.library.management.exception.ResourceNotFoundException;
 import com.library.management.repository.*;
@@ -10,30 +12,27 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
-
 // phiếu mượn / 1 lần mượn
-@Service  // đánh giấu đây là tầng xử lí nghiệp vụ
+@Service
 public class BorrowingService {
 
-    private final BorrowingRepository borrowingRepository;  // thao tác với bảng borrowings
-    private final BorrowingDetailRepository borrowingDetailRepository;  // thao tác với bảng borrowing_details
+    private final BorrowingRepository borrowingRepository;
+    private final BorrowingDetailRepository borrowingDetailRepository;
     private final ReaderRepository readerRepository;
-    private final BookCopyRepository bookCopyRepository;
     private final BookRepository bookRepository;
 
     public BorrowingService(
             BorrowingRepository borrowingRepository,
             BorrowingDetailRepository borrowingDetailRepository,
             ReaderRepository readerRepository,
-            BookCopyRepository bookCopyRepository,
             BookRepository bookRepository) {
 
         this.borrowingRepository = borrowingRepository;
         this.borrowingDetailRepository = borrowingDetailRepository;
         this.readerRepository = readerRepository;
-        this.bookCopyRepository = bookCopyRepository;
         this.bookRepository = bookRepository;
     }
 
@@ -44,43 +43,72 @@ public class BorrowingService {
     public Borrowing getBorrowingById(Long id) {
         return borrowingRepository.findById(id)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Borrowing not found"));
+                        new ResourceNotFoundException(
+                                "Borrowing not found"
+                        ));
     }
 
-    public List<BorrowingDetail> getBorrowingDetails(Long borrowingId) {
-        return borrowingDetailRepository.findByBorrowingId(borrowingId);
+    public List<BorrowingDetail> getBorrowingDetails(
+            Long borrowingId) {
+
+        return borrowingDetailRepository
+                .findByBorrowingId(borrowingId);
     }
 
-    public Borrowing renewBorrowing(Long id, String username) {
+    public Borrowing renewBorrowing(
+            Long id,
+            RenewBorrowingRequest request) {
 
         Borrowing borrowing = getBorrowingById(id);
 
-        Reader reader = readerRepository.findByUserUsername(username)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Reader not found for this user"
-                        ));
+        // 1. Chỉ phiếu đang mượn mới được gia hạn
+        if (!"BORROWING".equals(borrowing.getStatus())) {
 
-        if (!borrowing.getReader().getId().equals(reader.getId())) {
+            if ("OVERDUE".equals(borrowing.getStatus())) {
+                throw new RuntimeException(
+                        "Overdue borrowing cannot be renewed. Please return the books."
+                );
+            }
+
+            if ("RETURNED".equals(borrowing.getStatus())) {
+                throw new RuntimeException(
+                        "Returned borrowing cannot be renewed."
+                );
+            }
+
             throw new RuntimeException(
-                    "You are not allowed to renew this borrowing"
+                    "Only active borrowing can be renewed."
             );
         }
 
-        if ("RETURNED".equals(borrowing.getStatus())) {
+        // 2. Kiểm tra số lần gia hạn
+        if (borrowing.getRenewalCount() >= 2) {
             throw new RuntimeException(
-                    "Returned borrowing cannot be renewed"
+                    "This borrowing has reached the maximum renewal limit of 2 times."
             );
         }
 
-        if ("OVERDUE".equals(borrowing.getStatus())) {
+        // 3. Kiểm tra số ngày gia hạn
+        Integer days = request.getDays();
+
+        if (days == null || days < 3 || days > 30) {
             throw new RuntimeException(
-                    "Overdue borrowing cannot be renewed"
+                    "Renewal period must be between 3 and 30 days."
             );
         }
 
+        // 4. Kiểm tra thanh toán
+        if (!Boolean.TRUE.equals(
+                request.getPaymentConfirmed())) {
+
+            throw new RuntimeException(
+                    "Renewal requires payment confirmation."
+            );
+        }
+
+        // 5. Gia hạn
         borrowing.setDueDate(
-                borrowing.getDueDate().plusDays(7)
+                borrowing.getDueDate().plusDays(days)
         );
 
         borrowing.setRenewalCount(
@@ -90,110 +118,199 @@ public class BorrowingService {
         return borrowingRepository.save(borrowing);
     }
 
-    @Transactional // yêu cầu full thao tác thành công
-    public Borrowing borrowBooks(CreateBorrowingRequest request) {
+    @Transactional
+    public Borrowing borrowBooks(
+            CreateBorrowingRequest request) {
 
         // 1. Tìm độc giả
-        Reader reader = readerRepository.findById(request.getReaderId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Reader not found"));
+        Reader reader =
+                readerRepository.findById(request.getReaderId())
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Reader not found"
+                                ));
 
         // 2. Kiểm tra độc giả đang hoạt động
         if (!"ACTIVE".equals(reader.getStatus())) {
-            throw new RuntimeException("Reader is not active");
+            throw new RuntimeException(
+                    "Reader is not active"
+            );
         }
 
-        List<Borrowing> borrowings = borrowingRepository.findByReaderId(reader.getId());
+        // 3. Kiểm tra độc giả có phiếu quá hạn
+        List<Borrowing> borrowings =
+                borrowingRepository
+                        .findByReaderId(reader.getId());
 
-        // Reader bị chặn mượn khi đang có 1 phiếu mượn quá hạn trả
         for (Borrowing borrowing : borrowings) {
-            if ("OVERDUE".equals(borrowing.getStatus())) {
+
+            if ("OVERDUE".equals(
+                    borrowing.getStatus())) {
+
                 throw new RuntimeException(
                         "Reader has an overdue borrowing"
                 );
             }
         }
 
-        // 3. Kiểm tra số lượng sách mượn trong 1 lần
-        if (request.getBookCopyIds().size() > 5) {
-            throw new RuntimeException("A reader can borrow maximum 5 books");
-        }
+        // 4. Kiểm tra tổng số lượng sách trong lần mượn
+        int totalQuantity =
+                request.getBooks()
+                        .stream()
+                        .mapToInt(
+                                CreateBorrowingRequest
+                                        .BookBorrowItem::getQuantity
+                        )
+                        .sum();
 
-        // xử lí trường hợp nhập trùng bản sách
-        if (request.getBookCopyIds().stream().distinct().count()
-                != request.getBookCopyIds().size()) {
-
+        if (totalQuantity > 5) {
             throw new RuntimeException(
-                    "Duplicate book copy is not allowed"
+                    "A reader can borrow maximum 5 books"
             );
         }
 
-        // tìm bản sách hợp lệ để cho mượn
-        for (Long bookCopyId : request.getBookCopyIds()) {
+        // 5. Kiểm tra sách không bị trùng
+        long distinctBookCount =
+                request.getBooks()
+                        .stream()
+                        .map(
+                                CreateBorrowingRequest
+                                        .BookBorrowItem::getBookId
+                        )
+                        .distinct()
+                        .count();
 
-            BookCopy bookCopy = bookCopyRepository.findById(bookCopyId)
-                    .orElseThrow(() ->
-                            new ResourceNotFoundException("Book copy not found: " + bookCopyId));
+        if (distinctBookCount !=
+                request.getBooks().size()) {
 
-            if (!"ACTIVE".equals(bookCopy.getBook().getStatus())) {
-                throw new RuntimeException(
-                        "Book is inactive: " + bookCopy.getBook().getTitle()
-                );
-            }
-
-            if (!"AVAILABLE".equals(bookCopy.getStatus())) {
-                throw new RuntimeException(
-                        "Book copy is not available: " + bookCopyId
-                );
-            }
+            throw new RuntimeException(
+                    "Duplicate book is not allowed"
+            );
         }
 
-        long currentBorrowedBooks =
-                borrowingDetailRepository.countUnreturnedBooksByReaderId(reader.getId());
+        // 6. Kiểm tra từng sách
+        List<Book> books = new ArrayList<>();
 
-        // kiểm tra điều kiện mượn thêm
-        if (currentBorrowedBooks + request.getBookCopyIds().size() > 5) {
+        for (
+                CreateBorrowingRequest.BookBorrowItem item
+                : request.getBooks()
+        ) {
+
+            Book book =
+                    bookRepository.findById(item.getBookId())
+                            .orElseThrow(() ->
+                                    new ResourceNotFoundException(
+                                            "Book not found: "
+                                                    + item.getBookId()
+                                    ));
+
+            if (!"ACTIVE".equals(book.getStatus())) {
+                throw new RuntimeException(
+                        "Book is inactive: "
+                                + book.getTitle()
+                );
+            }
+
+            if (book.getAvailableQuantity()
+                    < item.getQuantity()) {
+
+                throw new RuntimeException(
+                        "Not enough available books: "
+                                + book.getTitle()
+                );
+            }
+
+            books.add(book);
+        }
+
+        // 7. Kiểm tra tổng số sách reader đang mượn
+        long currentBorrowedBooks =
+                borrowingDetailRepository
+                        .countUnreturnedBooksByReaderId(
+                                reader.getId()
+                        );
+
+        if (currentBorrowedBooks + totalQuantity > 5) {
             throw new RuntimeException(
                     "Reader cannot borrow more than 5 books"
             );
         }
 
-        Borrowing borrowing = new Borrowing(
-                null,
-                reader,
-                LocalDateTime.now(),
-                LocalDate.now().plusDays(7),
-                "BORROWING"
-        );
+        // 8. Tính tiền đặt cọc
+        BigDecimal depositAmount =
+                BigDecimal.ZERO;
+
+        for (int i = 0;
+             i < request.getBooks().size();
+             i++) {
+
+            CreateBorrowingRequest.BookBorrowItem item =
+                    request.getBooks().get(i);
+
+            Book book = books.get(i);
+
+            BigDecimal bookDeposit =
+                    book.getPrice()
+                            .multiply(
+                                    BigDecimal.valueOf(
+                                            item.getQuantity()
+                                    )
+                            );
+
+            depositAmount =
+                    depositAmount.add(bookDeposit);
+        }
+
+        // 9. Tạo phiếu mượn
+        Borrowing borrowing =
+                new Borrowing(
+                        null,
+                        reader,
+                        LocalDateTime.now(),
+                        LocalDate.now().plusDays(7),
+                        "BORROWING"
+                );
 
         borrowing.setRenewalCount(0);
-        borrowing = borrowingRepository.save(borrowing);
+        borrowing.setDepositAmount(depositAmount);
 
-        // lưu từng bản sách của 1 phiếu mượn vào borrowing_details
-        for (Long bookCopyId : request.getBookCopyIds()) {
+        borrowing =
+                borrowingRepository.save(borrowing);
 
-            BookCopy bookCopy = bookCopyRepository.findById(bookCopyId)
-                    .orElseThrow(() ->
-                            new ResourceNotFoundException(
-                                    "Book copy not found: " + bookCopyId
-                            ));
+        // 10. Tạo chi tiết mượn
+        for (int i = 0;
+             i < request.getBooks().size();
+             i++) {
 
-            BorrowingDetail detail = new BorrowingDetail();
+            CreateBorrowingRequest.BookBorrowItem item =
+                    request.getBooks().get(i);
+
+            Book book = books.get(i);
+
+            BorrowingDetail detail =
+                    new BorrowingDetail();
 
             detail.setBorrowing(borrowing);
-            detail.setBookCopy(bookCopy);
+            detail.setBook(book);
+            detail.setQuantity(item.getQuantity());
+
+            detail.setGoodQuantity(0);
+            detail.setDamagedQuantity(0);
+            detail.setLostQuantity(0);
+
             detail.setReturnedAt(null);
+
             detail.setFine(0);
+            detail.setDamageFine(
+                    BigDecimal.ZERO
+            );
 
             borrowingDetailRepository.save(detail);
-            bookCopy.setStatus("BORROWED");
-            bookCopyRepository.save(bookCopy);
 
-            // set lại số bản sách có thể cho mượn còn lại
-            Book book = bookCopy.getBook();
-
+            // 11. Giảm số lượng sách có thể cho mượn
             book.setAvailableQuantity(
-                    book.getAvailableQuantity() - 1
+                    book.getAvailableQuantity()
+                            - item.getQuantity()
             );
 
             bookRepository.save(book);
@@ -202,87 +319,191 @@ public class BorrowingService {
         return borrowing;
     }
 
-    public BorrowingDetail returnBook(Long detailId, String condition) {
+    // =========================================================
+    // TRẢ SÁCH
+    // =========================================================
 
-        BorrowingDetail detail = borrowingDetailRepository.findById(detailId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Borrowing detail not found"));
+    @Transactional
+    public BorrowingDetail returnBook(
+            Long detailId,
+            ReturnBookRequest request) {
 
-        if (detail.getReturnedAt() != null) {
-            throw new RuntimeException("Book has already been returned");
-        }
+        BorrowingDetail detail =
+                borrowingDetailRepository
+                        .findById(detailId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Borrowing detail not found"
+                                ));
 
-        if (!"GOOD".equals(condition)
-                && !"DAMAGED".equals(condition)
-                && !"LOST".equals(condition)) {
+        Book book = detail.getBook();
+
+        // Số lượng đã trả trước đó
+        int alreadyReturned =
+                detail.getGoodQuantity()
+                        + detail.getDamagedQuantity()
+                        + detail.getLostQuantity();
+
+        // Số lượng còn phải trả
+        int remainingQuantity =
+                detail.getQuantity() - alreadyReturned;
+
+        // Số lượng trả trong lần này
+        int goodQuantity =
+                request.getGoodQuantity();
+
+        int damagedQuantity =
+                request.getDamagedQuantity();
+
+        int lostQuantity =
+                request.getLostQuantity();
+
+        // Không cho số lượng âm
+        if (goodQuantity < 0
+                || damagedQuantity < 0
+                || lostQuantity < 0) {
 
             throw new RuntimeException(
-                    "Invalid return condition. Allowed values: GOOD, DAMAGED, LOST"
+                    "Return quantities cannot be negative"
             );
         }
 
-        BookCopy bookCopy = detail.getBookCopy();
-        Book book = bookCopy.getBook();
+        int currentReturnedQuantity =
+                goodQuantity
+                        + damagedQuantity
+                        + lostQuantity;
 
-        // Xử lý tình trạng sách
-        if ("GOOD".equals(condition)) {
+        // Không được trả 0 sách
+        if (currentReturnedQuantity <= 0) {
 
-            bookCopy.setStatus("AVAILABLE");
-
-        } else if ("DAMAGED".equals(condition)) {
-
-            bookCopy.setStatus("DAMAGED");
-
-        } else if ("LOST".equals(condition)) {
-
-            bookCopy.setStatus("LOST");
+            throw new RuntimeException(
+                    "At least one book must be returned"
+            );
         }
 
-        bookCopyRepository.save(bookCopy);
+        // Không được trả nhiều hơn số còn lại
+        if (currentReturnedQuantity > remainingQuantity) {
 
-        // Chỉ sách trả bình thường mới quay lại số lượng có sẵn
-        if ("GOOD".equals(condition)) {
+            throw new RuntimeException(
+                    "Return quantity cannot exceed the remaining quantity of "
+                            + remainingQuantity
+            );
+        }
+
+        // =========================================================
+        // CỘNG DỒN SỐ LƯỢNG ĐÃ TRẢ
+        // =========================================================
+
+        detail.setGoodQuantity(
+                detail.getGoodQuantity() + goodQuantity
+        );
+
+        detail.setDamagedQuantity(
+                detail.getDamagedQuantity() + damagedQuantity
+        );
+
+        detail.setLostQuantity(
+                detail.getLostQuantity() + lostQuantity
+        );
+
+        // =========================================================
+        // SÁCH GOOD QUAY LẠI KHO
+        // =========================================================
+
+        if (goodQuantity > 0) {
 
             book.setAvailableQuantity(
-                    book.getAvailableQuantity() + 1
+                    book.getAvailableQuantity()
+                            + goodQuantity
             );
         }
 
-        // Tính tiền phạt trả muộn
-        int lateFine = calculateFine(detail);
+        // =========================================================
+        // TÍNH PHÍ TRẢ MUỘN
+        // =========================================================
 
-        detail.setFine(lateFine);
+        int lateFine =
+                calculateFine(detail);
 
-        // Tính phí hỏng / mất
-        BigDecimal damageFine = BigDecimal.ZERO;
+        detail.setFine(
+                detail.getFine() + lateFine
+        );
 
-        if ("DAMAGED".equals(condition)) {
+        // =========================================================
+        // PHÍ DAMAGE
+        // 50.000 / 1 sách hỏng
+        // =========================================================
 
-            damageFine = new BigDecimal("50000");
+        BigDecimal damageFine =
+                BigDecimal.valueOf(damagedQuantity)
+                        .multiply(
+                                new BigDecimal("50000")
+                        );
 
-        } else if ("LOST".equals(condition)) {
+        // =========================================================
+        // PHÍ LOST
+        // Giá sách × số sách mất
+        // =========================================================
 
-            damageFine = book.getPrice();
+        BigDecimal lostFine =
+                book.getPrice()
+                        .multiply(
+                                BigDecimal.valueOf(
+                                        lostQuantity
+                                )
+                        );
+
+        BigDecimal currentDamageFine =
+                damageFine.add(lostFine);
+
+        detail.setDamageFine(
+                detail.getDamageFine()
+                        .add(currentDamageFine)
+        );
+
+        // =========================================================
+        // KIỂM TRA ĐÃ TRẢ HẾT CHƯA
+        // =========================================================
+
+        int totalReturnedAfterThisTime =
+                detail.getGoodQuantity()
+                        + detail.getDamagedQuantity()
+                        + detail.getLostQuantity();
+
+        if (totalReturnedAfterThisTime
+                == detail.getQuantity()) {
+
+            detail.setReturnedAt(
+                    LocalDateTime.now()
+            );
         }
 
-        detail.setDamageFine(damageFine);
-
-        detail.setReturnedAt(LocalDateTime.now());
-
         borrowingDetailRepository.save(detail);
+
         bookRepository.save(book);
 
-        Borrowing borrowing = detail.getBorrowing();
+        // =========================================================
+        // CẬP NHẬT TRẠNG THÁI PHIẾU MƯỢN
+        // =========================================================
+
+        Borrowing borrowing =
+                detail.getBorrowing();
 
         long unreturnedBooks =
-                borrowingDetailRepository.countUnreturnedBooksByBorrowingId(
-                        borrowing.getId()
-                );
+                borrowingDetailRepository
+                        .countUnreturnedBooksByBorrowingId(
+                                borrowing.getId()
+                        );
 
         if (unreturnedBooks == 0) {
+
             borrowing.setStatus("RETURNED");
+
         } else {
-            borrowing.setStatus("PARTIALLY_RETURNED");
+
+            borrowing.setStatus(
+                    "PARTIALLY_RETURNED"
+            );
         }
 
         borrowingRepository.save(borrowing);
@@ -290,54 +511,73 @@ public class BorrowingService {
         return detail;
     }
 
-    // tự động phát hiện quá hạn trả sách
+    // =========================================================
+    // OVERDUE
+    // =========================================================
+
     public void updateOverdueBorrowings() {
 
-        List<Borrowing> borrowings = borrowingRepository.findAll();
+        List<Borrowing> borrowings =
+                borrowingRepository.findAll();
 
         for (Borrowing borrowing : borrowings) {
 
-            if ("BORROWING".equals(borrowing.getStatus())
-                    && LocalDate.now().isAfter(borrowing.getDueDate())) {
+            if ("BORROWING".equals(
+                    borrowing.getStatus())
+                    && LocalDate.now().isAfter(
+                    borrowing.getDueDate())) {
 
-                borrowing.setStatus("OVERDUE");
+                borrowing.setStatus(
+                        "OVERDUE"
+                );
 
-                borrowingRepository.save(borrowing);
+                borrowingRepository.save(
+                        borrowing
+                );
             }
         }
     }
 
-    public int calculateFine(BorrowingDetail detail) {
+    // =========================================================
+    // TÍNH PHÍ TRẢ MUỘN
+    // =========================================================
 
-        Borrowing borrowing = detail.getBorrowing();
+    public int calculateFine(
+            BorrowingDetail detail) {
 
-        if (!LocalDate.now().isAfter(borrowing.getDueDate())) {
+        Borrowing borrowing =
+                detail.getBorrowing();
+
+        if (!LocalDate.now().isAfter(
+                borrowing.getDueDate())) {
+
             return 0;
         }
 
-        // tính so ngày quá hạn
-        long overdueDays = java.time.temporal.ChronoUnit.DAYS.between(
-                borrowing.getDueDate(),
-                LocalDate.now()
+        long overdueDays =
+                java.time.temporal.ChronoUnit.DAYS
+                        .between(
+                                borrowing.getDueDate(),
+                                LocalDate.now()
+                        );
+
+        return (int) (
+                overdueDays * 5000
         );
-
-        return (int) (overdueDays * 5000);
     }
 
-    // tìm phiếu mượn sách theo id
-    public BorrowingDetail getBorrowingDetailById(Long detailId) {
-        return borrowingDetailRepository.findById(detailId)
-                .orElseThrow(() -> new ResourceNotFoundException("Borrowing detail not found"));
-    }
+    // =========================================================
+    // GET DETAIL
+    // =========================================================
 
-    public List<Borrowing> getMyBorrowings(String username) {
+    public BorrowingDetail getBorrowingDetailById(
+            Long detailId) {
 
-        Reader reader = readerRepository.findByUserUsername(username)
+        return borrowingDetailRepository
+                .findById(detailId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Reader not found for this user"
+                                "Borrowing detail not found"
                         ));
-
-        return borrowingRepository.findByReaderId(reader.getId());
     }
 }

@@ -3,11 +3,12 @@ package com.library.management.dto;
 public class DashboardResponse {
 
     private long totalBooks;
-    private long totalBookCopies;
+    private long totalBookQuantity;
     private long totalReaders;
     private long totalAuthors;
     private long totalPublishers;
     private long totalCategories;
+    private long activeBorrowings;
     private long totalBorrowings;
     private long totalImportReceipts;
 
@@ -15,6 +16,7 @@ public class DashboardResponse {
     private long activeUsers;
     private long inactiveUsers;
 
+    private long todayReturns;
     private long todayFineRevenue;
     private long monthlyFineRevenue;
 
@@ -23,25 +25,28 @@ public class DashboardResponse {
 
     public DashboardResponse(
             long totalBooks,
-            long totalBookCopies,
+            long totalBookQuantity,
             long totalReaders,
             long totalAuthors,
             long totalPublishers,
             long totalCategories,
+            long activeBorrowings,
             long totalBorrowings,
             long totalImportReceipts,
             long totalUsers,
             long activeUsers,
             long inactiveUsers,
+            long todayReturns,
             long todayFineRevenue,
             long monthlyFineRevenue) {
 
         this.totalBooks = totalBooks;
-        this.totalBookCopies = totalBookCopies;
+        this.totalBookQuantity = totalBookQuantity;
         this.totalReaders = totalReaders;
         this.totalAuthors = totalAuthors;
         this.totalPublishers = totalPublishers;
         this.totalCategories = totalCategories;
+        this.activeBorrowings = activeBorrowings;
         this.totalBorrowings = totalBorrowings;
         this.totalImportReceipts = totalImportReceipts;
 
@@ -49,6 +54,7 @@ public class DashboardResponse {
         this.activeUsers = activeUsers;
         this.inactiveUsers = inactiveUsers;
 
+        this.todayReturns = todayReturns;
         this.todayFineRevenue = todayFineRevenue;
         this.monthlyFineRevenue = monthlyFineRevenue;
     }
@@ -61,12 +67,12 @@ public class DashboardResponse {
         this.totalBooks = totalBooks;
     }
 
-    public long getTotalBookCopies() {
-        return totalBookCopies;
+    public long getTotalBookQuantity() {
+        return totalBookQuantity;
     }
 
-    public void setTotalBookCopies(long totalBookCopies) {
-        this.totalBookCopies = totalBookCopies;
+    public void setTotalBookQuantity(long totalBookQuantity) {
+        this.totalBookQuantity = totalBookQuantity;
     }
 
     public long getTotalReaders() {
@@ -139,6 +145,22 @@ public class DashboardResponse {
 
     public void setInactiveUsers(long inactiveUsers) {
         this.inactiveUsers = inactiveUsers;
+    }
+
+    public long getTodayReturns() {
+        return todayReturns;
+    }
+
+    public void setTodayReturns(long todayReturns) {
+        this.todayReturns = todayReturns;
+    }
+
+    public long getActiveBorrowings() {
+        return activeBorrowings;
+    }
+
+    public void setActiveBorrowings(long activeBorrowings) {
+        this.activeBorrowings = activeBorrowings;
     }
 
     public long getTodayFineRevenue() {

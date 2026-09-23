@@ -4,7 +4,6 @@ import com.library.management.entity.Author;
 import com.library.management.entity.Book;
 import com.library.management.exception.ResourceNotFoundException;
 import com.library.management.repository.AuthorRepository;
-import com.library.management.repository.BookCopyRepository;
 import com.library.management.repository.BookRepository;
 import org.springframework.stereotype.Service;
 
@@ -15,12 +14,13 @@ public class AuthorService {
 
     private final AuthorRepository authorRepository;
     private final BookRepository bookRepository;
-    private final BookCopyRepository bookCopyRepository;
 
-    public AuthorService(AuthorRepository authorRepository, BookRepository bookRepository, BookCopyRepository bookCopyRepository) {
+    public AuthorService(
+            AuthorRepository authorRepository,
+            BookRepository bookRepository) {
+
         this.authorRepository = authorRepository;
         this.bookRepository = bookRepository;
-        this.bookCopyRepository = bookCopyRepository;
     }
 
     public Author createAuthor(Author author) {
@@ -88,22 +88,20 @@ public class AuthorService {
 
         List<Book> books = bookRepository.findBooksByAuthorId(id);
 
-        // kiểm tra xem tất cả author active k
+        // Kiểm tra tất cả author của Book đã ACTIVE chưa
         for (Book book : books) {
+
             boolean allAuthorsActive = book.getAuthors()
                     .stream()
                     .allMatch(a -> "ACTIVE".equals(a.getStatus()));
 
             if (allAuthorsActive) {
+
                 book.setStatus("ACTIVE");
 
-                long availableQuantity =
-                        bookCopyRepository.countByBookIdAndStatus(
-                                book.getId(),
-                                "AVAILABLE"
-                        );
-
-                book.setAvailableQuantity((int) availableQuantity);
+                book.setAvailableQuantity(
+                        book.getTotalQuantity()
+                );
             }
         }
 
