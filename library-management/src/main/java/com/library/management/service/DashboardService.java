@@ -9,8 +9,11 @@ import com.library.management.repository.CategoryRepository;
 import com.library.management.repository.ImportReceiptRepository;
 import com.library.management.repository.PublisherRepository;
 import com.library.management.repository.ReaderRepository;
+import com.library.management.repository.RenewalPaymentRepository;
 import com.library.management.repository.UserRepository;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 
 @Service
 public class DashboardService {
@@ -24,6 +27,7 @@ public class DashboardService {
     private final ImportReceiptRepository importReceiptRepository;
     private final UserRepository userRepository;
     private final BorrowingDetailRepository borrowingDetailRepository;
+    private final RenewalPaymentRepository renewalPaymentRepository;
 
     public DashboardService(
             BookRepository bookRepository,
@@ -34,7 +38,8 @@ public class DashboardService {
             BorrowingRepository borrowingRepository,
             ImportReceiptRepository importReceiptRepository,
             UserRepository userRepository,
-            BorrowingDetailRepository borrowingDetailRepository) {
+            BorrowingDetailRepository borrowingDetailRepository,
+            RenewalPaymentRepository renewalPaymentRepository) {
 
         this.bookRepository = bookRepository;
         this.readerRepository = readerRepository;
@@ -45,6 +50,7 @@ public class DashboardService {
         this.importReceiptRepository = importReceiptRepository;
         this.userRepository = userRepository;
         this.borrowingDetailRepository = borrowingDetailRepository;
+        this.renewalPaymentRepository = renewalPaymentRepository;
     }
 
     public DashboardResponse getDashboard() {
@@ -89,11 +95,36 @@ public class DashboardService {
         long todayReturns =
                 borrowingDetailRepository.getTodayReturnedBooks();
 
+        // =========================================================
+        // DOANH THU HÔM NAY
+        // = TIỀN PHẠT + PHÍ GIA HẠN
+        // =========================================================
+
         long todayFineRevenue =
                 borrowingDetailRepository.getTodayFineRevenue();
 
+        BigDecimal todayRenewalRevenue =
+                renewalPaymentRepository.getTodayRenewalRevenue();
+
+        long todayRevenue =
+                todayFineRevenue
+                        + todayRenewalRevenue.longValue();
+
+        // =========================================================
+        // DOANH THU THÁNG NÀY
+        // = TIỀN PHẠT + PHÍ GIA HẠN
+        // =========================================================
+
         long monthlyFineRevenue =
                 borrowingDetailRepository.getMonthlyFineRevenue();
+
+        BigDecimal monthlyRenewalRevenue =
+                renewalPaymentRepository
+                        .getMonthlyRenewalRevenue();
+
+        long monthlyRevenue =
+                monthlyFineRevenue
+                        + monthlyRenewalRevenue.longValue();
 
         return new DashboardResponse(
                 totalBooks,
@@ -109,8 +140,8 @@ public class DashboardService {
                 activeUsers,
                 inactiveUsers,
                 todayReturns,
-                todayFineRevenue,
-                monthlyFineRevenue
+                todayRevenue,
+                monthlyRevenue
         );
     }
 }

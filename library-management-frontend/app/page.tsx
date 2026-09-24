@@ -175,7 +175,7 @@ export default function Home() {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={1.6}
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.121 5.121A2 2 0 0118 9.121V19a2 2 0 01-2 2z"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a2 2 0 01.707.293l5.121 5.121A2 2 0 0118 9.121V19a2 2 0 01-2 2z"
                       />
                     </svg>
                   </div>
@@ -223,10 +223,10 @@ export default function Home() {
 
             </div>
 
-            {/* ── Fine Revenue ── */}
+            {/* ── Revenue ── */}
             <div className="grid gap-4 lg:grid-cols-2">
 
-              {/* Today's Fine Revenue */}
+              {/* Today's Revenue */}
               <button
                   type="button"
                   onClick={() => router.push("/borrowings")}
@@ -238,13 +238,13 @@ export default function Home() {
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
 
                       <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                        Today&apos;s Fine Revenue
+                        Today&apos;s Revenue
                       </p>
                     </div>
 
                     <div className="mt-3 flex items-baseline gap-1.5">
                       <span className="text-3xl font-bold tracking-tight text-slate-900">
-                        {(dashboard?.todayFineRevenue ?? 0).toLocaleString("vi-VN")}
+                        {(dashboard?.todayRevenue ?? 0).toLocaleString("vi-VN")}
                       </span>
 
                       <span className="text-sm font-semibold text-slate-500">
@@ -253,7 +253,7 @@ export default function Home() {
                     </div>
 
                     <p className="mt-1.5 text-xs text-slate-400">
-                      Fine revenue collected today
+                      Total revenue collected today
                     </p>
                   </div>
 
@@ -263,7 +263,7 @@ export default function Home() {
                 </div>
               </button>
 
-              {/* This Month's Fine Revenue */}
+              {/* This Month's Revenue */}
               <button
                   type="button"
                   onClick={() => router.push("/borrowings")}
@@ -275,13 +275,13 @@ export default function Home() {
                       <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
 
                       <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                        This Month&apos;s Fine Revenue
+                        This Month&apos;s Revenue
                       </p>
                     </div>
 
                     <div className="mt-3 flex items-baseline gap-1.5">
                       <span className="text-3xl font-bold tracking-tight text-slate-900">
-                        {(dashboard?.monthlyFineRevenue ?? 0).toLocaleString("vi-VN")}
+                        {(dashboard?.monthlyRevenue ?? 0).toLocaleString("vi-VN")}
                       </span>
 
                       <span className="text-sm font-semibold text-slate-500">
@@ -290,7 +290,7 @@ export default function Home() {
                     </div>
 
                     <p className="mt-1.5 text-xs text-slate-400">
-                      Fine revenue collected this month
+                      Total revenue collected this month
                     </p>
                   </div>
 

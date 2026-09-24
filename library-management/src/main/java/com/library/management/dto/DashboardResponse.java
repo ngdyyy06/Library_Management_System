@@ -17,8 +17,10 @@ public class DashboardResponse {
     private long inactiveUsers;
 
     private long todayReturns;
-    private long todayFineRevenue;
-    private long monthlyFineRevenue;
+
+    // Tổng doanh thu = tiền phạt + phí gia hạn
+    private long todayRevenue;
+    private long monthlyRevenue;
 
     public DashboardResponse() {
     }
@@ -37,8 +39,8 @@ public class DashboardResponse {
             long activeUsers,
             long inactiveUsers,
             long todayReturns,
-            long todayFineRevenue,
-            long monthlyFineRevenue) {
+            long todayRevenue,
+            long monthlyRevenue) {
 
         this.totalBooks = totalBooks;
         this.totalBookQuantity = totalBookQuantity;
@@ -55,8 +57,8 @@ public class DashboardResponse {
         this.inactiveUsers = inactiveUsers;
 
         this.todayReturns = todayReturns;
-        this.todayFineRevenue = todayFineRevenue;
-        this.monthlyFineRevenue = monthlyFineRevenue;
+        this.todayRevenue = todayRevenue;
+        this.monthlyRevenue = monthlyRevenue;
     }
 
     public long getTotalBooks() {
@@ -107,6 +109,14 @@ public class DashboardResponse {
         this.totalCategories = totalCategories;
     }
 
+    public long getActiveBorrowings() {
+        return activeBorrowings;
+    }
+
+    public void setActiveBorrowings(long activeBorrowings) {
+        this.activeBorrowings = activeBorrowings;
+    }
+
     public long getTotalBorrowings() {
         return totalBorrowings;
     }
@@ -155,27 +165,19 @@ public class DashboardResponse {
         this.todayReturns = todayReturns;
     }
 
-    public long getActiveBorrowings() {
-        return activeBorrowings;
+    public long getTodayRevenue() {
+        return todayRevenue;
     }
 
-    public void setActiveBorrowings(long activeBorrowings) {
-        this.activeBorrowings = activeBorrowings;
+    public void setTodayRevenue(long todayRevenue) {
+        this.todayRevenue = todayRevenue;
     }
 
-    public long getTodayFineRevenue() {
-        return todayFineRevenue;
+    public long getMonthlyRevenue() {
+        return monthlyRevenue;
     }
 
-    public void setTodayFineRevenue(long todayFineRevenue) {
-        this.todayFineRevenue = todayFineRevenue;
-    }
-
-    public long getMonthlyFineRevenue() {
-        return monthlyFineRevenue;
-    }
-
-    public void setMonthlyFineRevenue(long monthlyFineRevenue) {
-        this.monthlyFineRevenue = monthlyFineRevenue;
+    public void setMonthlyRevenue(long monthlyRevenue) {
+        this.monthlyRevenue = monthlyRevenue;
     }
 }

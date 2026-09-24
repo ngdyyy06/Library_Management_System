@@ -19,53 +19,51 @@ export default function UsersPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [roleFilter, setRoleFilter] = useState("ALL");
 
-    const [editingUser, setEditingUser] = useState<any | null>(null);
+    const [editingUser, setEditingUser] =
+        useState<any | null>(null);
 
-    const [newPassword, setNewPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
+    const [newPassword, setNewPassword] =
+        useState("");
 
-    const [editUsername, setEditUsername] = useState("");
-    const [editFullName, setEditFullName] = useState("");
-    const [editEmail, setEditEmail] = useState("");
-    const [editRoleId, setEditRoleId] = useState(3);
+    const [confirmPassword, setConfirmPassword] =
+        useState("");
 
-    const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+    const [editUsername, setEditUsername] =
+        useState("");
 
-    const [newUsername, setNewUsername] = useState("");
-    const [newFullName, setNewFullName] = useState("");
-    const [newEmail, setNewEmail] = useState("");
-    const [newUserPassword, setNewUserPassword] = useState("");
-    const [newRoleId, setNewRoleId] = useState(3);
+    const [editFullName, setEditFullName] =
+        useState("");
 
-    const filteredUsers = users.filter((user) => {
+    const [editEmail, setEditEmail] =
+        useState("");
 
-        const matchesSearch =
-            user.username
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase()) ||
-            user.fullName
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase()) ||
-            (user.email || "")
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase());
+    // 1 = ADMIN
+    // 2 = LIBRARIAN
+    const [editRoleId, setEditRoleId] =
+        useState(2);
 
-        const matchesRole =
-            roleFilter === "ALL" ||
-            user.role === roleFilter;
+    const [isAddUserOpen, setIsAddUserOpen] =
+        useState(false);
 
-        return matchesSearch && matchesRole;
-    });
+    const [newUsername, setNewUsername] =
+        useState("");
 
-    const totalUsers = users.length;
+    const [newFullName, setNewFullName] =
+        useState("");
 
-    const activeUsers = users.filter(
-        (u) => u.status === "ACTIVE"
-    ).length;
+    const [newEmail, setNewEmail] =
+        useState("");
 
-    const inactiveUsers = users.filter(
-        (u) => u.status !== "ACTIVE"
-    ).length;
+    const [newUserPassword, setNewUserPassword] =
+        useState("");
+
+    // Default = LIBRARIAN
+    const [newRoleId, setNewRoleId] =
+        useState(2);
+
+    // =========================================================
+    // LOAD USERS
+    // =========================================================
 
     useEffect(() => {
 
@@ -74,7 +72,21 @@ export default function UsersPage() {
             try {
 
                 const data = await getUsers();
-                setUsers(data);
+
+                /*
+                 * Users Management only displays
+                 * ADMIN and LIBRARIAN accounts.
+                 *
+                 * READER accounts are managed
+                 * in the separate Readers module.
+                 */
+                const systemUsers = data.filter(
+                    (user: any) =>
+                        user.role === "ADMIN" ||
+                        user.role === "LIBRARIAN"
+                );
+
+                setUsers(systemUsers);
 
             } catch (error) {
 
@@ -87,47 +99,104 @@ export default function UsersPage() {
 
     }, []);
 
-    const getRoleBadge = (role: string) => {
+    // =========================================================
+    // SEARCH & FILTER
+    // =========================================================
 
-        switch (role) {
+    const filteredUsers = users.filter((user) => {
 
-            case "ADMIN":
+        const username =
+            user.username?.toLowerCase() || "";
 
-                return (
-                    <span className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
-                        ADMIN
-                    </span>
-                );
+        const fullName =
+            user.fullName?.toLowerCase() || "";
 
-            case "LIBRARIAN":
+        const email =
+            user.email?.toLowerCase() || "";
 
-                return (
-                    <span className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
-                        LIBRARIAN
-                    </span>
-                );
+        const keyword =
+            searchTerm.toLowerCase();
 
-            default:
+        const matchesSearch =
+            username.includes(keyword) ||
+            fullName.includes(keyword) ||
+            email.includes(keyword);
 
-                return (
-                    <span className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
-                        READER
-                    </span>
-                );
+        const matchesRole =
+            roleFilter === "ALL" ||
+            user.role === roleFilter;
+
+        return (
+            matchesSearch &&
+            matchesRole
+        );
+    });
+
+    // =========================================================
+    // STATISTICS
+    // =========================================================
+
+    const totalUsers =
+        users.length;
+
+    const activeUsers =
+        users.filter(
+            (user) =>
+                user.status === "ACTIVE"
+        ).length;
+
+    const inactiveUsers =
+        users.filter(
+            (user) =>
+                user.status !== "ACTIVE"
+        ).length;
+
+    // =========================================================
+    // ROLE BADGE
+    // =========================================================
+
+    const getRoleBadge = (
+        role: string
+    ) => {
+
+        if (role === "ADMIN") {
+
+            return (
+                <span className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
+                    ADMIN
+                </span>
+            );
         }
+
+        return (
+            <span className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
+                LIBRARIAN
+            </span>
+        );
     };
+
+    // =========================================================
+    // INPUT STYLE
+    // =========================================================
 
     const inputCls =
         "w-full rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-gray-400 focus:bg-white focus:ring-2 focus:ring-gray-200";
 
+    // =========================================================
+    // RENDER
+    // =========================================================
+
     return (
+
         <RoleGuard allowedRoles={["ADMIN"]}>
 
             <div className="min-h-screen bg-white p-6 sm:p-8 lg:p-10">
 
                 <div className="mx-auto max-w-7xl space-y-8">
 
-                    {/* Header */}
+                    {/* ================================================= */}
+                    {/* HEADER */}
+                    {/* ================================================= */}
 
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
@@ -138,7 +207,7 @@ export default function UsersPage() {
                             </h1>
 
                             <p className="mt-1 text-sm text-gray-400">
-                                Manage user accounts, roles and permission status.
+                                Manage administrator and librarian accounts.
                             </p>
 
                         </div>
@@ -153,7 +222,9 @@ export default function UsersPage() {
                                 setNewFullName("");
                                 setNewEmail("");
                                 setNewUserPassword("");
-                                setNewRoleId(3);
+
+                                // Default role = Librarian
+                                setNewRoleId(2);
 
                             }}
                             className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700"
@@ -163,9 +234,13 @@ export default function UsersPage() {
 
                     </div>
 
-                    {/* Stat Cards */}
+                    {/* ================================================= */}
+                    {/* STAT CARDS */}
+                    {/* ================================================= */}
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+
+                        {/* Total */}
 
                         <div className="rounded-lg border border-gray-100 bg-gray-50 p-5">
 
@@ -178,10 +253,12 @@ export default function UsersPage() {
                             </p>
 
                             <p className="mt-0.5 text-xs text-gray-400">
-                                Registered accounts
+                                Admin and librarian accounts
                             </p>
 
                         </div>
+
+                        {/* Active */}
 
                         <div className="rounded-lg border border-gray-100 bg-gray-50 p-5">
 
@@ -198,6 +275,8 @@ export default function UsersPage() {
                             </p>
 
                         </div>
+
+                        {/* Inactive */}
 
                         <div className="rounded-lg border border-gray-100 bg-gray-50 p-5">
 
@@ -217,11 +296,15 @@ export default function UsersPage() {
 
                     </div>
 
-                    {/* Table Card */}
+                    {/* ================================================= */}
+                    {/* TABLE CARD */}
+                    {/* ================================================= */}
 
                     <div className="overflow-hidden rounded-lg border border-gray-200">
 
-                        {/* Search & Filter */}
+                        {/* ================================================= */}
+                        {/* SEARCH & FILTER */}
+                        {/* ================================================= */}
 
                         <div className="flex flex-col gap-3 border-b border-gray-100 bg-gray-50 px-4 py-3 sm:flex-row sm:items-center">
 
@@ -229,7 +312,9 @@ export default function UsersPage() {
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) =>
-                                    setSearchTerm(e.target.value)
+                                    setSearchTerm(
+                                        e.target.value
+                                    )
                                 }
                                 placeholder="Search by username, name or email..."
                                 className="flex-1 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200 sm:max-w-sm"
@@ -238,7 +323,9 @@ export default function UsersPage() {
                             <select
                                 value={roleFilter}
                                 onChange={(e) =>
-                                    setRoleFilter(e.target.value)
+                                    setRoleFilter(
+                                        e.target.value
+                                    )
                                 }
                                 className="rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm text-gray-700 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
                             >
@@ -255,15 +342,13 @@ export default function UsersPage() {
                                     Librarian
                                 </option>
 
-                                <option value="READER">
-                                    Reader
-                                </option>
-
                             </select>
 
                         </div>
 
-                        {/* Table */}
+                        {/* ================================================= */}
+                        {/* TABLE */}
+                        {/* ================================================= */}
 
                         <div className="overflow-x-auto">
 
@@ -322,210 +407,273 @@ export default function UsersPage() {
 
                                 ) : (
 
-                                    filteredUsers.map((user) => {
+                                    filteredUsers.map(
+                                        (user) => {
 
-                                        const isActive =
-                                            user.status === "ACTIVE";
+                                            const isActive =
+                                                user.status === "ACTIVE";
 
-                                        return (
+                                            return (
 
-                                            <tr
-                                                key={user.id}
-                                                className="transition hover:bg-gray-50"
-                                            >
+                                                <tr
+                                                    key={user.id}
+                                                    className="transition hover:bg-gray-50"
+                                                >
 
-                                                <td className="px-5 py-3.5 font-mono text-xs text-gray-400">
-                                                    #{user.id}
-                                                </td>
+                                                    {/* ID */}
 
-                                                <td className="px-5 py-3.5 font-medium text-gray-800">
-                                                    {user.username}
-                                                </td>
+                                                    <td className="px-5 py-3.5 font-mono text-xs text-gray-400">
+                                                        #{user.id}
+                                                    </td>
 
-                                                <td className="px-5 py-3.5 text-gray-600">
-                                                    {user.fullName}
-                                                </td>
+                                                    {/* Username */}
 
-                                                <td className="px-5 py-3.5 text-gray-500">
+                                                    <td className="px-5 py-3.5 font-medium text-gray-800">
+                                                        {user.username}
+                                                    </td>
 
-                                                    {user.email || (
+                                                    {/* Full Name */}
 
-                                                        <span className="text-gray-300">
-                                                            —
-                                                        </span>
+                                                    <td className="px-5 py-3.5 text-gray-600">
+                                                        {user.fullName}
+                                                    </td>
 
-                                                    )}
+                                                    {/* Email */}
 
-                                                </td>
+                                                    <td className="px-5 py-3.5 text-gray-500">
 
-                                                <td className="px-5 py-3.5">
-                                                    {getRoleBadge(user.role)}
-                                                </td>
+                                                        {user.email || (
 
-                                                <td className="px-5 py-3.5">
-
-                                                    <span
-                                                        className={`inline-flex items-center gap-1.5 text-xs font-semibold ${
-                                                            isActive
-                                                                ? "text-emerald-600"
-                                                                : "text-gray-400"
-                                                        }`}
-                                                    >
-
-                                                        <span
-                                                            className={`h-1.5 w-1.5 rounded-full ${
-                                                                isActive
-                                                                    ? "bg-emerald-500"
-                                                                    : "bg-gray-300"
-                                                            }`}
-                                                        />
-
-                                                        {user.status}
-
-                                                    </span>
-
-                                                </td>
-
-                                                <td className="px-5 py-3.5 text-right">
-
-                                                    <div className="flex items-center justify-end gap-1">
-
-                                                        {/* View */}
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                router.push(
-                                                                    `/users/${user.id}`
-                                                                )
-                                                            }
-                                                            className="rounded-md px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-100"
-                                                        >
-                                                            View
-                                                        </button>
-
-                                                        {/* Edit */}
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-
-                                                                setEditingUser(user);
-
-                                                                setNewPassword("");
-                                                                setConfirmPassword("");
-
-                                                                setEditUsername(
-                                                                    user.username
-                                                                );
-
-                                                                setEditFullName(
-                                                                    user.fullName
-                                                                );
-
-                                                                setEditEmail(
-                                                                    user.email || ""
-                                                                );
-
-                                                                setEditRoleId(
-                                                                    user.role === "ADMIN"
-                                                                        ? 1
-                                                                        : user.role === "LIBRARIAN"
-                                                                            ? 2
-                                                                            : 3
-                                                                );
-
-                                                            }}
-                                                            className="rounded-md px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-100"
-                                                        >
-                                                            Edit
-                                                        </button>
-
-                                                        {/* Activate / Deactivate */}
-
-                                                        {isActive ? (
-
-                                                            <button
-                                                                type="button"
-                                                                onClick={async () => {
-
-                                                                    if (
-                                                                        !window.confirm(
-                                                                            `Deactivate "${user.username}"?`
-                                                                        )
-                                                                    ) {
-                                                                        return;
-                                                                    }
-
-                                                                    try {
-
-                                                                        await deactivateUser(
-                                                                            user.id
-                                                                        );
-
-                                                                        setUsers(
-                                                                            await getUsers()
-                                                                        );
-
-                                                                    } catch (e) {
-
-                                                                        console.error(e);
-
-                                                                    }
-
-                                                                }}
-                                                                className="rounded-md px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50"
-                                                            >
-                                                                Deactivate
-                                                            </button>
-
-                                                        ) : (
-
-                                                            <button
-                                                                type="button"
-                                                                onClick={async () => {
-
-                                                                    if (
-                                                                        !window.confirm(
-                                                                            `Activate "${user.username}"?`
-                                                                        )
-                                                                    ) {
-                                                                        return;
-                                                                    }
-
-                                                                    try {
-
-                                                                        await activateUser(
-                                                                            user.id
-                                                                        );
-
-                                                                        setUsers(
-                                                                            await getUsers()
-                                                                        );
-
-                                                                    } catch (e) {
-
-                                                                        console.error(e);
-
-                                                                    }
-
-                                                                }}
-                                                                className="rounded-md px-2.5 py-1.5 text-xs font-medium text-emerald-600 transition hover:bg-emerald-50"
-                                                            >
-                                                                Activate
-                                                            </button>
+                                                            <span className="text-gray-300">
+                                                                —
+                                                            </span>
 
                                                         )}
 
-                                                    </div>
+                                                    </td>
 
-                                                </td>
+                                                    {/* Role */}
 
-                                            </tr>
+                                                    <td className="px-5 py-3.5">
 
-                                        );
+                                                        {getRoleBadge(
+                                                            user.role
+                                                        )}
 
-                                    })
+                                                    </td>
+
+                                                    {/* Status */}
+
+                                                    <td className="px-5 py-3.5">
+
+                                                        <span
+                                                            className={`inline-flex items-center gap-1.5 text-xs font-semibold ${
+                                                                isActive
+                                                                    ? "text-emerald-600"
+                                                                    : "text-gray-400"
+                                                            }`}
+                                                        >
+
+                                                            <span
+                                                                className={`h-1.5 w-1.5 rounded-full ${
+                                                                    isActive
+                                                                        ? "bg-emerald-500"
+                                                                        : "bg-gray-300"
+                                                                }`}
+                                                            />
+
+                                                            {user.status}
+
+                                                        </span>
+
+                                                    </td>
+
+                                                    {/* Actions */}
+
+                                                    <td className="px-5 py-3.5 text-right">
+
+                                                        <div className="flex items-center justify-end gap-1">
+
+                                                            {/* View */}
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    router.push(
+                                                                        `/users/${user.id}`
+                                                                    )
+                                                                }
+                                                                className="rounded-md px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-100"
+                                                            >
+                                                                View
+                                                            </button>
+
+                                                            {/* Edit */}
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+
+                                                                    setEditingUser(
+                                                                        user
+                                                                    );
+
+                                                                    setNewPassword(
+                                                                        ""
+                                                                    );
+
+                                                                    setConfirmPassword(
+                                                                        ""
+                                                                    );
+
+                                                                    setEditUsername(
+                                                                        user.username
+                                                                    );
+
+                                                                    setEditFullName(
+                                                                        user.fullName
+                                                                    );
+
+                                                                    setEditEmail(
+                                                                        user.email ||
+                                                                        ""
+                                                                    );
+
+                                                                    /*
+                                                                     * Only ADMIN
+                                                                     * and LIBRARIAN
+                                                                     */
+                                                                    setEditRoleId(
+                                                                        user.role ===
+                                                                        "ADMIN"
+                                                                            ? 1
+                                                                            : 2
+                                                                    );
+
+                                                                }}
+                                                                className="rounded-md px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-100"
+                                                            >
+                                                                Edit
+                                                            </button>
+
+                                                            {/* Activate / Deactivate */}
+
+                                                            {isActive ? (
+
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={async () => {
+
+                                                                        if (
+                                                                            !window.confirm(
+                                                                                `Deactivate "${user.username}"?`
+                                                                            )
+                                                                        ) {
+                                                                            return;
+                                                                        }
+
+                                                                        try {
+
+                                                                            await deactivateUser(
+                                                                                user.id
+                                                                            );
+
+                                                                            const data =
+                                                                                await getUsers();
+
+                                                                            const systemUsers =
+                                                                                data.filter(
+                                                                                    (item: any) =>
+                                                                                        item.role ===
+                                                                                        "ADMIN" ||
+                                                                                        item.role ===
+                                                                                        "LIBRARIAN"
+                                                                                );
+
+                                                                            setUsers(
+                                                                                systemUsers
+                                                                            );
+
+                                                                        } catch (
+                                                                            error
+                                                                            ) {
+
+                                                                            console.error(
+                                                                                error
+                                                                            );
+
+                                                                        }
+
+                                                                    }}
+                                                                    className="rounded-md px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                                                                >
+                                                                    Deactivate
+                                                                </button>
+
+                                                            ) : (
+
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={async () => {
+
+                                                                        if (
+                                                                            !window.confirm(
+                                                                                `Activate "${user.username}"?`
+                                                                            )
+                                                                        ) {
+                                                                            return;
+                                                                        }
+
+                                                                        try {
+
+                                                                            await activateUser(
+                                                                                user.id
+                                                                            );
+
+                                                                            const data =
+                                                                                await getUsers();
+
+                                                                            const systemUsers =
+                                                                                data.filter(
+                                                                                    (item: any) =>
+                                                                                        item.role ===
+                                                                                        "ADMIN" ||
+                                                                                        item.role ===
+                                                                                        "LIBRARIAN"
+                                                                                );
+
+                                                                            setUsers(
+                                                                                systemUsers
+                                                                            );
+
+                                                                        } catch (
+                                                                            error
+                                                                            ) {
+
+                                                                            console.error(
+                                                                                error
+                                                                            );
+
+                                                                        }
+
+                                                                    }}
+                                                                    className="rounded-md px-2.5 py-1.5 text-xs font-medium text-emerald-600 transition hover:bg-emerald-50"
+                                                                >
+                                                                    Activate
+                                                                </button>
+
+                                                            )}
+
+                                                        </div>
+
+                                                    </td>
+
+                                                </tr>
+
+                                            );
+
+                                        }
+                                    )
 
                                 )}
 
@@ -542,7 +690,7 @@ export default function UsersPage() {
             </div>
 
             {/* ========================================================= */}
-            {/* Edit User Modal */}
+            {/* EDIT USER MODAL */}
             {/* ========================================================= */}
 
             {editingUser && (
@@ -550,6 +698,8 @@ export default function UsersPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
 
                     <div className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-xl">
+
+                        {/* Header */}
 
                         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
 
@@ -593,7 +743,11 @@ export default function UsersPage() {
 
                         </div>
 
+                        {/* Form */}
+
                         <div className="max-h-[70vh] space-y-4 overflow-y-auto p-5">
+
+                            {/* Username */}
 
                             <div>
 
@@ -605,12 +759,16 @@ export default function UsersPage() {
                                     type="text"
                                     value={editUsername}
                                     onChange={(e) =>
-                                        setEditUsername(e.target.value)
+                                        setEditUsername(
+                                            e.target.value
+                                        )
                                     }
                                     className={inputCls}
                                 />
 
                             </div>
+
+                            {/* Full Name */}
 
                             <div>
 
@@ -622,12 +780,16 @@ export default function UsersPage() {
                                     type="text"
                                     value={editFullName}
                                     onChange={(e) =>
-                                        setEditFullName(e.target.value)
+                                        setEditFullName(
+                                            e.target.value
+                                        )
                                     }
                                     className={inputCls}
                                 />
 
                             </div>
+
+                            {/* Email */}
 
                             <div>
 
@@ -639,12 +801,16 @@ export default function UsersPage() {
                                     type="email"
                                     value={editEmail}
                                     onChange={(e) =>
-                                        setEditEmail(e.target.value)
+                                        setEditEmail(
+                                            e.target.value
+                                        )
                                     }
                                     className={inputCls}
                                 />
 
                             </div>
+
+                            {/* Password */}
 
                             <div className="grid grid-cols-2 gap-3">
 
@@ -658,7 +824,9 @@ export default function UsersPage() {
                                         type="password"
                                         value={newPassword}
                                         onChange={(e) =>
-                                            setNewPassword(e.target.value)
+                                            setNewPassword(
+                                                e.target.value
+                                            )
                                         }
                                         placeholder="Leave blank to keep"
                                         className={inputCls}
@@ -676,7 +844,9 @@ export default function UsersPage() {
                                         type="password"
                                         value={confirmPassword}
                                         onChange={(e) =>
-                                            setConfirmPassword(e.target.value)
+                                            setConfirmPassword(
+                                                e.target.value
+                                            )
                                         }
                                         placeholder="Confirm"
                                         className={inputCls}
@@ -685,6 +855,8 @@ export default function UsersPage() {
                                 </div>
 
                             </div>
+
+                            {/* Role */}
 
                             <div>
 
@@ -696,7 +868,9 @@ export default function UsersPage() {
                                     value={editRoleId}
                                     onChange={(e) =>
                                         setEditRoleId(
-                                            Number(e.target.value)
+                                            Number(
+                                                e.target.value
+                                            )
                                         )
                                     }
                                     className={inputCls}
@@ -710,15 +884,13 @@ export default function UsersPage() {
                                         Librarian
                                     </option>
 
-                                    <option value={3}>
-                                        Reader
-                                    </option>
-
                                 </select>
 
                             </div>
 
                         </div>
+
+                        {/* Footer */}
 
                         <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-4">
 
@@ -736,9 +908,13 @@ export default function UsersPage() {
                                 type="button"
                                 onClick={async () => {
 
-                                    if (!editingUser) return;
+                                    if (!editingUser) {
+                                        return;
+                                    }
 
-                                    if (!editUsername.trim()) {
+                                    if (
+                                        !editUsername.trim()
+                                    ) {
 
                                         window.alert(
                                             "Username is required."
@@ -747,7 +923,9 @@ export default function UsersPage() {
                                         return;
                                     }
 
-                                    if (!editFullName.trim()) {
+                                    if (
+                                        !editFullName.trim()
+                                    ) {
 
                                         window.alert(
                                             "Full Name is required."
@@ -758,7 +936,8 @@ export default function UsersPage() {
 
                                     if (
                                         newPassword &&
-                                        newPassword !== confirmPassword
+                                        newPassword !==
+                                        confirmPassword
                                     ) {
 
                                         window.alert(
@@ -773,34 +952,61 @@ export default function UsersPage() {
                                         await updateUser(
                                             editingUser.id,
                                             {
-                                                username: editUsername,
-                                                password: newPassword,
-                                                fullName: editFullName,
-                                                email: editEmail,
-                                                roleId: editRoleId
+                                                username:
+                                                editUsername,
+                                                password:
+                                                newPassword,
+                                                fullName:
+                                                editFullName,
+                                                email:
+                                                editEmail,
+                                                roleId:
+                                                editRoleId,
                                             }
                                         );
 
+                                        const data =
+                                            await getUsers();
+
+                                        const systemUsers =
+                                            data.filter(
+                                                (item: any) =>
+                                                    item.role ===
+                                                    "ADMIN" ||
+                                                    item.role ===
+                                                    "LIBRARIAN"
+                                            );
+
                                         setUsers(
-                                            await getUsers()
+                                            systemUsers
                                         );
 
-                                        setEditingUser(null);
+                                        setEditingUser(
+                                            null
+                                        );
 
-                                        setNewPassword("");
-                                        setConfirmPassword("");
+                                        setNewPassword(
+                                            ""
+                                        );
+
+                                        setConfirmPassword(
+                                            ""
+                                        );
 
                                         window.alert(
                                             "User updated successfully."
                                         );
 
-                                    } catch (error) {
+                                    } catch (
+                                        error
+                                        ) {
 
                                         window.alert(
                                             error instanceof Error
                                                 ? error.message
                                                 : "Failed to update user."
                                         );
+
                                     }
 
                                 }}
@@ -818,7 +1024,7 @@ export default function UsersPage() {
             )}
 
             {/* ========================================================= */}
-            {/* Add User Modal */}
+            {/* ADD USER MODAL */}
             {/* ========================================================= */}
 
             {isAddUserOpen && (
@@ -826,6 +1032,8 @@ export default function UsersPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
 
                     <div className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-xl">
+
+                        {/* Header */}
 
                         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
 
@@ -836,7 +1044,7 @@ export default function UsersPage() {
                                 </h2>
 
                                 <p className="text-xs text-gray-400">
-                                    Add a new account to the system
+                                    Add an administrator or librarian account
                                 </p>
 
                             </div>
@@ -844,7 +1052,9 @@ export default function UsersPage() {
                             <button
                                 type="button"
                                 onClick={() =>
-                                    setIsAddUserOpen(false)
+                                    setIsAddUserOpen(
+                                        false
+                                    )
                                 }
                                 className="rounded-md p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
                             >
@@ -869,7 +1079,11 @@ export default function UsersPage() {
 
                         </div>
 
+                        {/* Form */}
+
                         <div className="max-h-[70vh] space-y-4 overflow-y-auto p-5">
+
+                            {/* Username */}
 
                             <div>
 
@@ -884,13 +1098,17 @@ export default function UsersPage() {
                                     type="text"
                                     value={newUsername}
                                     onChange={(e) =>
-                                        setNewUsername(e.target.value)
+                                        setNewUsername(
+                                            e.target.value
+                                        )
                                     }
                                     placeholder="e.g. john_doe"
                                     className={inputCls}
                                 />
 
                             </div>
+
+                            {/* Full Name */}
 
                             <div>
 
@@ -905,13 +1123,17 @@ export default function UsersPage() {
                                     type="text"
                                     value={newFullName}
                                     onChange={(e) =>
-                                        setNewFullName(e.target.value)
+                                        setNewFullName(
+                                            e.target.value
+                                        )
                                     }
                                     placeholder="e.g. John Doe"
                                     className={inputCls}
                                 />
 
                             </div>
+
+                            {/* Email */}
 
                             <div>
 
@@ -923,13 +1145,17 @@ export default function UsersPage() {
                                     type="email"
                                     value={newEmail}
                                     onChange={(e) =>
-                                        setNewEmail(e.target.value)
+                                        setNewEmail(
+                                            e.target.value
+                                        )
                                     }
                                     placeholder="e.g. john@example.com"
                                     className={inputCls}
                                 />
 
                             </div>
+
+                            {/* Password */}
 
                             <div>
 
@@ -942,15 +1168,21 @@ export default function UsersPage() {
 
                                 <input
                                     type="password"
-                                    value={newUserPassword}
+                                    value={
+                                        newUserPassword
+                                    }
                                     onChange={(e) =>
-                                        setNewUserPassword(e.target.value)
+                                        setNewUserPassword(
+                                            e.target.value
+                                        )
                                     }
                                     placeholder="Enter initial password"
                                     className={inputCls}
                                 />
 
                             </div>
+
+                            {/* Role */}
 
                             <div>
 
@@ -962,7 +1194,9 @@ export default function UsersPage() {
                                     value={newRoleId}
                                     onChange={(e) =>
                                         setNewRoleId(
-                                            Number(e.target.value)
+                                            Number(
+                                                e.target.value
+                                            )
                                         )
                                     }
                                     className={inputCls}
@@ -976,22 +1210,22 @@ export default function UsersPage() {
                                         Librarian
                                     </option>
 
-                                    <option value={3}>
-                                        Reader
-                                    </option>
-
                                 </select>
 
                             </div>
 
                         </div>
 
+                        {/* Footer */}
+
                         <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-4">
 
                             <button
                                 type="button"
                                 onClick={() =>
-                                    setIsAddUserOpen(false)
+                                    setIsAddUserOpen(
+                                        false
+                                    )
                                 }
                                 className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
                             >
@@ -1002,7 +1236,9 @@ export default function UsersPage() {
                                 type="button"
                                 onClick={async () => {
 
-                                    if (!newUsername.trim()) {
+                                    if (
+                                        !newUsername.trim()
+                                    ) {
 
                                         window.alert(
                                             "Username is required."
@@ -1011,7 +1247,9 @@ export default function UsersPage() {
                                         return;
                                     }
 
-                                    if (!newFullName.trim()) {
+                                    if (
+                                        !newFullName.trim()
+                                    ) {
 
                                         window.alert(
                                             "Full Name is required."
@@ -1020,7 +1258,9 @@ export default function UsersPage() {
                                         return;
                                     }
 
-                                    if (!newUserPassword.trim()) {
+                                    if (
+                                        !newUserPassword.trim()
+                                    ) {
 
                                         window.alert(
                                             "Password is required."
@@ -1032,36 +1272,72 @@ export default function UsersPage() {
                                     try {
 
                                         await createUser({
-                                            username: newUsername,
-                                            password: newUserPassword,
-                                            fullName: newFullName,
-                                            email: newEmail,
-                                            roleId: newRoleId
+                                            username:
+                                            newUsername,
+                                            password:
+                                            newUserPassword,
+                                            fullName:
+                                            newFullName,
+                                            email:
+                                            newEmail,
+                                            roleId:
+                                            newRoleId,
                                         });
 
+                                        const data =
+                                            await getUsers();
+
+                                        const systemUsers =
+                                            data.filter(
+                                                (item: any) =>
+                                                    item.role ===
+                                                    "ADMIN" ||
+                                                    item.role ===
+                                                    "LIBRARIAN"
+                                            );
+
                                         setUsers(
-                                            await getUsers()
+                                            systemUsers
                                         );
 
-                                        setIsAddUserOpen(false);
+                                        setIsAddUserOpen(
+                                            false
+                                        );
 
-                                        setNewUsername("");
-                                        setNewFullName("");
-                                        setNewEmail("");
-                                        setNewUserPassword("");
-                                        setNewRoleId(3);
+                                        setNewUsername(
+                                            ""
+                                        );
+
+                                        setNewFullName(
+                                            ""
+                                        );
+
+                                        setNewEmail(
+                                            ""
+                                        );
+
+                                        setNewUserPassword(
+                                            ""
+                                        );
+
+                                        setNewRoleId(
+                                            2
+                                        );
 
                                         window.alert(
                                             "User created successfully."
                                         );
 
-                                    } catch (error) {
+                                    } catch (
+                                        error
+                                        ) {
 
                                         window.alert(
                                             error instanceof Error
                                                 ? error.message
                                                 : "Failed to create user."
                                         );
+
                                     }
 
                                 }}

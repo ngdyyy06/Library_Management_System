@@ -1443,3 +1443,39 @@ export async function updateMyStaffProfile(data: {
 
     return response.json();
 }
+
+export async function getReturnHistory() {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/borrowings/return-history`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    const text = await response.text();
+
+    let result: any = null;
+
+    if (text) {
+        try {
+            result = JSON.parse(text);
+        } catch {
+            result = null;
+        }
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            result?.message ||
+            text ||
+            "Failed to get return history"
+        );
+    }
+
+    return result;
+}

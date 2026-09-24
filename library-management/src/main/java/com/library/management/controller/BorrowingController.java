@@ -5,6 +5,7 @@ import com.library.management.dto.RenewBorrowingRequest;
 import com.library.management.dto.ReturnBookRequest;
 import com.library.management.entity.Borrowing;
 import com.library.management.entity.BorrowingDetail;
+import com.library.management.entity.ReturnHistory;
 import com.library.management.service.BorrowingService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -76,6 +77,13 @@ public class BorrowingController {
                 borrowingService.getAllBorrowings();
 
         return ResponseEntity.ok(borrowings);
+    }
+
+    @GetMapping("/return-history")
+    public ResponseEntity<List<ReturnHistory>> getReturnHistory() {
+        return ResponseEntity.ok(
+                borrowingService.getReturnHistory()
+        );
     }
 
     @GetMapping("/{id}")

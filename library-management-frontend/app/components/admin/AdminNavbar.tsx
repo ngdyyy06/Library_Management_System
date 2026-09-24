@@ -178,6 +178,25 @@ export default function AdminNavbar() {
                         </svg>
                     ),
                 },
+                {
+                    name: "Readers",
+                    href: "/staff/readers",
+                    icon: (
+                        <svg
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.7}
+                                d="M16 19a4 4 0 00-8 0M12 15a3 3 0 100-6 3 3 0 000 6zM19 19a3 3 0 00-2.5-2.96M17 9a3 3 0 012.5 4.96"
+                            />
+                        </svg>
+                    ),
+                },
             ],
         },
     ];
