@@ -55,6 +55,25 @@ export default function AdminNavbar() {
                     ),
                 },
                 {
+                    name: "Book Shelf",
+                    href: "/book-shelves",
+                    icon: (
+                        <svg
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.7}
+                                d="M4 5.5A2.5 2.5 0 016.5 3H20v17H6.5A2.5 2.5 0 014 17.5v-12zM8 7h8M8 11h8M8 15h5"
+                            />
+                        </svg>
+                    ),
+                },
+                {
                     name: "Authors",
                     href: "/authors",
                     icon: (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     getBooks,
@@ -10,12 +10,14 @@ import {
     activateBook,
     deactivateBook,
     getPublishers,
+    getCategories,
 } from "../lib/api";
 
 export default function BooksPage() {
     const [books, setBooks] = useState<any[]>([]);
     const [authors, setAuthors] = useState<any[]>([]);
     const [publishers, setPublishers] = useState<any[]>([]);
+    const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     const [showAddForm, setShowAddForm] = useState(false);
@@ -38,7 +40,13 @@ export default function BooksPage() {
         description: "",
         authorIds: [] as number[],
         authorNames: "",
+        categoryIds: [] as number[],
+        primaryCategoryId: "",
     });
+
+    // =========================================================
+    // LOAD DATA
+    // =========================================================
 
     useEffect(() => {
         loadInitialData();
@@ -52,6 +60,7 @@ export default function BooksPage() {
                 loadBooks(),
                 loadAuthors(),
                 loadPublishers(),
+                loadCategories(),
             ]);
         } finally {
             setLoading(false);
@@ -91,6 +100,23 @@ export default function BooksPage() {
         }
     };
 
+    const loadCategories = async () => {
+        try {
+            const data = await getCategories();
+
+            setCategories(data || []);
+        } catch (error) {
+            console.error(
+                "Failed to load categories:",
+                error
+            );
+        }
+    };
+
+    // =========================================================
+    // RESET FORM
+    // =========================================================
+
     const resetForm = () => {
         setFormData({
             title: "",
@@ -103,15 +129,112 @@ export default function BooksPage() {
             description: "",
             authorIds: [],
             authorNames: "",
+            categoryIds: [],
+            primaryCategoryId: "",
         });
+    };
+
+    // =========================================================
+    // CATEGORY HELPERS
+    // =========================================================
+
+    const getSelectedPrimaryCategory = () => {
+        if (!formData.primaryCategoryId) {
+            return null;
+        }
+
+        return (
+            categories.find(
+                (category) =>
+                    Number(category.id) ===
+                    Number(formData.primaryCategoryId)
+            ) || null
+        );
+    };
+
+    const selectedPrimaryCategory =
+        getSelectedPrimaryCategory();
+
+    const selectedShelf =
+        selectedPrimaryCategory?.defaultShelf || null;
+
+    const handleCategoryChange = (
+        event: React.ChangeEvent<HTMLSelectElement>
+    ) => {
+        const selectedIds = Array.from(
+            event.target.selectedOptions
+        ).map((option) => Number(option.value));
+
+        setFormData((prev) => {
+            const primaryStillSelected =
+                prev.primaryCategoryId &&
+                selectedIds.includes(
+                    Number(prev.primaryCategoryId)
+                );
+
+            return {
+                ...prev,
+                categoryIds: selectedIds,
+                primaryCategoryId:
+                    primaryStillSelected
+                        ? prev.primaryCategoryId
+                        : "",
+            };
+        });
+    };
+
+    const handlePrimaryCategoryChange = (
+        event: React.ChangeEvent<HTMLSelectElement>
+    ) => {
+        const primaryCategoryId = event.target.value;
+
+        setFormData((prev) => ({
+            ...prev,
+            primaryCategoryId,
+        }));
     };
 
     // =========================================================
     // ADD BOOK
     // =========================================================
+
     const handleAddBook = async () => {
         if (!formData.title.trim()) {
             alert("Please enter a book title!");
+            return;
+        }
+
+        if (!formData.isbn.trim()) {
+            alert("Please enter an ISBN code!");
+            return;
+        }
+
+        if (formData.categoryIds.length === 0) {
+            alert("Please select at least one category!");
+            return;
+        }
+
+        if (!formData.primaryCategoryId) {
+            alert("Please select a primary category!");
+            return;
+        }
+
+        const primaryCategory =
+            categories.find(
+                (category) =>
+                    Number(category.id) ===
+                    Number(formData.primaryCategoryId)
+            );
+
+        if (!primaryCategory) {
+            alert("Primary category not found!");
+            return;
+        }
+
+        if (!primaryCategory.defaultShelf) {
+            alert(
+                "The selected primary category does not have a default shelf."
+            );
             return;
         }
 
@@ -123,6 +246,7 @@ export default function BooksPage() {
 
             const newBook = await createBook({
                 title: formData.title.trim(),
+
                 isbn: formData.isbn.trim(),
 
                 publisherId: formData.publisher
@@ -140,13 +264,26 @@ export default function BooksPage() {
                 totalQuantity:
                     Number(formData.totalQuantity) || 0,
 
-                description: formData.description.trim(),
+                description:
+                    formData.description.trim(),
 
                 authorIds: formData.authorIds,
+
                 authorNames,
+
+                categoryIds:
+                formData.categoryIds,
+
+                primaryCategoryId:
+                    Number(
+                        formData.primaryCategoryId
+                    ),
             });
 
-            setBooks((prev) => [...prev, newBook]);
+            setBooks((prev) => [
+                ...prev,
+                newBook,
+            ]);
 
             resetForm();
             setShowAddForm(false);
@@ -154,9 +291,13 @@ export default function BooksPage() {
             await Promise.all([
                 loadBooks(),
                 loadAuthors(),
+                loadCategories(),
             ]);
         } catch (error) {
-            console.error("Failed to create book:", error);
+            console.error(
+                "Failed to create book:",
+                error
+            );
 
             alert(
                 error instanceof Error
@@ -169,6 +310,7 @@ export default function BooksPage() {
     // =========================================================
     // EDIT BOOK
     // =========================================================
+
     const handleEditClick = (book: any) => {
         setEditingBook(book);
 
@@ -176,6 +318,19 @@ export default function BooksPage() {
             book.authors?.map((author: any) =>
                 Number(author.id)
             ) || [];
+
+        const selectedCategoryIds =
+            book.categories?.map(
+                (category: any) =>
+                    Number(category.id)
+            ) || [];
+
+        const primaryCategoryId =
+            book.primaryCategory?.id
+                ? String(
+                    book.primaryCategory.id
+                )
+                : "";
 
         setFormData({
             title: book.title || "",
@@ -186,9 +341,11 @@ export default function BooksPage() {
                 ? String(book.publisher.id)
                 : "",
 
-            publishYear: book.publishYear
-                ? String(book.publishYear)
-                : "",
+            publishYear:
+                book.publishYear !== undefined &&
+                book.publishYear !== null
+                    ? String(book.publishYear)
+                    : "",
 
             price:
                 book.price !== undefined &&
@@ -208,16 +365,57 @@ export default function BooksPage() {
                     ? String(book.availableQuantity)
                     : "",
 
-            description: book.description || "",
+            description:
+                book.description || "",
 
             authorIds: selectedAuthorIds,
+
             authorNames: "",
+
+            categoryIds:
+            selectedCategoryIds,
+
+            primaryCategoryId,
         });
     };
 
     const handleUpdateBook = async () => {
         if (!editingBook || !formData.title.trim()) {
             alert("Please enter a book title!");
+            return;
+        }
+
+        if (!formData.isbn.trim()) {
+            alert("Please enter an ISBN code!");
+            return;
+        }
+
+        if (formData.categoryIds.length === 0) {
+            alert("Please select at least one category!");
+            return;
+        }
+
+        if (!formData.primaryCategoryId) {
+            alert("Please select a primary category!");
+            return;
+        }
+
+        const primaryCategory =
+            categories.find(
+                (category) =>
+                    Number(category.id) ===
+                    Number(formData.primaryCategoryId)
+            );
+
+        if (!primaryCategory) {
+            alert("Primary category not found!");
+            return;
+        }
+
+        if (!primaryCategory.defaultShelf) {
+            alert(
+                "The selected primary category does not have a default shelf."
+            );
             return;
         }
 
@@ -230,33 +428,58 @@ export default function BooksPage() {
             const updatedBook = await updateBook(
                 editingBook.id,
                 {
-                    title: formData.title.trim(),
+                    title:
+                        formData.title.trim(),
 
-                    isbn: formData.isbn.trim(),
+                    isbn:
+                        formData.isbn.trim(),
 
-                    publisherId: formData.publisher
-                        ? Number(formData.publisher)
-                        : undefined,
+                    publisherId:
+                        formData.publisher
+                            ? Number(
+                                formData.publisher
+                            )
+                            : undefined,
 
-                    publishYear: formData.publishYear
-                        ? Number(formData.publishYear)
-                        : undefined,
+                    publishYear:
+                        formData.publishYear
+                            ? Number(
+                                formData.publishYear
+                            )
+                            : undefined,
 
-                    price: formData.price
-                        ? Number(formData.price)
-                        : undefined,
+                    price:
+                        formData.price
+                            ? Number(
+                                formData.price
+                            )
+                            : undefined,
 
                     totalQuantity:
-                        Number(formData.totalQuantity) || 0,
+                        Number(
+                            formData.totalQuantity
+                        ) || 0,
 
                     availableQuantity:
-                        Number(formData.availableQuantity) || 0,
+                        Number(
+                            formData.availableQuantity
+                        ) || 0,
 
                     description:
                         formData.description.trim(),
 
-                    authorIds: formData.authorIds,
+                    authorIds:
+                    formData.authorIds,
+
                     authorNames,
+
+                    categoryIds:
+                    formData.categoryIds,
+
+                    primaryCategoryId:
+                        Number(
+                            formData.primaryCategoryId
+                        ),
                 }
             );
 
@@ -274,6 +497,7 @@ export default function BooksPage() {
             await Promise.all([
                 loadBooks(),
                 loadAuthors(),
+                loadCategories(),
             ]);
         } catch (error) {
             console.error(
@@ -292,7 +516,10 @@ export default function BooksPage() {
     // =========================================================
     // DEACTIVATE BOOK
     // =========================================================
-    const handleDeactivate = async (book: any) => {
+
+    const handleDeactivate = async (
+        book: any
+    ) => {
         const confirmed = window.confirm(
             `Are you sure you want to deactivate "${book.title}"?`
         );
@@ -319,7 +546,10 @@ export default function BooksPage() {
     // =========================================================
     // ACTIVATE BOOK
     // =========================================================
-    const handleActivate = async (book: any) => {
+
+    const handleActivate = async (
+        book: any
+    ) => {
         try {
             await activateBook(book.id);
             await loadBooks();
@@ -340,9 +570,32 @@ export default function BooksPage() {
     // =========================================================
     // FILTER BOOKS
     // =========================================================
+
     const filteredBooks = useMemo(() => {
         return books.filter((b) => {
-            const query = searchTerm.toLowerCase();
+            const query =
+                searchTerm.toLowerCase();
+
+            const categoryNames =
+                b.categories
+                    ?.map(
+                        (category: any) =>
+                            category.name || ""
+                    )
+                    .join(" ")
+                    .toLowerCase() || "";
+
+            const primaryCategoryName =
+                b.primaryCategory?.name
+                    ?.toLowerCase() || "";
+
+            const shelfName =
+                b.shelf?.name
+                    ?.toLowerCase() || "";
+
+            const shelfCode =
+                b.shelf?.shelfCode
+                    ?.toLowerCase() || "";
 
             const matchesSearch =
                 (b.title || "")
@@ -353,7 +606,11 @@ export default function BooksPage() {
                     .includes(query) ||
                 (b.publisher?.name || "")
                     .toLowerCase()
-                    .includes(query);
+                    .includes(query) ||
+                categoryNames.includes(query) ||
+                primaryCategoryName.includes(query) ||
+                shelfName.includes(query) ||
+                shelfCode.includes(query);
 
             const isActive =
                 b.status === "ACTIVE" ||
@@ -369,20 +626,29 @@ export default function BooksPage() {
                 matchesStatus = !isActive;
             }
 
-            return matchesSearch && matchesStatus;
+            return (
+                matchesSearch &&
+                matchesStatus
+            );
         });
-    }, [books, searchTerm, statusFilter]);
+    }, [
+        books,
+        searchTerm,
+        statusFilter,
+    ]);
 
     // =========================================================
     // METRICS
     // =========================================================
+
     const totalTitles = books.length;
 
-    const activeBooksCount = books.filter(
-        (b) =>
-            b.status === "ACTIVE" ||
-            b.active === true
-    ).length;
+    const activeBooksCount =
+        books.filter(
+            (b) =>
+                b.status === "ACTIVE" ||
+                b.active === true
+        ).length;
 
     const totalAvailable = books
         .filter(
@@ -392,7 +658,8 @@ export default function BooksPage() {
         )
         .reduce(
             (acc, curr) =>
-                acc + (curr.availableQuantity || 0),
+                acc +
+                (curr.availableQuantity || 0),
             0
         );
 
@@ -403,6 +670,7 @@ export default function BooksPage() {
                 {/* ========================================================= */}
                 {/* HEADER                                                     */}
                 {/* ========================================================= */}
+
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <div className="mb-2 flex items-center gap-2 text-xs text-slate-400">
@@ -432,7 +700,7 @@ export default function BooksPage() {
                         </h1>
 
                         <p className="mt-1 max-w-3xl text-sm text-slate-500">
-                            Manage book titles, publications, authors, inventory, and circulation availability.
+                            Manage book titles, publications, authors, categories, shelves, inventory, and circulation availability.
                         </p>
                     </div>
 
@@ -465,9 +733,11 @@ export default function BooksPage() {
                 {/* ========================================================= */}
                 {/* METRIC CARDS                                               */}
                 {/* ========================================================= */}
+
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
 
                     {/* Total Titles */}
+
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex items-center justify-between">
                             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -501,6 +771,7 @@ export default function BooksPage() {
                     </div>
 
                     {/* Available Copies */}
+
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex items-center justify-between">
                             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -534,6 +805,7 @@ export default function BooksPage() {
                     </div>
 
                     {/* Active Titles */}
+
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex items-center justify-between">
                             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -570,9 +842,11 @@ export default function BooksPage() {
                 {/* ========================================================= */}
                 {/* BOOK TABLE                                                 */}
                 {/* ========================================================= */}
+
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
                     {/* Search / Filter */}
+
                     <div className="flex flex-col gap-4 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 className="text-base font-semibold text-slate-900">
@@ -580,7 +854,9 @@ export default function BooksPage() {
                             </h2>
 
                             <p className="mt-1 text-xs text-slate-400">
-                                Showing {filteredBooks.length} of{" "}
+                                Showing{" "}
+                                {filteredBooks.length}{" "}
+                                of{" "}
                                 {totalTitles} titles
                             </p>
                         </div>
@@ -588,6 +864,7 @@ export default function BooksPage() {
                         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
 
                             {/* Search */}
+
                             <div className="relative w-full sm:w-72">
                                 <svg
                                     className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
@@ -606,7 +883,9 @@ export default function BooksPage() {
                                 <input
                                     type="text"
                                     placeholder="Search books..."
-                                    value={searchTerm}
+                                    value={
+                                        searchTerm
+                                    }
                                     onChange={(e) =>
                                         setSearchTerm(
                                             e.target.value
@@ -617,8 +896,11 @@ export default function BooksPage() {
                             </div>
 
                             {/* Status Filter */}
+
                             <select
-                                value={statusFilter}
+                                value={
+                                    statusFilter
+                                }
                                 onChange={(e) =>
                                     setStatusFilter(
                                         e.target.value as
@@ -645,6 +927,7 @@ export default function BooksPage() {
                     </div>
 
                     {/* Table */}
+
                     {loading ? (
                         <div className="flex min-h-[320px] flex-col items-center justify-center">
                             <div className="h-7 w-7 animate-spin rounded-full border-2 border-slate-300 border-t-black" />
@@ -677,272 +960,350 @@ export default function BooksPage() {
 
                             <p className="mt-1 max-w-md text-xs text-slate-400">
                                 {searchTerm ||
-                                statusFilter !== "ALL"
+                                statusFilter !==
+                                "ALL"
                                     ? "Try adjusting your search criteria or status filter."
                                     : "Get started by adding a new book title to the catalog."}
                             </p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
-                            <table className="w-full min-w-[1100px] text-left text-xs">
+                            <table className="w-full min-w-[1450px] text-left text-xs">
+
                                 <thead className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                                 <tr>
-                                    <th
-                                        scope="col"
-                                        className="py-3.5 pl-6 pr-3"
-                                    >
+                                    <th className="py-3.5 pl-6 pr-3">
                                         ID
                                     </th>
 
-                                    <th
-                                        scope="col"
-                                        className="px-4 py-3.5"
-                                    >
+                                    <th className="px-4 py-3.5">
                                         Title
                                     </th>
 
-                                    <th
-                                        scope="col"
-                                        className="px-4 py-3.5"
-                                    >
+                                    <th className="px-4 py-3.5">
                                         ISBN
                                     </th>
 
-                                    <th
-                                        scope="col"
-                                        className="px-4 py-3.5"
-                                    >
+                                    <th className="px-4 py-3.5">
                                         Publisher
                                     </th>
 
-                                    <th
-                                        scope="col"
-                                        className="px-4 py-3.5"
-                                    >
+                                    <th className="px-4 py-3.5">
+                                        Primary Category
+                                    </th>
+
+                                    <th className="px-4 py-3.5">
+                                        Shelf
+                                    </th>
+
+                                    <th className="px-4 py-3.5">
                                         Year
                                     </th>
 
-                                    <th
-                                        scope="col"
-                                        className="px-4 py-3.5 text-center"
-                                    >
+                                    <th className="px-4 py-3.5 text-center">
                                         Total
                                     </th>
 
-                                    <th
-                                        scope="col"
-                                        className="px-4 py-3.5 text-center"
-                                    >
+                                    <th className="px-4 py-3.5 text-center">
                                         Available
                                     </th>
 
-                                    <th
-                                        scope="col"
-                                        className="px-4 py-3.5 text-center"
-                                    >
+                                    <th className="px-4 py-3.5 text-center">
                                         Status
                                     </th>
 
-                                    <th
-                                        scope="col"
-                                        className="py-3.5 pl-4 pr-6 text-right"
-                                    >
+                                    <th className="py-3.5 pl-4 pr-6 text-right">
                                         Actions
                                     </th>
                                 </tr>
                                 </thead>
 
                                 <tbody className="divide-y divide-slate-100">
-                                {filteredBooks.map((book) => {
-                                    const isActive =
-                                        book.status ===
-                                        "ACTIVE" ||
-                                        book.active === true;
+                                {filteredBooks.map(
+                                    (book) => {
+                                        const isActive =
+                                            book.status ===
+                                            "ACTIVE" ||
+                                            book.active ===
+                                            true;
 
-                                    const hasStock =
-                                        (book.availableQuantity ||
-                                            0) > 0;
+                                        const hasStock =
+                                            (book.availableQuantity ||
+                                                0) > 0;
 
-                                    return (
-                                        <tr
-                                            key={book.id}
-                                            className="transition-colors hover:bg-slate-50/60"
-                                        >
-                                            {/* ID */}
-                                            <td className="py-4 pl-6 pr-3 align-top">
-                                                <span className="font-mono text-xs font-medium text-slate-400">
-                                                    #{book.id}
-                                                </span>
-                                            </td>
+                                        return (
+                                            <tr
+                                                key={
+                                                    book.id
+                                                }
+                                                className="transition-colors hover:bg-slate-50/60"
+                                            >
+                                                {/* ID */}
 
-                                            {/* Title */}
-                                            <td className="max-w-sm px-4 py-4 align-top">
-                                                <div
-                                                    onClick={() =>
-                                                        router.push(
-                                                            `/books/${book.id}`
-                                                        )
-                                                    }
-                                                    className="group flex cursor-pointer items-start gap-3"
-                                                >
-                                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition group-hover:border-slate-300 group-hover:bg-white group-hover:text-slate-900">
-                                                        <svg
-                                                            className="h-4 w-4"
-                                                            fill="none"
-                                                            viewBox="0 0 24 24"
-                                                            stroke="currentColor"
-                                                        >
-                                                            <path
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                strokeWidth="1.6"
-                                                                d="M6 4.5A2.5 2.5 0 0 1 8.5 2H20v17H8.5A2.5 2.5 0 0 0 6 21.5m0-17A2.5 2.5 0 0 0 3.5 7v12A2.5 2.5 0 0 0 6 21.5"
-                                                            />
-                                                        </svg>
-                                                    </div>
-
-                                                    <div className="min-w-0">
-                                                        <div className="truncate text-sm font-semibold text-slate-900 transition group-hover:text-slate-600">
-                                                            {book.title}
-                                                        </div>
-
-                                                        {book.description ? (
-                                                            <p className="mt-1 line-clamp-1 text-[11px] leading-4 text-slate-400">
-                                                                {
-                                                                    book.description
-                                                                }
-                                                            </p>
-                                                        ) : (
-                                                            <span className="mt-1 block text-[11px] text-slate-400">
-                                                                Click to view details
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            {/* ISBN */}
-                                            <td className="px-4 py-4 align-top">
-                                                <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-[11px] text-slate-600">
-                                                    {book.isbn ||
-                                                        "—"}
-                                                </span>
-                                            </td>
-
-                                            {/* Publisher */}
-                                            <td className="px-4 py-4 align-top text-slate-600">
-                                                {book.publisher?.name || (
-                                                    <span className="italic text-slate-400">
-                                                        —
+                                                <td className="py-4 pl-6 pr-3 align-top">
+                                                    <span className="font-mono text-xs font-medium text-slate-400">
+                                                        #
+                                                        {
+                                                            book.id
+                                                        }
                                                     </span>
-                                                )}
-                                            </td>
+                                                </td>
 
-                                            {/* Year */}
-                                            <td className="px-4 py-4 align-top font-medium text-slate-600">
-                                                {book.publishYear ||
-                                                    "—"}
-                                            </td>
+                                                {/* Title */}
 
-                                            {/* Total */}
-                                            <td className="px-4 py-4 text-center align-top">
-                                                <span className="font-semibold text-slate-800">
-                                                    {book.totalQuantity ||
-                                                        0}
-                                                </span>
-                                            </td>
-
-                                            {/* Available */}
-                                            <td className="px-4 py-4 text-center align-top">
-                                                <span
-                                                    className={`inline-flex min-w-8 justify-center rounded-md px-2.5 py-1 text-xs font-semibold ${
-                                                        !isActive
-                                                            ? "bg-slate-100 text-slate-400"
-                                                            : hasStock
-                                                                ? "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/15"
-                                                                : "bg-rose-50 text-rose-600 ring-1 ring-inset ring-rose-600/15"
-                                                    }`}
-                                                >
-                                                    {isActive
-                                                        ? book.availableQuantity ??
-                                                        0
-                                                        : 0}
-                                                </span>
-                                            </td>
-
-                                            {/* Status */}
-                                            <td className="px-4 py-4 text-center align-top">
-                                                <span
-                                                    className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
-                                                        isActive
-                                                            ? "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/15"
-                                                            : "bg-slate-100 text-slate-500 ring-1 ring-inset ring-slate-500/15"
-                                                    }`}
-                                                >
-                                                    <span
-                                                        className={`h-1.5 w-1.5 rounded-full ${
-                                                            isActive
-                                                                ? "bg-emerald-500"
-                                                                : "bg-slate-400"
-                                                        }`}
-                                                    />
-
-                                                    {isActive
-                                                        ? "ACTIVE"
-                                                        : "INACTIVE"}
-                                                </span>
-                                            </td>
-
-                                            {/* Actions */}
-                                            <td className="py-4 pl-4 pr-6 align-top">
-                                                <div className="flex items-center justify-end gap-1.5">
-                                                    <button
+                                                <td className="max-w-sm px-4 py-4 align-top">
+                                                    <div
                                                         onClick={() =>
                                                             router.push(
                                                                 `/books/${book.id}`
                                                             )
                                                         }
-                                                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                                        className="group flex cursor-pointer items-start gap-3"
                                                     >
-                                                        Detail
-                                                    </button>
+                                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition group-hover:border-slate-300 group-hover:bg-white group-hover:text-slate-900">
+                                                            <svg
+                                                                className="h-4 w-4"
+                                                                fill="none"
+                                                                viewBox="0 0 24 24"
+                                                                stroke="currentColor"
+                                                            >
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    strokeWidth="1.6"
+                                                                    d="M6 4.5A2.5 2.5 0 0 1 8.5 2H20v17H8.5A2.5 2.5 0 0 0 6 21.5m0-17A2.5 2.5 0 0 0 3.5 7v12A2.5 2.5 0 0 0 6 21.5"
+                                                                />
+                                                            </svg>
+                                                        </div>
 
-                                                    <button
-                                                        onClick={() =>
-                                                            handleEditClick(
-                                                                book
-                                                            )
-                                                        }
-                                                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                                                    >
-                                                        Edit
-                                                    </button>
+                                                        <div className="min-w-0">
+                                                            <div className="truncate text-sm font-semibold text-slate-900 transition group-hover:text-slate-600">
+                                                                {
+                                                                    book.title
+                                                                }
+                                                            </div>
 
-                                                    <button
-                                                        onClick={() =>
-                                                            isActive
-                                                                ? handleDeactivate(
-                                                                    book
-                                                                )
-                                                                : handleActivate(
-                                                                    book
-                                                                )
+                                                            {book.description ? (
+                                                                <p className="mt-1 line-clamp-1 text-[11px] leading-4 text-slate-400">
+                                                                    {
+                                                                        book.description
+                                                                    }
+                                                                </p>
+                                                            ) : (
+                                                                <span className="mt-1 block text-[11px] text-slate-400">
+                                                                    Click to view details
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                {/* ISBN */}
+
+                                                <td className="px-4 py-4 align-top">
+                                                    <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-[11px] text-slate-600">
+                                                        {
+                                                            book.isbn ||
+                                                            "—"
                                                         }
-                                                        className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition focus:outline-none ${
-                                                            isActive
-                                                                ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 focus:ring-2 focus:ring-rose-500/15"
-                                                                : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 focus:ring-2 focus:ring-emerald-500/15"
+                                                    </span>
+                                                </td>
+
+                                                {/* Publisher */}
+
+                                                <td className="px-4 py-4 align-top text-slate-600">
+                                                    {book.publisher?.name || (
+                                                        <span className="italic text-slate-400">
+                                                            —
+                                                        </span>
+                                                    )}
+                                                </td>
+
+                                                {/* Primary Category */}
+
+                                                <td className="px-4 py-4 align-top">
+                                                    {book.primaryCategory ? (
+                                                        <div>
+                                                            <span className="inline-flex rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
+                                                                {
+                                                                    book
+                                                                        .primaryCategory
+                                                                        .name
+                                                                }
+                                                            </span>
+
+                                                            {book.categories &&
+                                                            book.categories.length >
+                                                            1 ? (
+                                                                <p className="mt-1 text-[10px] text-slate-400">
+                                                                    +
+                                                                    {
+                                                                        book
+                                                                            .categories
+                                                                            .length -
+                                                                        1
+                                                                    }{" "}
+                                                                    other categor
+                                                                    {book
+                                                                        .categories
+                                                                        .length -
+                                                                    1 ===
+                                                                    1
+                                                                        ? "y"
+                                                                        : "ies"}
+                                                                </p>
+                                                            ) : null}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="italic text-slate-400">
+                                                            Not assigned
+                                                        </span>
+                                                    )}
+                                                </td>
+
+                                                {/* Shelf */}
+
+                                                <td className="px-4 py-4 align-top">
+                                                    {book.shelf ? (
+                                                        <div>
+                                                            <span className="font-mono text-[11px] font-semibold text-slate-700">
+                                                                {
+                                                                    book
+                                                                        .shelf
+                                                                        .shelfCode
+                                                                }
+                                                            </span>
+
+                                                            <p className="mt-1 text-[11px] text-slate-500">
+                                                                {
+                                                                    book
+                                                                        .shelf
+                                                                        .name
+                                                                }
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="italic text-slate-400">
+                                                            Not assigned
+                                                        </span>
+                                                    )}
+                                                </td>
+
+                                                {/* Year */}
+
+                                                <td className="px-4 py-4 align-top font-medium text-slate-600">
+                                                    {
+                                                        book.publishYear ||
+                                                        "—"
+                                                    }
+                                                </td>
+
+                                                {/* Total */}
+
+                                                <td className="px-4 py-4 text-center align-top">
+                                                    <span className="font-semibold text-slate-800">
+                                                        {
+                                                            book.totalQuantity ||
+                                                            0
+                                                        }
+                                                    </span>
+                                                </td>
+
+                                                {/* Available */}
+
+                                                <td className="px-4 py-4 text-center align-top">
+                                                    <span
+                                                        className={`inline-flex min-w-8 justify-center rounded-md px-2.5 py-1 text-xs font-semibold ${
+                                                            !isActive
+                                                                ? "bg-slate-100 text-slate-400"
+                                                                : hasStock
+                                                                    ? "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/15"
+                                                                    : "bg-rose-50 text-rose-600 ring-1 ring-inset ring-rose-600/15"
                                                         }`}
                                                     >
                                                         {isActive
-                                                            ? "Deactivate"
-                                                            : "Activate"}
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                                            ? book.availableQuantity ??
+                                                            0
+                                                            : 0}
+                                                    </span>
+                                                </td>
+
+                                                {/* Status */}
+
+                                                <td className="px-4 py-4 text-center align-top">
+                                                    <span
+                                                        className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                                                            isActive
+                                                                ? "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/15"
+                                                                : "bg-slate-100 text-slate-500 ring-1 ring-inset ring-slate-500/15"
+                                                        }`}
+                                                    >
+                                                        <span
+                                                            className={`h-1.5 w-1.5 rounded-full ${
+                                                                isActive
+                                                                    ? "bg-emerald-500"
+                                                                    : "bg-slate-400"
+                                                            }`}
+                                                        />
+
+                                                        {isActive
+                                                            ? "ACTIVE"
+                                                            : "INACTIVE"}
+                                                    </span>
+                                                </td>
+
+                                                {/* Actions */}
+
+                                                <td className="py-4 pl-4 pr-6 align-top">
+                                                    <div className="flex items-center justify-end gap-1.5">
+                                                        <button
+                                                            onClick={() =>
+                                                                router.push(
+                                                                    `/books/${book.id}`
+                                                                )
+                                                            }
+                                                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                                        >
+                                                            Detail
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() =>
+                                                                handleEditClick(
+                                                                    book
+                                                                )
+                                                            }
+                                                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                                        >
+                                                            Edit
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() =>
+                                                                isActive
+                                                                    ? handleDeactivate(
+                                                                        book
+                                                                    )
+                                                                    : handleActivate(
+                                                                        book
+                                                                    )
+                                                            }
+                                                            className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition focus:outline-none ${
+                                                                isActive
+                                                                    ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 focus:ring-2 focus:ring-rose-500/15"
+                                                                    : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 focus:ring-2 focus:ring-emerald-500/15"
+                                                            }`}
+                                                        >
+                                                            {isActive
+                                                                ? "Deactivate"
+                                                                : "Activate"}
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    }
+                                )}
                                 </tbody>
                             </table>
                         </div>
@@ -953,11 +1314,13 @@ export default function BooksPage() {
             {/* ========================================================= */}
             {/* ADD BOOK MODAL                                            */}
             {/* ========================================================= */}
+
             {showAddForm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
                     <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl">
 
                         {/* Modal Header */}
+
                         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
                             <div>
                                 <h3 className="text-base font-semibold text-slate-900">
@@ -971,7 +1334,9 @@ export default function BooksPage() {
 
                             <button
                                 onClick={() => {
-                                    setShowAddForm(false);
+                                    setShowAddForm(
+                                        false
+                                    );
                                     resetForm();
                                 }}
                                 className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
@@ -995,6 +1360,7 @@ export default function BooksPage() {
                         <div className="grid grid-cols-1 gap-5 px-6 py-6 sm:grid-cols-2">
 
                             {/* Title */}
+
                             <div className="sm:col-span-2">
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Book Title{" "}
@@ -1006,11 +1372,15 @@ export default function BooksPage() {
                                 <input
                                     type="text"
                                     placeholder="Enter book title"
-                                    value={formData.title}
+                                    value={
+                                        formData.title
+                                    }
                                     onChange={(e) =>
                                         setFormData({
                                             ...formData,
-                                            title: e.target.value,
+                                            title: e
+                                                .target
+                                                .value,
                                         })
                                     }
                                     className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -1018,6 +1388,7 @@ export default function BooksPage() {
                             </div>
 
                             {/* ISBN */}
+
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700">
                                     ISBN Code{" "}
@@ -1029,11 +1400,15 @@ export default function BooksPage() {
                                 <input
                                     type="text"
                                     placeholder="e.g. 978-0132350884"
-                                    value={formData.isbn}
+                                    value={
+                                        formData.isbn
+                                    }
                                     onChange={(e) =>
                                         setFormData({
                                             ...formData,
-                                            isbn: e.target.value,
+                                            isbn: e
+                                                .target
+                                                .value,
                                         })
                                     }
                                     className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -1041,18 +1416,22 @@ export default function BooksPage() {
                             </div>
 
                             {/* Publisher */}
+
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Publisher
                                 </label>
 
                                 <select
-                                    value={formData.publisher}
+                                    value={
+                                        formData.publisher
+                                    }
                                     onChange={(e) =>
                                         setFormData({
                                             ...formData,
                                             publisher:
-                                            e.target.value,
+                                            e.target
+                                                .value,
                                         })
                                     }
                                     className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -1061,18 +1440,194 @@ export default function BooksPage() {
                                         Select Publisher
                                     </option>
 
-                                    {publishers.map((pub) => (
-                                        <option
-                                            key={pub.id}
-                                            value={pub.id}
-                                        >
-                                            {pub.name}
-                                        </option>
-                                    ))}
+                                    {publishers.map(
+                                        (pub) => (
+                                            <option
+                                                key={
+                                                    pub.id
+                                                }
+                                                value={
+                                                    pub.id
+                                                }
+                                            >
+                                                {
+                                                    pub.name
+                                                }
+                                            </option>
+                                        )
+                                    )}
                                 </select>
                             </div>
 
+                            {/* Categories */}
+
+                            <div className="sm:col-span-2">
+                                <label className="block text-xs font-semibold text-slate-700">
+                                    Categories{" "}
+                                    <span className="text-rose-500">
+                                        *
+                                    </span>
+                                </label>
+
+                                <select
+                                    multiple
+                                    value={formData.categoryIds.map(
+                                        String
+                                    )}
+                                    onChange={
+                                        handleCategoryChange
+                                    }
+                                    className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                    size={Math.min(
+                                        Math.max(
+                                            categories.filter(
+                                                (
+                                                    category
+                                                ) =>
+                                                    category.status ===
+                                                    "ACTIVE"
+                                            ).length,
+                                            3
+                                        ),
+                                        6
+                                    )}
+                                >
+                                    {categories
+                                        .filter(
+                                            (
+                                                category
+                                            ) =>
+                                                category.status ===
+                                                "ACTIVE"
+                                        )
+                                        .map(
+                                            (
+                                                category
+                                            ) => (
+                                                <option
+                                                    key={
+                                                        category.id
+                                                    }
+                                                    value={
+                                                        category.id
+                                                    }
+                                                >
+                                                    {
+                                                        category.name
+                                                    }
+                                                </option>
+                                            )
+                                        )}
+                                </select>
+
+                                <p className="mt-1.5 text-[11px] text-slate-400">
+                                    Hold Ctrl to select multiple categories.
+                                </p>
+                            </div>
+
+                            {/* Primary Category */}
+
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-700">
+                                    Primary Category{" "}
+                                    <span className="text-rose-500">
+                                        *
+                                    </span>
+                                </label>
+
+                                <select
+                                    value={
+                                        formData.primaryCategoryId
+                                    }
+                                    onChange={
+                                        handlePrimaryCategoryChange
+                                    }
+                                    disabled={
+                                        formData.categoryIds
+                                            .length ===
+                                        0
+                                    }
+                                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+                                >
+                                    <option value="">
+                                        {formData
+                                            .categoryIds
+                                            .length ===
+                                        0
+                                            ? "Select categories first"
+                                            : "Select Primary Category"}
+                                    </option>
+
+                                    {categories
+                                        .filter(
+                                            (
+                                                category
+                                            ) =>
+                                                category.status ===
+                                                "ACTIVE" &&
+                                                formData.categoryIds.includes(
+                                                    Number(
+                                                        category.id
+                                                    )
+                                                )
+                                        )
+                                        .map(
+                                            (
+                                                category
+                                            ) => (
+                                                <option
+                                                    key={
+                                                        category.id
+                                                    }
+                                                    value={
+                                                        category.id
+                                                    }
+                                                >
+                                                    {
+                                                        category.name
+                                                    }
+                                                </option>
+                                            )
+                                        )}
+                                </select>
+                            </div>
+
+                            {/* Default Shelf */}
+
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-700">
+                                    Default Shelf
+                                </label>
+
+                                <div className="mt-1.5 min-h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                                    {selectedShelf ? (
+                                        <div>
+                                            <div className="font-mono text-xs font-semibold text-slate-800">
+                                                {
+                                                    selectedShelf.shelfCode
+                                                }
+                                            </div>
+
+                                            <div className="mt-0.5 text-[11px] text-slate-500">
+                                                {
+                                                    selectedShelf.name
+                                                }
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <span className="text-sm text-slate-400">
+                                            Select a primary category
+                                        </span>
+                                    )}
+                                </div>
+
+                                <p className="mt-1.5 text-[11px] text-slate-400">
+                                    Shelf is determined automatically from the primary category.
+                                </p>
+                            </div>
+
                             {/* Existing Authors */}
+
                             <div className="sm:col-span-2">
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Existing Authors
@@ -1086,12 +1641,16 @@ export default function BooksPage() {
                                     onChange={(e) => {
                                         const selectedIds =
                                             Array.from(
-                                                e.target
+                                                e
+                                                    .target
                                                     .selectedOptions
-                                            ).map((opt) =>
-                                                Number(
-                                                    opt.value
-                                                )
+                                            ).map(
+                                                (
+                                                    opt
+                                                ) =>
+                                                    Number(
+                                                        opt.value
+                                                    )
                                             );
 
                                         setFormData({
@@ -1104,7 +1663,9 @@ export default function BooksPage() {
                                     size={Math.min(
                                         Math.max(
                                             authors.filter(
-                                                (author) =>
+                                                (
+                                                    author
+                                                ) =>
                                                     author.status ===
                                                     "ACTIVE"
                                             ).length,
@@ -1115,18 +1676,30 @@ export default function BooksPage() {
                                 >
                                     {authors
                                         .filter(
-                                            (author) =>
+                                            (
+                                                author
+                                            ) =>
                                                 author.status ===
                                                 "ACTIVE"
                                         )
-                                        .map((author) => (
-                                            <option
-                                                key={author.id}
-                                                value={author.id}
-                                            >
-                                                {author.name}
-                                            </option>
-                                        ))}
+                                        .map(
+                                            (
+                                                author
+                                            ) => (
+                                                <option
+                                                    key={
+                                                        author.id
+                                                    }
+                                                    value={
+                                                        author.id
+                                                    }
+                                                >
+                                                    {
+                                                        author.name
+                                                    }
+                                                </option>
+                                            )
+                                        )}
                                 </select>
 
                                 <p className="mt-1.5 text-[11px] text-slate-400">
@@ -1135,6 +1708,7 @@ export default function BooksPage() {
                             </div>
 
                             {/* New Authors */}
+
                             <div className="sm:col-span-2">
                                 <label className="block text-xs font-semibold text-slate-700">
                                     New Author Names
@@ -1143,12 +1717,15 @@ export default function BooksPage() {
                                 <input
                                     type="text"
                                     placeholder="e.g. Robert C. Martin, Martin Fowler"
-                                    value={formData.authorNames}
+                                    value={
+                                        formData.authorNames
+                                    }
                                     onChange={(e) =>
                                         setFormData({
                                             ...formData,
                                             authorNames:
-                                            e.target.value,
+                                            e.target
+                                                .value,
                                         })
                                     }
                                     className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -1160,6 +1737,7 @@ export default function BooksPage() {
                             </div>
 
                             {/* Publish Year */}
+
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Publish Year
@@ -1168,12 +1746,15 @@ export default function BooksPage() {
                                 <input
                                     type="number"
                                     placeholder="e.g. 2024"
-                                    value={formData.publishYear}
+                                    value={
+                                        formData.publishYear
+                                    }
                                     onChange={(e) =>
                                         setFormData({
                                             ...formData,
                                             publishYear:
-                                            e.target.value,
+                                            e.target
+                                                .value,
                                         })
                                     }
                                     className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -1181,9 +1762,10 @@ export default function BooksPage() {
                             </div>
 
                             {/* Price */}
+
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700">
-                                    Price ($/VND)
+                                    Price (VND)
                                 </label>
 
                                 <input
@@ -1191,11 +1773,15 @@ export default function BooksPage() {
                                     min="0"
                                     step="0.01"
                                     placeholder="e.g. 150000"
-                                    value={formData.price}
+                                    value={
+                                        formData.price
+                                    }
                                     onChange={(e) =>
                                         setFormData({
                                             ...formData,
-                                            price: e.target.value,
+                                            price: e
+                                                .target
+                                                .value,
                                         })
                                     }
                                     className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -1203,6 +1789,7 @@ export default function BooksPage() {
                             </div>
 
                             {/* Total Quantity */}
+
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Total Quantity{" "}
@@ -1222,7 +1809,8 @@ export default function BooksPage() {
                                         setFormData({
                                             ...formData,
                                             totalQuantity:
-                                            e.target.value,
+                                            e.target
+                                                .value,
                                         })
                                     }
                                     className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -1230,6 +1818,7 @@ export default function BooksPage() {
                             </div>
 
                             {/* Description */}
+
                             <div className="sm:col-span-2">
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Description / Synopsis
@@ -1245,7 +1834,8 @@ export default function BooksPage() {
                                         setFormData({
                                             ...formData,
                                             description:
-                                            e.target.value,
+                                            e.target
+                                                .value,
                                         })
                                     }
                                     className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -1253,12 +1843,15 @@ export default function BooksPage() {
                             </div>
                         </div>
 
-                        {/* Modal Footer */}
+                        {/* Footer */}
+
                         <div className="flex justify-end gap-2 border-t border-slate-200 px-6 py-4">
                             <button
                                 type="button"
                                 onClick={() => {
-                                    setShowAddForm(false);
+                                    setShowAddForm(
+                                        false
+                                    );
                                     resetForm();
                                 }}
                                 className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
@@ -1268,7 +1861,9 @@ export default function BooksPage() {
 
                             <button
                                 type="button"
-                                onClick={handleAddBook}
+                                onClick={
+                                    handleAddBook
+                                }
                                 className="inline-flex h-10 items-center justify-center rounded-lg bg-black px-4 text-sm font-medium text-white shadow-sm transition hover:bg-[#1f1f1f] focus:outline-none focus:ring-2 focus:ring-black/20 active:scale-[0.98]"
                             >
                                 Create Book
@@ -1281,11 +1876,13 @@ export default function BooksPage() {
             {/* ========================================================= */}
             {/* EDIT BOOK MODAL                                           */}
             {/* ========================================================= */}
+
             {editingBook && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
                     <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl">
 
-                        {/* Modal Header */}
+                        {/* Header */}
+
                         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
                             <div>
                                 <h3 className="text-base font-semibold text-slate-900">
@@ -1293,13 +1890,19 @@ export default function BooksPage() {
                                 </h3>
 
                                 <p className="mt-1 text-xs text-slate-400">
-                                    Update catalog entry #{editingBook.id}.
+                                    Update catalog entry #
+                                    {
+                                        editingBook.id
+                                    }
+                                    .
                                 </p>
                             </div>
 
                             <button
                                 onClick={() => {
-                                    setEditingBook(null);
+                                    setEditingBook(
+                                        null
+                                    );
                                     resetForm();
                                 }}
                                 className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
@@ -1323,6 +1926,7 @@ export default function BooksPage() {
                         <div className="grid grid-cols-1 gap-5 px-6 py-6 sm:grid-cols-2">
 
                             {/* Title */}
+
                             <div className="sm:col-span-2">
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Book Title{" "}
@@ -1333,11 +1937,15 @@ export default function BooksPage() {
 
                                 <input
                                     type="text"
-                                    value={formData.title}
+                                    value={
+                                        formData.title
+                                    }
                                     onChange={(e) =>
                                         setFormData({
                                             ...formData,
-                                            title: e.target.value,
+                                            title: e
+                                                .target
+                                                .value,
                                         })
                                     }
                                     className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -1345,18 +1953,26 @@ export default function BooksPage() {
                             </div>
 
                             {/* ISBN */}
+
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700">
-                                    ISBN Code
+                                    ISBN Code{" "}
+                                    <span className="text-rose-500">
+                                        *
+                                    </span>
                                 </label>
 
                                 <input
                                     type="text"
-                                    value={formData.isbn}
+                                    value={
+                                        formData.isbn
+                                    }
                                     onChange={(e) =>
                                         setFormData({
                                             ...formData,
-                                            isbn: e.target.value,
+                                            isbn: e
+                                                .target
+                                                .value,
                                         })
                                     }
                                     className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -1364,18 +1980,22 @@ export default function BooksPage() {
                             </div>
 
                             {/* Publisher */}
+
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Publisher
                                 </label>
 
                                 <select
-                                    value={formData.publisher}
+                                    value={
+                                        formData.publisher
+                                    }
                                     onChange={(e) =>
                                         setFormData({
                                             ...formData,
                                             publisher:
-                                            e.target.value,
+                                            e.target
+                                                .value,
                                         })
                                     }
                                     className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -1384,18 +2004,208 @@ export default function BooksPage() {
                                         Select Publisher
                                     </option>
 
-                                    {publishers.map((pub) => (
-                                        <option
-                                            key={pub.id}
-                                            value={pub.id}
-                                        >
-                                            {pub.name}
-                                        </option>
-                                    ))}
+                                    {publishers.map(
+                                        (pub) => (
+                                            <option
+                                                key={
+                                                    pub.id
+                                                }
+                                                value={
+                                                    pub.id
+                                                }
+                                            >
+                                                {
+                                                    pub.name
+                                                }
+                                            </option>
+                                        )
+                                    )}
                                 </select>
                             </div>
 
+                            {/* Categories */}
+
+                            <div className="sm:col-span-2">
+                                <label className="block text-xs font-semibold text-slate-700">
+                                    Categories{" "}
+                                    <span className="text-rose-500">
+                                        *
+                                    </span>
+                                </label>
+
+                                <select
+                                    multiple
+                                    value={formData.categoryIds.map(
+                                        String
+                                    )}
+                                    onChange={
+                                        handleCategoryChange
+                                    }
+                                    className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                    size={Math.min(
+                                        Math.max(
+                                            categories.length,
+                                            3
+                                        ),
+                                        6
+                                    )}
+                                >
+                                    {categories.map(
+                                        (
+                                            category
+                                        ) => (
+                                            <option
+                                                key={
+                                                    category.id
+                                                }
+                                                value={
+                                                    category.id
+                                                }
+                                            >
+                                                {
+                                                    category.name
+                                                }
+                                                {category.status ===
+                                                "INACTIVE"
+                                                    ? " (Inactive)"
+                                                    : ""}
+                                            </option>
+                                        )
+                                    )}
+                                </select>
+
+                                <p className="mt-1.5 text-[11px] text-slate-400">
+                                    Hold Ctrl to select multiple categories.
+                                </p>
+                            </div>
+
+                            {/* Primary Category */}
+
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-700">
+                                    Primary Category{" "}
+                                    <span className="text-rose-500">
+                                        *
+                                    </span>
+                                </label>
+
+                                <select
+                                    value={
+                                        formData.primaryCategoryId
+                                    }
+                                    onChange={
+                                        handlePrimaryCategoryChange
+                                    }
+                                    disabled={
+                                        formData.categoryIds
+                                            .length ===
+                                        0
+                                    }
+                                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+                                >
+                                    <option value="">
+                                        {formData
+                                            .categoryIds
+                                            .length ===
+                                        0
+                                            ? "Select categories first"
+                                            : "Select Primary Category"}
+                                    </option>
+
+                                    {categories
+                                        .filter(
+                                            (
+                                                category
+                                            ) =>
+                                                formData.categoryIds.includes(
+                                                    Number(
+                                                        category.id
+                                                    )
+                                                )
+                                        )
+                                        .map(
+                                            (
+                                                category
+                                            ) => (
+                                                <option
+                                                    key={
+                                                        category.id
+                                                    }
+                                                    value={
+                                                        category.id
+                                                    }
+                                                >
+                                                    {
+                                                        category.name
+                                                    }
+                                                    {category.status ===
+                                                    "INACTIVE"
+                                                        ? " (Inactive)"
+                                                        : ""}
+                                                </option>
+                                            )
+                                        )}
+                                </select>
+                            </div>
+
+                            {/* Default Shelf */}
+
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-700">
+                                    Default Shelf
+                                </label>
+
+                                <div className="mt-1.5 min-h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                                    {selectedShelf ? (
+                                        <div>
+                                            <div className="font-mono text-xs font-semibold text-slate-800">
+                                                {
+                                                    selectedShelf.shelfCode
+                                                }
+                                            </div>
+
+                                            <div className="mt-0.5 text-[11px] text-slate-500">
+                                                {
+                                                    selectedShelf.name
+                                                }
+                                            </div>
+                                        </div>
+                                    ) : editingBook?.shelf &&
+                                    editingBook?.primaryCategory?.id ===
+                                    Number(
+                                        formData.primaryCategoryId
+                                    ) ? (
+                                        <div>
+                                            <div className="font-mono text-xs font-semibold text-slate-800">
+                                                {
+                                                    editingBook
+                                                        .shelf
+                                                        .shelfCode
+                                                }
+                                            </div>
+
+                                            <div className="mt-0.5 text-[11px] text-slate-500">
+                                                {
+                                                    editingBook
+                                                        .shelf
+                                                        .name
+                                                }
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <span className="text-sm text-slate-400">
+                                            Select a primary category
+                                        </span>
+                                    )}
+                                </div>
+
+                                <p className="mt-1.5 text-[11px] text-slate-400">
+                                    Shelf is determined automatically from the primary category.
+                                </p>
+                            </div>
+
                             {/* Publish Year */}
+
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Publish Year
@@ -1403,12 +2213,15 @@ export default function BooksPage() {
 
                                 <input
                                     type="number"
-                                    value={formData.publishYear}
+                                    value={
+                                        formData.publishYear
+                                    }
                                     onChange={(e) =>
                                         setFormData({
                                             ...formData,
                                             publishYear:
-                                            e.target.value,
+                                            e.target
+                                                .value,
                                         })
                                     }
                                     className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -1416,20 +2229,25 @@ export default function BooksPage() {
                             </div>
 
                             {/* Price */}
+
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700">
-                                    Price
+                                    Price (VND)
                                 </label>
 
                                 <input
                                     type="number"
                                     min="0"
                                     step="0.01"
-                                    value={formData.price}
+                                    value={
+                                        formData.price
+                                    }
                                     onChange={(e) =>
                                         setFormData({
                                             ...formData,
-                                            price: e.target.value,
+                                            price: e
+                                                .target
+                                                .value,
                                         })
                                     }
                                     className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -1437,6 +2255,7 @@ export default function BooksPage() {
                             </div>
 
                             {/* Total Quantity */}
+
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Total Quantity
@@ -1452,7 +2271,8 @@ export default function BooksPage() {
                                         setFormData({
                                             ...formData,
                                             totalQuantity:
-                                            e.target.value,
+                                            e.target
+                                                .value,
                                         })
                                     }
                                     className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -1460,6 +2280,7 @@ export default function BooksPage() {
                             </div>
 
                             {/* Available Quantity */}
+
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Available Quantity
@@ -1475,7 +2296,8 @@ export default function BooksPage() {
                                         setFormData({
                                             ...formData,
                                             availableQuantity:
-                                            e.target.value,
+                                            e.target
+                                                .value,
                                         })
                                     }
                                     className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -1483,6 +2305,7 @@ export default function BooksPage() {
                             </div>
 
                             {/* Existing Authors */}
+
                             <div className="sm:col-span-2">
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Existing Authors
@@ -1496,12 +2319,16 @@ export default function BooksPage() {
                                     onChange={(e) => {
                                         const selectedIds =
                                             Array.from(
-                                                e.target
+                                                e
+                                                    .target
                                                     .selectedOptions
-                                            ).map((opt) =>
-                                                Number(
-                                                    opt.value
-                                                )
+                                            ).map(
+                                                (
+                                                    opt
+                                                ) =>
+                                                    Number(
+                                                        opt.value
+                                                    )
                                             );
 
                                         setFormData({
@@ -1519,18 +2346,28 @@ export default function BooksPage() {
                                         5
                                     )}
                                 >
-                                    {authors.map((author) => (
-                                        <option
-                                            key={author.id}
-                                            value={author.id}
-                                        >
-                                            {author.name}
-                                            {author.status ===
-                                            "INACTIVE"
-                                                ? " (Inactive)"
-                                                : ""}
-                                        </option>
-                                    ))}
+                                    {authors.map(
+                                        (
+                                            author
+                                        ) => (
+                                            <option
+                                                key={
+                                                    author.id
+                                                }
+                                                value={
+                                                    author.id
+                                                }
+                                            >
+                                                {
+                                                    author.name
+                                                }
+                                                {author.status ===
+                                                "INACTIVE"
+                                                    ? " (Inactive)"
+                                                    : ""}
+                                            </option>
+                                        )
+                                    )}
                                 </select>
 
                                 <p className="mt-1.5 text-[11px] text-slate-400">
@@ -1539,6 +2376,7 @@ export default function BooksPage() {
                             </div>
 
                             {/* New Authors */}
+
                             <div className="sm:col-span-2">
                                 <label className="block text-xs font-semibold text-slate-700">
                                     New Author Names
@@ -1547,12 +2385,15 @@ export default function BooksPage() {
                                 <input
                                     type="text"
                                     placeholder="e.g. Robert C. Martin, Martin Fowler"
-                                    value={formData.authorNames}
+                                    value={
+                                        formData.authorNames
+                                    }
                                     onChange={(e) =>
                                         setFormData({
                                             ...formData,
                                             authorNames:
-                                            e.target.value,
+                                            e.target
+                                                .value,
                                         })
                                     }
                                     className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -1564,6 +2405,7 @@ export default function BooksPage() {
                             </div>
 
                             {/* Description */}
+
                             <div className="sm:col-span-2">
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Description
@@ -1578,7 +2420,8 @@ export default function BooksPage() {
                                         setFormData({
                                             ...formData,
                                             description:
-                                            e.target.value,
+                                            e.target
+                                                .value,
                                         })
                                     }
                                     className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -1586,12 +2429,15 @@ export default function BooksPage() {
                             </div>
                         </div>
 
-                        {/* Modal Footer */}
+                        {/* Footer */}
+
                         <div className="flex justify-end gap-2 border-t border-slate-200 px-6 py-4">
                             <button
                                 type="button"
                                 onClick={() => {
-                                    setEditingBook(null);
+                                    setEditingBook(
+                                        null
+                                    );
                                     resetForm();
                                 }}
                                 className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
@@ -1601,7 +2447,9 @@ export default function BooksPage() {
 
                             <button
                                 type="button"
-                                onClick={handleUpdateBook}
+                                onClick={
+                                    handleUpdateBook
+                                }
                                 className="inline-flex h-10 items-center justify-center rounded-lg bg-black px-4 text-sm font-medium text-white shadow-sm transition hover:bg-[#1f1f1f] focus:outline-none focus:ring-2 focus:ring-black/20 active:scale-[0.98]"
                             >
                                 Save Changes

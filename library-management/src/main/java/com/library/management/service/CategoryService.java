@@ -1,11 +1,14 @@
 package com.library.management.service;
 
 import com.library.management.entity.Book;
+import com.library.management.entity.BookShelf;
 import com.library.management.entity.Category;
 import com.library.management.exception.ResourceNotFoundException;
 import com.library.management.repository.BookRepository;
+import com.library.management.repository.BookShelfRepository;
 import com.library.management.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 
 @Service
@@ -13,10 +16,16 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final BookRepository bookRepository;
+    private final BookShelfRepository bookShelfRepository;
 
-    public CategoryService(CategoryRepository categoryRepository, BookRepository bookRepository) {
+    public CategoryService(
+            CategoryRepository categoryRepository,
+            BookRepository bookRepository,
+            BookShelfRepository bookShelfRepository
+    ) {
         this.categoryRepository = categoryRepository;
         this.bookRepository = bookRepository;
+        this.bookShelfRepository = bookShelfRepository;
     }
 
     // Tạo Category
@@ -109,6 +118,7 @@ public class CategoryService {
         return categoryRepository.save(category);
     }
 
+    // Lấy Books theo Category
     public List<Book> getBooksByCategory(Long categoryId) {
 
         categoryRepository.findById(categoryId)
@@ -116,5 +126,38 @@ public class CategoryService {
                         new ResourceNotFoundException("Category not found"));
 
         return bookRepository.findByCategoriesId(categoryId);
+    }
+
+    // Gán Default Shelf cho Category
+    public Category assignDefaultShelf(Long categoryId, Long shelfId) {
+
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Category not found"));
+
+        BookShelf shelf = bookShelfRepository.findById(shelfId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Shelf not found"));
+
+        category.setDefaultShelf(shelf);
+
+        return categoryRepository.save(category);
+    }
+
+    public Category removeDefaultShelf(Long categoryId) {
+
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Category not found"));
+
+        if (category.getDefaultShelf() == null) {
+            throw new RuntimeException(
+                    "Category does not have a default shelf"
+            );
+        }
+
+        category.setDefaultShelf(null);
+
+        return categoryRepository.save(category);
     }
 }

@@ -115,6 +115,7 @@ export default function CategoryDetailPage() {
     }
 
     const isActive = category?.status === "ACTIVE";
+    const defaultShelf = category?.defaultShelf;
 
     return (
         <div className="min-h-screen w-full bg-[#f7f8fa] p-6 font-sans lg:p-8">
@@ -240,12 +241,9 @@ export default function CategoryDetailPage() {
 
                     {/* Catalog Volume */}
                     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                                Catalog Volume
-                            </p>
-
-                        </div>
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                            Catalog Volume
+                        </p>
 
                         <p className="mt-3 text-4xl font-bold text-slate-900">
                             {books.length}
@@ -256,6 +254,75 @@ export default function CategoryDetailPage() {
                                 ? "1 book currently assigned"
                                 : `${books.length} books currently assigned`}
                         </p>
+                    </div>
+                </div>
+
+                {/* Default Shelf */}
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+
+                        <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600">
+                                <svg
+                                    className="h-6 w-6"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M4 19h16" />
+                                    <path d="M4 15h16" />
+                                    <path d="M4 11h16" />
+                                    <path d="M4 7h16" />
+                                    <path d="M6 4v16" />
+                                    <path d="M18 4v16" />
+                                </svg>
+                            </div>
+
+                            <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                                    Default Shelf
+                                </p>
+
+                                {defaultShelf ? (
+                                    <>
+                                        <h2 className="mt-1 text-lg font-bold text-slate-900">
+                                            {defaultShelf.name}
+                                        </h2>
+
+                                        <p className="mt-1 font-mono text-xs text-slate-400">
+                                            {defaultShelf.shelfCode}
+                                        </p>
+                                    </>
+                                ) : (
+                                    <p className="mt-1 text-sm font-medium text-slate-400">
+                                        Not Assigned
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        {defaultShelf && (
+                            <div
+                                className={`inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
+                                    defaultShelf.status === "ACTIVE"
+                                        ? "bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-500/20"
+                                        : "bg-slate-100 text-slate-500 ring-1 ring-inset ring-slate-400/20"
+                                }`}
+                            >
+                                <span
+                                    className={`h-1.5 w-1.5 rounded-full ${
+                                        defaultShelf.status === "ACTIVE"
+                                            ? "bg-emerald-500"
+                                            : "bg-slate-400"
+                                    }`}
+                                />
+
+                                {defaultShelf.status || "UNKNOWN"}
+                            </div>
+                        )}
                     </div>
                 </div>
 

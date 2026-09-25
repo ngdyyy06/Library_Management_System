@@ -600,6 +600,9 @@ export async function createBook(data: {
     totalQuantity: number;
     authorIds?: number[];
     authorNames?: string[];
+    categoryIds?: number[];
+    categoryNames?: string[];
+    primaryCategoryId?: number;
 }) {
     const token = localStorage.getItem("token");
 
@@ -635,6 +638,9 @@ export async function updateBook(
         totalQuantity: number;
         authorIds?: number[];
         authorNames?: string[];
+        categoryIds?: number[];
+        categoryNames?: string[];
+        primaryCategoryId?: number;
         availableQuantity: number;
     }
 ) {
@@ -1478,4 +1484,238 @@ export async function getReturnHistory() {
     }
 
     return result;
+}
+
+export async function getLibraryCard(readerId: number) {
+    const response = await fetch(
+        `${API_URL}/library-cards/reader/${readerId}`,
+        {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+
+        throw new Error(
+            errorData?.message || "Failed to fetch library card."
+        );
+    }
+
+    return response.json();
+}
+
+export async function getBookShelves() {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/book-shelves`, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message || "Failed to get book shelves"
+        );
+    }
+
+    return response.json();
+}
+
+export async function getBookShelfById(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/book-shelves/${id}`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message || "Failed to get book shelf"
+        );
+    }
+
+    return response.json();
+}
+
+export async function createBookShelf(data: {
+    shelfCode: string;
+    name: string;
+    status?: string;
+}) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/book-shelves`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            responseData.message || "Failed to create book shelf"
+        );
+    }
+
+    return responseData;
+}
+
+
+export async function updateBookShelf(
+    id: number,
+    data: {
+        shelfCode: string;
+        name: string;
+    }
+) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/book-shelves/${id}`,
+        {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(data),
+        }
+    );
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            responseData.message || "Failed to update book shelf"
+        );
+    }
+
+    return responseData;
+}
+
+
+export async function activateBookShelf(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/book-shelves/${id}/activate`,
+        {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            responseData.message || "Failed to activate book shelf"
+        );
+    }
+
+    return responseData;
+}
+
+
+export async function deactivateBookShelf(id: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/book-shelves/${id}/deactivate`,
+        {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            responseData.message || "Failed to deactivate book shelf"
+        );
+    }
+
+    return responseData;
+}
+
+export async function assignCategoryDefaultShelf(
+    categoryId: number,
+    shelfId: number
+) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/categories/${categoryId}/default-shelf/${shelfId}`,
+        {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            responseData.message ||
+            "Failed to assign default shelf"
+        );
+    }
+
+    return responseData;
+}
+
+
+export async function removeCategoryDefaultShelf(
+    categoryId: number
+) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/categories/${categoryId}/default-shelf/remove`,
+        {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            responseData.message ||
+            "Failed to remove default shelf"
+        );
+    }
+
+    return responseData;
 }

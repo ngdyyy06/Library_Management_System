@@ -1,22 +1,38 @@
 package com.library.management.service;
 
 import com.library.management.dto.CreateReaderRequest;
+import com.library.management.entity.LibraryCard;
+import com.library.management.entity.LibraryCardPayment;
 import com.library.management.entity.Reader;
 import com.library.management.exception.ResourceNotFoundException;
+import com.library.management.repository.LibraryCardPaymentRepository;
+import com.library.management.repository.LibraryCardRepository;
 import com.library.management.repository.ReaderRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class ReaderService {
 
-    private final ReaderRepository readerRepository;
+    private static final BigDecimal CARD_FEE = new BigDecimal("50000");
 
-    public ReaderService(ReaderRepository readerRepository) {
+    private final ReaderRepository readerRepository;
+    private final LibraryCardRepository libraryCardRepository;
+    private final LibraryCardPaymentRepository libraryCardPaymentRepository;
+
+    public ReaderService(
+            ReaderRepository readerRepository,
+            LibraryCardRepository libraryCardRepository,
+            LibraryCardPaymentRepository libraryCardPaymentRepository
+    ) {
         this.readerRepository = readerRepository;
+        this.libraryCardRepository = libraryCardRepository;
+        this.libraryCardPaymentRepository = libraryCardPaymentRepository;
     }
 
     // Lấy tất cả Reader
@@ -24,13 +40,15 @@ public class ReaderService {
         return readerRepository.findAll();
     }
 
-    // Tạo Reader mới / cấp thẻ thành viên
+    // Tạo Reader mới + cấp Library Card + thu Card Fee
+    @Transactional
     public Reader createReader(CreateReaderRequest request) {
 
         if (readerRepository.existsByReaderCode(request.getReaderCode())) {
             throw new RuntimeException("Reader code already exists!");
         }
 
+        // 1. Tạo Reader
         Reader reader = new Reader();
 
         reader.setReaderCode(request.getReaderCode());
@@ -42,7 +60,30 @@ public class ReaderService {
         reader.setStatus("ACTIVE");
         reader.setCreatedAt(LocalDateTime.now());
 
-        return readerRepository.save(reader);
+        Reader savedReader = readerRepository.save(reader);
+
+        // 2. Tạo Library Card
+        String cardNumber = generateCardNumber();
+
+        LibraryCard card = new LibraryCard();
+        card.setCardNumber(cardNumber);
+        card.setReader(savedReader);
+        card.setIssuedAt(LocalDate.now());
+        card.setExpiredAt(LocalDate.now().plusYears(1));
+        card.setStatus(LibraryCard.CardStatus.ACTIVE);
+
+        LibraryCard savedCard = libraryCardRepository.save(card);
+
+        // 3. Thu Card Fee
+        LibraryCardPayment payment = new LibraryCardPayment();
+        payment.setLibraryCard(savedCard);
+        payment.setAmount(CARD_FEE);
+        payment.setPaidAt(LocalDateTime.now());
+
+        libraryCardPaymentRepository.save(payment);
+
+        // 4. Trả về Reader đã được tạo
+        return savedReader;
     }
 
     // Lấy Reader theo ID
@@ -89,6 +130,12 @@ public class ReaderService {
 
         reader.setStatus("INACTIVE");
 
+        libraryCardRepository.findByReaderId(id)
+                .ifPresent(card -> {
+                    card.setStatus(LibraryCard.CardStatus.INACTIVE);
+                    libraryCardRepository.save(card);
+                });
+
         return readerRepository.save(reader);
     }
 
@@ -105,6 +152,25 @@ public class ReaderService {
 
         reader.setStatus("ACTIVE");
 
+        libraryCardRepository.findByReaderId(id)
+                .ifPresent(card -> {
+                    card.setStatus(LibraryCard.CardStatus.ACTIVE);
+                    libraryCardRepository.save(card);
+                });
+
         return readerRepository.save(reader);
+    }
+
+    private String generateCardNumber() {
+
+        long nextId = libraryCardRepository.count() + 1;
+
+        String cardNumber;
+
+        do {
+            cardNumber = String.format("CARD-%06d", nextId++);
+        } while (libraryCardRepository.existsByCardNumber(cardNumber));
+
+        return cardNumber;
     }
 }

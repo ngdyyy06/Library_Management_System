@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
-import com.library.management.entity.Category;
 
 @Entity
 @Table(name = "books")
@@ -58,6 +57,16 @@ public class Book {
             inverseJoinColumns = @JoinColumn(name = "category_id")
     )
     private Set<Category> categories = new HashSet<>();
+
+    // Primary Category
+    @ManyToOne
+    @JoinColumn(name = "primary_category_id")
+    private Category primaryCategory;
+
+    // Physical Shelf
+    @ManyToOne
+    @JoinColumn(name = "shelf_id")
+    private BookShelf shelf;
 
     public Book() {
     }
@@ -180,5 +189,21 @@ public class Book {
 
     public void setCategories(Set<Category> categories) {
         this.categories = categories;
+    }
+
+    public Category getPrimaryCategory() {
+        return primaryCategory;
+    }
+
+    public void setPrimaryCategory(Category primaryCategory) {
+        this.primaryCategory = primaryCategory;
+    }
+
+    public BookShelf getShelf() {
+        return shelf;
+    }
+
+    public void setShelf(BookShelf shelf) {
+        this.shelf = shelf;
     }
 }

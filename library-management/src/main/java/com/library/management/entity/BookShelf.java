@@ -3,36 +3,30 @@ package com.library.management.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "categories")
-public class Category {
+@Table(name = "book_shelves")
+public class BookShelf {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, unique = true)
+    private String shelfCode;
+
+    @Column(nullable = false)
     private String name;
 
     @Column(nullable = false)
     private String status;
 
-    @ManyToOne
-    @JoinColumn(name = "default_shelf_id")
-    private BookShelf defaultShelf;
-
-    public Category() {
+    public BookShelf() {
     }
 
-    public Category(
-            Long id,
-            String name,
-            String status,
-            BookShelf defaultShelf
-    ) {
+    public BookShelf(Long id, String shelfCode, String name, String status) {
         this.id = id;
+        this.shelfCode = shelfCode;
         this.name = name;
         this.status = status;
-        this.defaultShelf = defaultShelf;
     }
 
     public Long getId() {
@@ -41,6 +35,14 @@ public class Category {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getShelfCode() {
+        return shelfCode;
+    }
+
+    public void setShelfCode(String shelfCode) {
+        this.shelfCode = shelfCode;
     }
 
     public String getName() {
@@ -57,13 +59,5 @@ public class Category {
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    public BookShelf getDefaultShelf() {
-        return defaultShelf;
-    }
-
-    public void setDefaultShelf(BookShelf defaultShelf) {
-        this.defaultShelf = defaultShelf;
     }
 }

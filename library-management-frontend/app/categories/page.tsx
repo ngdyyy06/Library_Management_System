@@ -8,33 +8,45 @@ import {
     updateCategory,
     activateCategory,
     deactivateCategory,
+    getBookShelves,
+    assignCategoryDefaultShelf,
+    removeCategoryDefaultShelf,
 } from "../lib/api";
 
 export default function CategoriesPage() {
     const [categories, setCategories] = useState<any[]>([]);
+    const [shelves, setShelves] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingCategory, setEditingCategory] = useState<any | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
+    const [statusFilter, setStatusFilter] =
+        useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
 
     const router = useRouter();
 
     const [formData, setFormData] = useState({
         name: "",
+        defaultShelfId: "",
     });
 
     useEffect(() => {
-        loadCategories();
+        loadData();
     }, []);
 
-    const loadCategories = async () => {
+    const loadData = async () => {
         try {
             setLoading(true);
-            const data = await getCategories();
-            setCategories(data || []);
+
+            const [categoryData, shelfData] = await Promise.all([
+                getCategories(),
+                getBookShelves(),
+            ]);
+
+            setCategories(categoryData || []);
+            setShelves(shelfData || []);
         } catch (error) {
-            console.error("Failed to load categories:", error);
+            console.error("Failed to load categories and shelves:", error);
         } finally {
             setLoading(false);
         }
@@ -47,13 +59,32 @@ export default function CategoriesPage() {
         }
 
         try {
-            await createCategory(formData.name.trim());
-            setShowAddForm(false);
-            setFormData({ name: "" });
-            await loadCategories();
+            const createdCategory = await createCategory(
+                formData.name.trim()
+            );
+
+            const categoryId = createdCategory?.id;
+
+            if (
+                formData.defaultShelfId &&
+                categoryId
+            ) {
+                await assignCategoryDefaultShelf(
+                    categoryId,
+                    Number(formData.defaultShelfId)
+                );
+            }
+
+            closeFormModal();
+            await loadData();
         } catch (error) {
             console.error("Failed to create category:", error);
-            alert("Failed to create category. Please try again!");
+
+            alert(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to create category. Please try again!"
+            );
         }
     };
 
@@ -64,20 +95,50 @@ export default function CategoriesPage() {
         }
 
         try {
-            await updateCategory(editingCategory.id, formData.name.trim());
-            setEditingCategory(null);
-            setShowAddForm(false);
-            setFormData({ name: "" });
-            await loadCategories();
+            await updateCategory(
+                editingCategory.id,
+                formData.name.trim()
+            );
+
+            const currentShelfId =
+                editingCategory.defaultShelf?.id
+                    ? Number(editingCategory.defaultShelf.id)
+                    : null;
+
+            const newShelfId = formData.defaultShelfId
+                ? Number(formData.defaultShelfId)
+                : null;
+
+            if (currentShelfId !== newShelfId) {
+                if (newShelfId) {
+                    await assignCategoryDefaultShelf(
+                        editingCategory.id,
+                        newShelfId
+                    );
+                } else if (currentShelfId) {
+                    await removeCategoryDefaultShelf(
+                        editingCategory.id
+                    );
+                }
+            }
+
+            closeFormModal();
+            await loadData();
         } catch (error) {
             console.error("Failed to update category:", error);
-            alert("Failed to update category. Please try again!");
+
+            alert(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to update category. Please try again!"
+            );
         }
     };
 
     const handleToggleStatus = async (category: any) => {
         const isActive =
-            category.status === "ACTIVE" || category.active === true;
+            category.status === "ACTIVE" ||
+            category.active === true;
 
         const confirmMsg = isActive
             ? `Are you sure you want to deactivate category "${category.name}"?`
@@ -92,25 +153,39 @@ export default function CategoriesPage() {
                 await activateCategory(category.id);
             }
 
-            await loadCategories();
+            await loadData();
         } catch (error) {
             console.error("Failed to toggle category status:", error);
-            alert("Action failed. Please try again!");
+
+            alert(
+                error instanceof Error
+                    ? error.message
+                    : "Action failed. Please try again!"
+            );
         }
     };
 
     const startEditing = (category: any) => {
         setEditingCategory(category);
+
         setFormData({
             name: category.name || "",
+            defaultShelfId: category.defaultShelf?.id
+                ? String(category.defaultShelf.id)
+                : "",
         });
+
         setShowAddForm(true);
     };
 
     const closeFormModal = () => {
         setShowAddForm(false);
         setEditingCategory(null);
-        setFormData({ name: "" });
+
+        setFormData({
+            name: "",
+            defaultShelfId: "",
+        });
     };
 
     const filteredCategories = useMemo(() => {
@@ -120,7 +195,8 @@ export default function CategoriesPage() {
                 .includes(searchTerm.toLowerCase());
 
             const isActive =
-                category.status === "ACTIVE" || category.active === true;
+                category.status === "ACTIVE" ||
+                category.active === true;
 
             let matchesStatus = true;
 
@@ -140,7 +216,8 @@ export default function CategoriesPage() {
 
     const activeCount = categories.filter(
         (category) =>
-            category.status === "ACTIVE" || category.active === true
+            category.status === "ACTIVE" ||
+            category.active === true
     ).length;
 
     const inactiveCount = totalCount - activeCount;
@@ -163,7 +240,8 @@ export default function CategoriesPage() {
                         </div>
 
                         <p className="mt-1 text-sm text-slate-500">
-                            Manage book genres, classification taxonomy, and activity status.
+                            Manage book genres, classification taxonomy,
+                            and activity status.
                         </p>
                     </div>
 
@@ -172,7 +250,12 @@ export default function CategoriesPage() {
                         type="button"
                         onClick={() => {
                             setEditingCategory(null);
-                            setFormData({ name: "" });
+
+                            setFormData({
+                                name: "",
+                                defaultShelfId: "",
+                            });
+
                             setShowAddForm(true);
                         }}
                         className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-black px-4 text-sm font-medium text-white shadow-sm transition hover:bg-[#1f1f1f] focus:outline-none focus:ring-2 focus:ring-black/20 active:scale-[0.98]"
@@ -199,11 +282,9 @@ export default function CategoriesPage() {
 
                     {/* Total Categories */}
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                                Total Categories
-                            </span>
-                        </div>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                            Total Categories
+                        </span>
 
                         <p className="mt-2 text-3xl font-bold text-slate-900">
                             {totalCount}
@@ -216,12 +297,9 @@ export default function CategoriesPage() {
 
                     {/* Active Categories */}
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                                Active Categories
-                            </span>
-
-                        </div>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                            Active Categories
+                        </span>
 
                         <p className="mt-2 text-3xl font-bold text-slate-900">
                             {activeCount}
@@ -234,12 +312,9 @@ export default function CategoriesPage() {
 
                     {/* Inactive Categories */}
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                                Inactive Categories
-                            </span>
-
-                        </div>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                            Inactive Categories
+                        </span>
 
                         <p className="mt-2 text-3xl font-bold text-slate-900">
                             {inactiveCount}
@@ -262,7 +337,8 @@ export default function CategoriesPage() {
                             </h2>
 
                             <p className="mt-0.5 text-xs text-slate-400">
-                                Showing {filteredCategories.length} of {totalCount} items
+                                Showing {filteredCategories.length} of{" "}
+                                {totalCount} items
                             </p>
                         </div>
 
@@ -287,7 +363,9 @@ export default function CategoriesPage() {
                                     type="text"
                                     placeholder="Search category name..."
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onChange={(e) =>
+                                        setSearchTerm(e.target.value)
+                                    }
                                     className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-9 pr-4 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
                                 />
                             </div>
@@ -305,9 +383,15 @@ export default function CategoriesPage() {
                                 }
                                 className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-medium text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
                             >
-                                <option value="ALL">All Status</option>
-                                <option value="ACTIVE">Active</option>
-                                <option value="INACTIVE">Inactive</option>
+                                <option value="ALL">
+                                    All Status
+                                </option>
+                                <option value="ACTIVE">
+                                    Active
+                                </option>
+                                <option value="INACTIVE">
+                                    Inactive
+                                </option>
                             </select>
                         </div>
                     </div>
@@ -321,7 +405,6 @@ export default function CategoriesPage() {
                                 Loading categories...
                             </p>
                         </div>
-
                     ) : filteredCategories.length === 0 ? (
 
                         /* Empty State */
@@ -346,12 +429,12 @@ export default function CategoriesPage() {
                             </h3>
 
                             <p className="mt-1 max-w-sm text-xs text-slate-400">
-                                {searchTerm || statusFilter !== "ALL"
+                                {searchTerm ||
+                                statusFilter !== "ALL"
                                     ? "Try adjusting your search criteria or status filter."
                                     : "Get started by creating a new category record."}
                             </p>
                         </div>
-
                     ) : (
 
                         /* Table */
@@ -376,6 +459,13 @@ export default function CategoriesPage() {
 
                                     <th
                                         scope="col"
+                                        className="px-4 py-3.5"
+                                    >
+                                        Default Shelf
+                                    </th>
+
+                                    <th
+                                        scope="col"
                                         className="px-4 py-3.5 text-center"
                                     >
                                         Status
@@ -391,133 +481,166 @@ export default function CategoriesPage() {
                                 </thead>
 
                                 <tbody className="divide-y divide-slate-100">
-                                {filteredCategories.map((category) => {
-                                    const isActive =
-                                        category.status === "ACTIVE" ||
-                                        category.active === true;
+                                {filteredCategories.map(
+                                    (category) => {
+                                        const isActive =
+                                            category.status ===
+                                            "ACTIVE" ||
+                                            category.active === true;
 
-                                    return (
-                                        <tr
-                                            key={category.id}
-                                            className="transition hover:bg-slate-50/60"
-                                        >
-                                            {/* ID */}
-                                            <td className="py-4 pl-6 pr-3 font-mono text-xs font-medium text-slate-400">
-                                                #{category.id}
-                                            </td>
+                                        const defaultShelf =
+                                            category.defaultShelf;
 
-                                            {/* Category Name */}
-                                            <td className="px-4 py-4">
-                                                <div
-                                                    onClick={() =>
-                                                        router.push(
-                                                            `/categories/${category.id}`
-                                                        )
-                                                    }
-                                                    className="group flex cursor-pointer items-center gap-3"
-                                                >
-                                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 transition group-hover:border-slate-900 group-hover:bg-slate-900 group-hover:text-white">
-                                                        <svg
-                                                            className="h-4 w-4"
-                                                            fill="none"
-                                                            viewBox="0 0 24 24"
-                                                            stroke="currentColor"
-                                                            strokeWidth="1.5"
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                        >
-                                                            <path d="M7 7h10" />
-                                                            <path d="M7 12h10" />
-                                                            <path d="M7 17h6" />
-                                                        </svg>
-                                                    </div>
+                                        return (
+                                            <tr
+                                                key={category.id}
+                                                className="transition hover:bg-slate-50/60"
+                                            >
+                                                {/* ID */}
+                                                <td className="py-4 pl-6 pr-3 font-mono text-xs font-medium text-slate-400">
+                                                    #{category.id}
+                                                </td>
 
-                                                    <div>
-                                                        <div className="text-sm font-semibold text-slate-900 transition group-hover:text-slate-600">
-                                                            {category.name}
-                                                        </div>
-
-                                                        <div className="text-[11px] text-slate-400">
-                                                            Click to view details
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            {/* Status */}
-                                            <td className="px-4 py-4 text-center">
-                                                    <span
-                                                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium tracking-wide ${
-                                                            isActive
-                                                                ? "bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-500/20"
-                                                                : "bg-slate-100 text-slate-500 ring-1 ring-inset ring-slate-400/20"
-                                                        }`}
-                                                    >
-                                                        <span
-                                                            className={`h-1.5 w-1.5 rounded-full ${
-                                                                isActive
-                                                                    ? "bg-emerald-500"
-                                                                    : "bg-slate-400"
-                                                            }`}
-                                                        />
-
-                                                        {isActive
-                                                            ? "ACTIVE"
-                                                            : "INACTIVE"}
-                                                    </span>
-                                            </td>
-
-                                            {/* Actions */}
-                                            <td className="py-4 pl-4 pr-6 text-right">
-                                                <div className="flex items-center justify-end gap-1.5">
-
-                                                    {/* Detail */}
-                                                    <button
-                                                        type="button"
+                                                {/* Category Name */}
+                                                <td className="px-4 py-4">
+                                                    <div
                                                         onClick={() =>
                                                             router.push(
                                                                 `/categories/${category.id}`
                                                             )
                                                         }
-                                                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
+                                                        className="group flex cursor-pointer items-center gap-3"
                                                     >
-                                                        Detail
-                                                    </button>
+                                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 transition group-hover:border-slate-900 group-hover:bg-slate-900 group-hover:text-white">
+                                                            <svg
+                                                                className="h-4 w-4"
+                                                                fill="none"
+                                                                viewBox="0 0 24 24"
+                                                                stroke="currentColor"
+                                                                strokeWidth="1.5"
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                            >
+                                                                <path d="M7 7h10" />
+                                                                <path d="M7 12h10" />
+                                                                <path d="M7 17h6" />
+                                                            </svg>
+                                                        </div>
 
-                                                    {/* Edit */}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            startEditing(category)
-                                                        }
-                                                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
-                                                    >
-                                                        Edit
-                                                    </button>
+                                                        <div>
+                                                            <div className="text-sm font-semibold text-slate-900 transition group-hover:text-slate-600">
+                                                                {
+                                                                    category.name
+                                                                }
+                                                            </div>
 
-                                                    {/* Activate / Deactivate */}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            handleToggleStatus(
-                                                                category
-                                                            )
-                                                        }
-                                                        className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
-                                                            isActive
-                                                                ? "border border-rose-200 bg-rose-50/50 text-rose-600 hover:bg-rose-50"
-                                                                : "border border-emerald-200 bg-emerald-50/50 text-emerald-700 hover:bg-emerald-50"
-                                                        }`}
-                                                    >
-                                                        {isActive
-                                                            ? "Deactivate"
-                                                            : "Activate"}
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                                            <div className="text-[11px] text-slate-400">
+                                                                Click to view details
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                {/* Default Shelf */}
+                                                <td className="px-4 py-4">
+                                                    {defaultShelf ? (
+                                                        <div>
+                                                            <div className="text-xs font-semibold text-slate-800">
+                                                                {
+                                                                    defaultShelf.name
+                                                                }
+                                                            </div>
+
+                                                            <div className="mt-0.5 font-mono text-[10px] text-slate-400">
+                                                                {
+                                                                    defaultShelf.shelfCode
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-slate-400">
+                                                                Not Assigned
+                                                            </span>
+                                                    )}
+                                                </td>
+
+                                                {/* Status */}
+                                                <td className="px-4 py-4 text-center">
+                                                        <span
+                                                            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium tracking-wide ${
+                                                                isActive
+                                                                    ? "bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-500/20"
+                                                                    : "bg-slate-100 text-slate-500 ring-1 ring-inset ring-slate-400/20"
+                                                            }`}
+                                                        >
+                                                            <span
+                                                                className={`h-1.5 w-1.5 rounded-full ${
+                                                                    isActive
+                                                                        ? "bg-emerald-500"
+                                                                        : "bg-slate-400"
+                                                                }`}
+                                                            />
+
+                                                            {isActive
+                                                                ? "ACTIVE"
+                                                                : "INACTIVE"}
+                                                        </span>
+                                                </td>
+
+                                                {/* Actions */}
+                                                <td className="py-4 pl-4 pr-6 text-right">
+                                                    <div className="flex items-center justify-end gap-1.5">
+
+                                                        {/* Detail */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                router.push(
+                                                                    `/categories/${category.id}`
+                                                                )
+                                                            }
+                                                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
+                                                        >
+                                                            Detail
+                                                        </button>
+
+                                                        {/* Edit */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                startEditing(
+                                                                    category
+                                                                )
+                                                            }
+                                                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
+                                                        >
+                                                            Edit
+                                                        </button>
+
+                                                        {/* Activate / Deactivate */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                handleToggleStatus(
+                                                                    category
+                                                                )
+                                                            }
+                                                            className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
+                                                                isActive
+                                                                    ? "border border-rose-200 bg-rose-50/50 text-rose-600 hover:bg-rose-50"
+                                                                    : "border border-emerald-200 bg-emerald-50/50 text-emerald-700 hover:bg-emerald-50"
+                                                            }`}
+                                                        >
+                                                            {isActive
+                                                                ? "Deactivate"
+                                                                : "Activate"}
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    }
+                                )}
                                 </tbody>
                             </table>
                         </div>
@@ -540,7 +663,8 @@ export default function CategoriesPage() {
                                 </h3>
 
                                 <p className="mt-0.5 text-xs text-slate-400">
-                                    Manage genre and catalog classification
+                                    Manage genre, shelf assignment,
+                                    and catalog classification
                                 </p>
                             </div>
 
@@ -568,10 +692,14 @@ export default function CategoriesPage() {
 
                         {/* Form */}
                         <div className="mt-5 space-y-4">
+
+                            {/* Category Name */}
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Category Name{" "}
-                                    <span className="text-rose-500">*</span>
+                                    <span className="text-rose-500">
+                                        *
+                                    </span>
                                 </label>
 
                                 <input
@@ -586,6 +714,52 @@ export default function CategoriesPage() {
                                     }
                                     className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
                                 />
+                            </div>
+
+                            {/* Default Shelf */}
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-700">
+                                    Default Shelf
+                                </label>
+
+                                <select
+                                    value={formData.defaultShelfId}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            defaultShelfId:
+                                            e.target.value,
+                                        })
+                                    }
+                                    className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
+                                >
+                                    <option value="">
+                                        Not Assigned
+                                    </option>
+
+                                    {shelves
+                                        .filter(
+                                            (shelf) =>
+                                                shelf.status ===
+                                                "ACTIVE" ||
+                                                !shelf.status
+                                        )
+                                        .map((shelf) => (
+                                            <option
+                                                key={shelf.id}
+                                                value={shelf.id}
+                                            >
+                                                {shelf.shelfCode} -{" "}
+                                                {shelf.name}
+                                            </option>
+                                        ))}
+                                </select>
+
+                                <p className="mt-1.5 text-[11px] text-slate-400">
+                                    This shelf will be used as the default
+                                    physical location for books in this
+                                    category.
+                                </p>
                             </div>
                         </div>
 

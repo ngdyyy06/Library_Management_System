@@ -1,8 +1,6 @@
 package com.library.management.dto;
 
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -32,6 +30,9 @@ public class CreateBookRequest {
     private List<Long> categoryIds;
 
     private List<String> categoryNames;
+
+    // Primary Category
+    private Long primaryCategoryId;
 
     public CreateBookRequest() {
     }
@@ -114,5 +115,13 @@ public class CreateBookRequest {
 
     public void setCategoryNames(List<String> categoryNames) {
         this.categoryNames = categoryNames;
+    }
+
+    public Long getPrimaryCategoryId() {
+        return primaryCategoryId;
+    }
+
+    public void setPrimaryCategoryId(Long primaryCategoryId) {
+        this.primaryCategoryId = primaryCategoryId;
     }
 }

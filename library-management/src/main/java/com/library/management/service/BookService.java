@@ -3,11 +3,13 @@ package com.library.management.service;
 import com.library.management.dto.CreateBookRequest;
 import com.library.management.entity.Author;
 import com.library.management.entity.Book;
+import com.library.management.entity.BookShelf;
 import com.library.management.entity.Category;
 import com.library.management.entity.Publisher;
 import com.library.management.exception.ResourceNotFoundException;
 import com.library.management.repository.AuthorRepository;
 import com.library.management.repository.BookRepository;
+import com.library.management.repository.BookShelfRepository;
 import com.library.management.repository.CategoryRepository;
 import com.library.management.repository.PublisherRepository;
 import org.springframework.stereotype.Service;
@@ -26,17 +28,20 @@ public class BookService {
     private final AuthorRepository authorRepository;
     private final PublisherRepository publisherRepository;
     private final CategoryRepository categoryRepository;
+    private final BookShelfRepository bookShelfRepository;
 
     public BookService(
             BookRepository bookRepository,
             AuthorRepository authorRepository,
             PublisherRepository publisherRepository,
-            CategoryRepository categoryRepository) {
+            CategoryRepository categoryRepository,
+            BookShelfRepository bookShelfRepository) {
 
         this.bookRepository = bookRepository;
         this.authorRepository = authorRepository;
         this.publisherRepository = publisherRepository;
         this.categoryRepository = categoryRepository;
+        this.bookShelfRepository = bookShelfRepository;
     }
 
     // =========================================================
@@ -131,6 +136,16 @@ public class BookService {
 
         book.setCategories(categories);
 
+        // =====================================================
+        // Primary Category + Shelf
+        // =====================================================
+
+        applyPrimaryCategoryAndShelf(
+                book,
+                request.getPrimaryCategoryId(),
+                categories
+        );
+
         return bookRepository.save(book);
     }
 
@@ -185,17 +200,14 @@ public class BookService {
                 String normalizedName =
                         trimmedName.toLowerCase(Locale.ROOT);
 
-                // Avoid duplicate author names in the same request
                 if (!processedNames.add(normalizedName)) {
                     continue;
                 }
 
-                // Find existing author
                 Author author = authorRepository
                         .findByNameIgnoreCase(trimmedName)
                         .orElse(null);
 
-                // Create new author if not found
                 if (author == null) {
 
                     author = new Author();
@@ -325,13 +337,45 @@ public class BookService {
         // Update Categories
         // =====================================================
 
-        if (request.getCategoryIds() != null
-                || request.getCategoryNames() != null) {
+        boolean categoriesProvided =
+                request.getCategoryIds() != null
+                        || request.getCategoryNames() != null;
+
+        if (categoriesProvided) {
 
             Set<Category> categories =
                     resolveCategories(request);
 
             book.setCategories(categories);
+
+            /*
+             * When categories are changed,
+             * primary category must also be specified.
+             */
+            if (request.getPrimaryCategoryId() == null) {
+
+                throw new RuntimeException(
+                        "Primary category is required when updating book categories"
+                );
+            }
+
+            applyPrimaryCategoryAndShelf(
+                    book,
+                    request.getPrimaryCategoryId(),
+                    categories
+            );
+
+        } else if (request.getPrimaryCategoryId() != null) {
+
+            /*
+             * Categories are unchanged,
+             * but the primary category is changed.
+             */
+            applyPrimaryCategoryAndShelf(
+                    book,
+                    request.getPrimaryCategoryId(),
+                    book.getCategories()
+            );
         }
 
         /*
@@ -466,17 +510,14 @@ public class BookService {
                 String normalizedName =
                         categoryName.toLowerCase(Locale.ROOT);
 
-                // Avoid duplicate category names
                 if (!processedNames.add(normalizedName)) {
                     continue;
                 }
 
-                // Find existing category
                 Category category = categoryRepository
                         .findByNameIgnoreCase(categoryName)
                         .orElse(null);
 
-                // Create new category if not found
                 if (category == null) {
 
                     category = new Category();
@@ -493,5 +534,81 @@ public class BookService {
         }
 
         return categories;
+    }
+
+    // =========================================================
+    // APPLY PRIMARY CATEGORY + SHELF
+    // =========================================================
+
+    private void applyPrimaryCategoryAndShelf(
+            Book book,
+            Long primaryCategoryId,
+            Set<Category> categories) {
+
+        // =====================================================
+        // Primary Category is required
+        // =====================================================
+
+        if (primaryCategoryId == null) {
+
+            throw new RuntimeException(
+                    "Primary category is required"
+            );
+        }
+
+        // =====================================================
+        // Find Primary Category
+        // =====================================================
+
+        Category primaryCategory = categoryRepository
+                .findById(primaryCategoryId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Primary category not found"
+                        )
+                );
+
+        // =====================================================
+        // Primary Category must belong to book categories
+        // =====================================================
+
+        boolean belongsToBook =
+                categories.stream()
+                        .anyMatch(category ->
+                                category.getId()
+                                        .equals(primaryCategory.getId()));
+
+        if (!belongsToBook) {
+
+            throw new RuntimeException(
+                    "Primary category must be one of the book categories"
+            );
+        }
+
+        // =====================================================
+        // Find Default Shelf
+        // =====================================================
+
+        BookShelf defaultShelf =
+                primaryCategory.getDefaultShelf();
+
+        if (defaultShelf == null) {
+
+            throw new RuntimeException(
+                    "Primary category does not have a default shelf"
+            );
+        }
+
+        // =====================================================
+        // Set Primary Category
+        // =====================================================
+
+        book.setPrimaryCategory(primaryCategory);
+
+        // =====================================================
+        // Set Physical Shelf
+        // =====================================================
+
+        book.setShelf(defaultShelf);
     }
 }

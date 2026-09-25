@@ -109,6 +109,9 @@ export default function BookDetailPage() {
             ? Math.round((availableQty / totalQty) * 100)
             : 0;
 
+    const shelf = book.shelf;
+    const primaryCategory = book.primaryCategory;
+
     return (
         <div className="min-h-screen w-full bg-[#f7f8fa] p-6 font-sans sm:p-8">
             <div className="mx-auto max-w-6xl space-y-6">
@@ -159,7 +162,8 @@ export default function BookDetailPage() {
                         </div>
 
                         <p className="mt-1 text-sm text-slate-500">
-                            View catalog information, publication details, and inventory availability.
+                            View catalog information, publication details, and
+                            inventory availability.
                         </p>
                     </div>
 
@@ -306,6 +310,76 @@ export default function BookDetailPage() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* ================================================= */}
+                        {/* SHELF CARD                                         */}
+                        {/* ================================================= */}
+                        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                            <div className="flex items-center gap-2">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-500">
+                                    <svg
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={1.6}
+                                            d="M4 19h16M4 15h16M4 11h16M6 7h12M8 3h8"
+                                        />
+                                    </svg>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                                        Physical Location
+                                    </h3>
+
+                                    <p className="mt-0.5 text-[11px] text-slate-400">
+                                        Library shelf
+                                    </p>
+                                </div>
+                            </div>
+
+                            {shelf ? (
+                                <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <p className="font-mono text-sm font-bold text-slate-900">
+                                                {shelf.shelfCode}
+                                            </p>
+
+                                            <p className="mt-1 text-sm font-semibold text-slate-700">
+                                                {shelf.name}
+                                            </p>
+                                        </div>
+
+                                        <span
+                                            className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ring-inset ${
+                                                shelf.status === "ACTIVE"
+                                                    ? "bg-emerald-50 text-emerald-700 ring-emerald-600/15"
+                                                    : "bg-slate-100 text-slate-500 ring-slate-500/15"
+                                            }`}
+                                        >
+                                            {shelf.status || "—"}
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="mt-5 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4">
+                                    <p className="text-sm font-medium text-slate-500">
+                                        Shelf not assigned
+                                    </p>
+
+                                    <p className="mt-1 text-xs leading-5 text-slate-400">
+                                        This book does not have a physical
+                                        shelf assigned yet.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* ===================================================== */}
@@ -387,6 +461,51 @@ export default function BookDetailPage() {
                                 </div>
                             </div>
 
+                            {/* Categories */}
+                            <div className="mt-6">
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                    Categories
+                                </p>
+
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {book.categories &&
+                                    book.categories.length > 0 ? (
+                                        book.categories.map(
+                                            (
+                                                category: any,
+                                                idx: number
+                                            ) => (
+                                                <span
+                                                    key={
+                                                        category.id ??
+                                                        idx
+                                                    }
+                                                    className={`inline-flex items-center rounded-lg border px-3 py-1.5 text-xs font-semibold ${
+                                                        primaryCategory?.id ===
+                                                        category.id
+                                                            ? "border-slate-300 bg-slate-900 text-white"
+                                                            : "border-slate-200 bg-slate-50 text-slate-700"
+                                                    }`}
+                                                >
+                                                    {category.name}
+
+                                                    {primaryCategory?.id ===
+                                                        category.id && (
+                                                            <span className="ml-1.5 text-[10px] font-medium text-slate-300">
+                                                            Primary
+                                                        </span>
+                                                        )}
+                                                </span>
+                                            )
+                                        )
+                                    ) : (
+                                        <span className="text-xs italic text-slate-400">
+                                            No categories assigned
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
                             {/* Metadata */}
                             <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
@@ -434,6 +553,40 @@ export default function BookDetailPage() {
                                     <p className="mt-1 font-mono text-sm font-semibold text-slate-900">
                                         {book.isbn || "—"}
                                     </p>
+                                </div>
+
+                                {/* Primary Category */}
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                        Primary Category
+                                    </p>
+
+                                    <p className="mt-1 text-sm font-semibold text-slate-900">
+                                        {primaryCategory?.name || "—"}
+                                    </p>
+                                </div>
+
+                                {/* Shelf */}
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                        Shelf
+                                    </p>
+
+                                    {shelf ? (
+                                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                                            <span className="font-mono text-sm font-semibold text-slate-900">
+                                                {shelf.shelfCode}
+                                            </span>
+
+                                            <span className="text-xs text-slate-400">
+                                                {shelf.name}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <p className="mt-1 text-sm font-semibold text-slate-400">
+                                            Not assigned
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:col-span-2">

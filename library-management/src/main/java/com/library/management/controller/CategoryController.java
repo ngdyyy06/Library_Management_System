@@ -69,4 +69,20 @@ public class CategoryController {
 
         return categoryService.activateCategory(id);
     }
+
+    // Gán Default Shelf cho Category
+    @PatchMapping("/{categoryId}/default-shelf/{shelfId}")
+    public Category assignDefaultShelf(
+            @PathVariable Long categoryId,
+            @PathVariable Long shelfId) {
+
+        return categoryService.assignDefaultShelf(categoryId, shelfId);
+    }
+
+    @PatchMapping("/{categoryId}/default-shelf/remove")
+    public Category removeDefaultShelf(
+            @PathVariable Long categoryId) {
+
+        return categoryService.removeDefaultShelf(categoryId);
+    }
 }
