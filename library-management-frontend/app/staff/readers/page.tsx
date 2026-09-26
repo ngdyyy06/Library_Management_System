@@ -10,6 +10,7 @@ import {
     activateReader,
     deactivateReader,
     getLibraryCard,
+    getReaderRevenue,
 } from "@/app/lib/api";
 
 export default function StaffReadersPage() {
@@ -18,9 +19,16 @@ export default function StaffReadersPage() {
     const [readers, setReaders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Reader revenue state
+    const [revenue, setRevenue] = useState({
+        todayRevenue: 0,
+        monthlyRevenue: 0,
+    });
+
     // Search & Filter state
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
+    const [statusFilter, setStatusFilter] =
+        useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
 
     // Add / Edit Modal state
     const [showFormModal, setShowFormModal] = useState(false);
@@ -33,8 +41,19 @@ export default function StaffReadersPage() {
     // Form-level error
     const [formError, setFormError] = useState("");
 
+    // Field-level errors
+    const [fieldErrors, setFieldErrors] = useState<{
+        readerCode?: string;
+        fullName?: string;
+        email?: string;
+        phone?: string;
+        address?: string;
+        dateOfBirth?: string;
+    }>({});
+
     // Library Card state
-    const [selectedLibraryCard, setSelectedLibraryCard] = useState<any | null>(null);
+    const [selectedLibraryCard, setSelectedLibraryCard] =
+        useState<any | null>(null);
     const [showLibraryCardModal, setShowLibraryCardModal] = useState(false);
     const [loadingLibraryCard, setLoadingLibraryCard] = useState(false);
 
@@ -54,11 +73,28 @@ export default function StaffReadersPage() {
     async function loadReaders() {
         try {
             setLoading(true);
-            const data = await getReaders();
-            setReaders(data || []);
+
+            const [readerData, revenueData] = await Promise.all([
+                getReaders(),
+                getReaderRevenue(),
+            ]);
+
+            setReaders(readerData || []);
+
+            setRevenue({
+                todayRevenue: Number(
+                    revenueData?.todayRevenue ?? 0
+                ),
+                monthlyRevenue: Number(
+                    revenueData?.monthlyRevenue ?? 0
+                ),
+            });
         } catch (err: any) {
             console.error("Failed to load readers:", err);
-            setError(err?.message || "Failed to load readers.");
+
+            setError(
+                err?.message || "Failed to load readers."
+            );
         } finally {
             setLoading(false);
         }
@@ -66,6 +102,7 @@ export default function StaffReadersPage() {
 
     function openAddModal() {
         setEditingReader(null);
+
         setFormData({
             readerCode: "",
             fullName: "",
@@ -74,12 +111,16 @@ export default function StaffReadersPage() {
             address: "",
             dateOfBirth: "",
         });
+
         setFormError("");
+        setFieldErrors({});
+
         setShowFormModal(true);
     }
 
     function openEditModal(reader: any) {
         setEditingReader(reader);
+
         setFormData({
             readerCode: reader.readerCode || "",
             fullName: reader.fullName || "",
@@ -88,18 +129,25 @@ export default function StaffReadersPage() {
             address: reader.address || "",
             dateOfBirth: reader.dateOfBirth || "",
         });
+
         setFormError("");
+        setFieldErrors({});
+
         setShowFormModal(true);
     }
 
     function closeFormModal() {
         if (saving) return;
+
         setShowFormModal(false);
         setEditingReader(null);
         setFormError("");
+        setFieldErrors({});
     }
 
-    function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
+    function handleChange(
+        event: React.ChangeEvent<HTMLInputElement>
+    ) {
         const { name, value } = event.target;
 
         setFormData((prev) => ({
@@ -107,27 +155,127 @@ export default function StaffReadersPage() {
             [name]: value,
         }));
 
-        // Clear form error when user starts correcting the input
+        // Clear general form error
         setFormError("");
+
+        // Clear error of the field currently being edited
+        setFieldErrors((prev) => ({
+            ...prev,
+            [name]: undefined,
+        }));
     }
 
-    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    function handleBackendError(message: string) {
+        const lowerMessage = message.toLowerCase();
+
+        setFormError("");
+        setFieldErrors({});
+
+        /*
+         * Phone-related errors
+         */
+        if (
+            lowerMessage.includes("phone") ||
+            lowerMessage.includes("số điện thoại") ||
+            lowerMessage.includes("mobile")
+        ) {
+            setFieldErrors({
+                phone: message,
+            });
+
+            return;
+        }
+
+        /*
+         * Email-related errors
+         */
+        if (
+            lowerMessage.includes("email") ||
+            lowerMessage.includes("e-mail")
+        ) {
+            setFieldErrors({
+                email: message,
+            });
+
+            return;
+        }
+
+        /*
+         * Reader code-related errors
+         */
+        if (
+            lowerMessage.includes("reader code") ||
+            lowerMessage.includes("readercode")
+        ) {
+            setFieldErrors({
+                readerCode: message,
+            });
+
+            return;
+        }
+
+        /*
+         * Full name-related errors
+         */
+        if (
+            lowerMessage.includes("full name") ||
+            lowerMessage.includes("fullname")
+        ) {
+            setFieldErrors({
+                fullName: message,
+            });
+
+            return;
+        }
+
+        /*
+         * Unknown error
+         * -> show at the top of the form
+         */
+        setFormError(message);
+    }
+
+    async function handleSubmit(
+        event: React.FormEvent<HTMLFormElement>
+    ) {
         event.preventDefault();
 
         setFormError("");
+        setFieldErrors({});
 
+        // Basic frontend validation
         if (!formData.readerCode.trim()) {
-            setFormError("Reader code is required.");
+            setFieldErrors({
+                readerCode: "Reader code is required.",
+            });
             return;
         }
 
         if (!formData.fullName.trim()) {
-            setFormError("Full name is required.");
+            setFieldErrors({
+                fullName: "Full name is required.",
+            });
             return;
         }
 
         if (!formData.phone.trim()) {
-            setFormError("Phone number is required.");
+            setFieldErrors({
+                phone: "Phone number is required.",
+            });
+            return;
+        }
+
+        const phone = formData.phone.trim();
+
+        /*
+         * Basic format validation.
+         * Unique validation is handled by backend.
+         */
+        if (!/^0\d{9}$/.test(phone)) {
+            setFieldErrors({
+                phone:
+                    "Phone number must be exactly 10 digits and start with 0.",
+            });
             return;
         }
 
@@ -138,52 +286,83 @@ export default function StaffReadersPage() {
                 readerCode: formData.readerCode.trim(),
                 fullName: formData.fullName.trim(),
                 email: formData.email.trim() || undefined,
-                phone: formData.phone.trim(),
+                phone,
                 address: formData.address.trim() || undefined,
-                dateOfBirth: formData.dateOfBirth || undefined,
+                dateOfBirth:
+                    formData.dateOfBirth || undefined,
             };
 
             if (editingReader) {
-                await updateReader(editingReader.id, payload);
+                await updateReader(
+                    editingReader.id,
+                    payload
+                );
             } else {
                 await createReader(payload);
             }
 
             await loadReaders();
+
             closeFormModal();
         } catch (err: any) {
-            console.error("Failed to save reader:", err);
-            setFormError(err?.message || "Failed to save reader.");
+            console.error(
+                "Failed to save reader:",
+                err
+            );
+
+            const message =
+                err?.message ||
+                "Failed to save reader.";
+
+            handleBackendError(message);
         } finally {
             setSaving(false);
         }
     }
 
     async function handleActivate(id: number) {
-        if (!window.confirm("Are you sure you want to activate this reader account?")) {
+        if (
+            !window.confirm(
+                "Are you sure you want to activate this reader account?"
+            )
+        ) {
             return;
         }
 
         try {
             setError("");
+
             await activateReader(id);
+
             await loadReaders();
         } catch (err: any) {
-            setError(err?.message || "Failed to activate reader.");
+            setError(
+                err?.message ||
+                "Failed to activate reader."
+            );
         }
     }
 
     async function handleDeactivate(id: number) {
-        if (!window.confirm("Are you sure you want to deactivate this reader account?")) {
+        if (
+            !window.confirm(
+                "Are you sure you want to deactivate this reader account?"
+            )
+        ) {
             return;
         }
 
         try {
             setError("");
+
             await deactivateReader(id);
+
             await loadReaders();
         } catch (err: any) {
-            setError(err?.message || "Failed to deactivate reader.");
+            setError(
+                err?.message ||
+                "Failed to deactivate reader."
+            );
         }
     }
 
@@ -197,8 +376,15 @@ export default function StaffReadersPage() {
             setSelectedLibraryCard(card);
             setShowLibraryCardModal(true);
         } catch (err: any) {
-            console.error("Failed to load library card:", err);
-            setError(err?.message || "Failed to load library card.");
+            console.error(
+                "Failed to load library card:",
+                err
+            );
+
+            setError(
+                err?.message ||
+                "Failed to load library card."
+            );
         } finally {
             setLoadingLibraryCard(false);
         }
@@ -214,33 +400,56 @@ export default function StaffReadersPage() {
     // Filter & Search Logic
     const filteredReaders = useMemo(() => {
         return readers.filter((reader) => {
-            const keyword = searchTerm.trim().toLowerCase();
+            const keyword =
+                searchTerm.trim().toLowerCase();
 
             const matchesSearch =
                 !keyword ||
-                reader.readerCode?.toLowerCase().includes(keyword) ||
-                reader.fullName?.toLowerCase().includes(keyword) ||
-                reader.email?.toLowerCase().includes(keyword) ||
-                reader.phone?.toLowerCase().includes(keyword);
+                reader.readerCode
+                    ?.toLowerCase()
+                    .includes(keyword) ||
+                reader.fullName
+                    ?.toLowerCase()
+                    .includes(keyword) ||
+                reader.email
+                    ?.toLowerCase()
+                    .includes(keyword) ||
+                reader.phone
+                    ?.toLowerCase()
+                    .includes(keyword);
 
             const matchesStatus =
-                statusFilter === "ALL" || reader.status === statusFilter;
+                statusFilter === "ALL" ||
+                reader.status === statusFilter;
 
-            return matchesSearch && matchesStatus;
+            return (
+                matchesSearch &&
+                matchesStatus
+            );
         });
-    }, [readers, searchTerm, statusFilter]);
+    }, [
+        readers,
+        searchTerm,
+        statusFilter,
+    ]);
 
     // Metric Calculations
     const totalReaders = readers.length;
-    const activeReaders = readers.filter((r) => r.status === "ACTIVE").length;
-    const inactiveReaders = readers.filter((r) => r.status === "INACTIVE").length;
+
+    const activeReaders = readers.filter(
+        (r) => r.status === "ACTIVE"
+    ).length;
+
+    const inactiveReaders = readers.filter(
+        (r) => r.status === "INACTIVE"
+    ).length;
 
     return (
         <RoleGuard allowedRoles={["LIBRARIAN", "ADMIN"]}>
             <div className="min-h-screen w-full bg-[#fafafa] p-6 lg:p-8">
                 <div className="mx-auto max-w-7xl space-y-6">
 
-                    {/* ── Page Header ── */}
+                    {/* Page Header */}
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <div className="flex items-center gap-2.5">
@@ -281,7 +490,7 @@ export default function StaffReadersPage() {
                         </button>
                     </div>
 
-                    {/* ── Page-level Error Banner ── */}
+                    {/* Page-level Error */}
                     {error && (
                         <div className="flex items-center justify-between rounded-lg border border-rose-200 bg-rose-50/70 px-4 py-3 text-xs text-rose-700 sm:text-sm">
                             <div className="flex items-center gap-2">
@@ -312,7 +521,7 @@ export default function StaffReadersPage() {
                         </div>
                     )}
 
-                    {/* ── 3-Metric Statistics Strip ── */}
+                    {/* Reader Statistics */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
 
                         {/* Total Readers */}
@@ -361,7 +570,105 @@ export default function StaffReadersPage() {
                         </div>
                     </div>
 
-                    {/* ── Main Container: Search, Filter & Table ── */}
+                    {/* Card Revenue */}
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+
+                        {/* Today's Card Revenue */}
+                        <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+                            <div className="flex items-start justify-between">
+
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+
+                                        <p className="text-sm font-medium uppercase tracking-wide text-slate-500">
+                                            Today's Card Revenue
+                                        </p>
+                                    </div>
+
+                                    <div className="mt-2 flex items-baseline gap-2">
+                                        <p className="text-2xl font-semibold tracking-tight text-slate-900">
+                                            {revenue.todayRevenue.toLocaleString("vi-VN")}
+                                        </p>
+
+                                        <span className="text-sm font-medium text-emerald-600">
+                        VND
+                    </span>
+                                    </div>
+
+                                    <p className="mt-1.5 text-xs text-slate-400">
+                                        Library card fees collected today
+                                    </p>
+                                </div>
+
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50">
+                                    <svg
+                                        className="h-5 w-5 text-emerald-600"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={1.5}
+                                            d="M12 8c-1.657 0-3 1.12-3 2.5S10.343 13 12 13s3 1.12 3 2.5S13.657 18 12 18m0-10V6m0 12v-2m0-10a6 6 0 100 12 6 6 0 000-12z"
+                                        />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        {/* Monthly Card Revenue */}
+                        <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+                            <div className="flex items-start justify-between">
+
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="h-2 w-2 rounded-full bg-blue-500" />
+
+                                        <p className="text-sm font-medium uppercase tracking-wide text-slate-500">
+                                            Monthly Card Revenue
+                                        </p>
+                                    </div>
+
+                                    <div className="mt-2 flex items-baseline gap-2">
+                                        <p className="text-2xl font-semibold tracking-tight text-slate-900">
+                                            {revenue.monthlyRevenue.toLocaleString("vi-VN")}
+                                        </p>
+
+                                        <span className="text-sm font-medium text-blue-600">
+                                            VND
+                                        </span>
+                                    </div>
+
+                                    <p className="mt-1.5 text-xs text-slate-400">
+                                        Library card fees collected this month
+                                    </p>
+                                </div>
+
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50">
+                                    <svg
+                                        className="h-5 w-5 text-blue-600"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={1.5}
+                                            d="M3 3v18h18M7 16l3-4 3 2 5-7"
+                                        />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {/* Main Container */}
                     <div className="rounded-xl border border-slate-200/80 bg-white shadow-xs">
 
                         {/* Filter Bar */}
@@ -386,7 +693,9 @@ export default function StaffReadersPage() {
                                     <input
                                         type="text"
                                         value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        onChange={(e) =>
+                                            setSearchTerm(e.target.value)
+                                        }
                                         placeholder="Search by code, name, email, or phone number..."
                                         className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:bg-white focus:ring-1 focus:ring-slate-400 sm:text-sm"
                                     />
@@ -396,22 +705,34 @@ export default function StaffReadersPage() {
                                     value={statusFilter}
                                     onChange={(e) =>
                                         setStatusFilter(
-                                            e.target.value as "ALL" | "ACTIVE" | "INACTIVE"
+                                            e.target.value as
+                                                | "ALL"
+                                                | "ACTIVE"
+                                                | "INACTIVE"
                                         )
                                     }
                                     className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white focus:ring-1 focus:ring-slate-400 sm:text-sm"
                                 >
-                                    <option value="ALL">All Statuses</option>
-                                    <option value="ACTIVE">Active</option>
-                                    <option value="INACTIVE">Inactive</option>
+                                    <option value="ALL">
+                                        All Statuses
+                                    </option>
+
+                                    <option value="ACTIVE">
+                                        Active
+                                    </option>
+
+                                    <option value="INACTIVE">
+                                        Inactive
+                                    </option>
                                 </select>
                             </div>
                         </div>
 
-                        {/* Table View */}
+                        {/* Table */}
                         {loading ? (
                             <div className="flex flex-col items-center justify-center py-16 text-center">
                                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-900 border-t-transparent" />
+
                                 <p className="mt-3 text-xs text-slate-500">
                                     Loading readers directory...
                                 </p>
@@ -480,9 +801,9 @@ export default function StaffReadersPage() {
                                             className="transition-colors hover:bg-slate-50/70"
                                         >
                                             <td className="px-5 py-3.5">
-                                                    <span className="font-mono text-xs font-semibold text-slate-700">
-                                                        {reader.readerCode}
-                                                    </span>
+                                                <span className="font-mono text-xs font-semibold text-slate-700">
+                                                    {reader.readerCode}
+                                                </span>
                                             </td>
 
                                             <td className="px-5 py-3.5 font-medium text-slate-900">
@@ -498,31 +819,32 @@ export default function StaffReadersPage() {
                                             </td>
 
                                             <td className="px-5 py-3.5">
+                                                <span
+                                                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                                        reader.status ===
+                                                        "ACTIVE"
+                                                            ? "bg-emerald-50 text-emerald-700"
+                                                            : "bg-slate-100 text-slate-600"
+                                                    }`}
+                                                >
                                                     <span
-                                                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                                            reader.status === "ACTIVE"
-                                                                ? "bg-emerald-50 text-emerald-700"
-                                                                : "bg-slate-100 text-slate-600"
+                                                        className={`h-1.5 w-1.5 rounded-full ${
+                                                            reader.status ===
+                                                            "ACTIVE"
+                                                                ? "bg-emerald-500"
+                                                                : "bg-slate-400"
                                                         }`}
-                                                    >
-                                                        <span
-                                                            className={`h-1.5 w-1.5 rounded-full ${
-                                                                reader.status === "ACTIVE"
-                                                                    ? "bg-emerald-500"
-                                                                    : "bg-slate-400"
-                                                            }`}
-                                                        />
+                                                    />
 
-                                                        {reader.status === "ACTIVE"
-                                                            ? "Active"
-                                                            : "Inactive"}
-                                                    </span>
+                                                    {reader.status === "ACTIVE"
+                                                        ? "Active"
+                                                        : "Inactive"}
+                                                </span>
                                             </td>
 
                                             <td className="px-5 py-3.5 text-right">
                                                 <div className="flex items-center justify-end gap-1.5">
 
-                                                    {/* Dedicated Detail Page Navigation */}
                                                     <button
                                                         type="button"
                                                         onClick={() =>
@@ -535,31 +857,41 @@ export default function StaffReadersPage() {
                                                         Details
                                                     </button>
 
-                                                    {/* Library Card */}
                                                     <button
                                                         type="button"
-                                                        onClick={() => handleViewCard(reader.id)}
-                                                        disabled={loadingLibraryCard}
+                                                        onClick={() =>
+                                                            handleViewCard(
+                                                                reader.id
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            loadingLibraryCard
+                                                        }
                                                         className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
                                                     >
                                                         View Card
                                                     </button>
 
-                                                    {/* In-Page Edit Modal Trigger */}
                                                     <button
                                                         type="button"
-                                                        onClick={() => openEditModal(reader)}
+                                                        onClick={() =>
+                                                            openEditModal(
+                                                                reader
+                                                            )
+                                                        }
                                                         className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
                                                     >
                                                         Edit
                                                     </button>
 
-                                                    {/* Activate / Deactivate Action */}
-                                                    {reader.status === "ACTIVE" ? (
+                                                    {reader.status ===
+                                                    "ACTIVE" ? (
                                                         <button
                                                             type="button"
                                                             onClick={() =>
-                                                                handleDeactivate(reader.id)
+                                                                handleDeactivate(
+                                                                    reader.id
+                                                                )
                                                             }
                                                             className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-rose-600 shadow-2xs transition hover:bg-rose-50"
                                                         >
@@ -569,7 +901,9 @@ export default function StaffReadersPage() {
                                                         <button
                                                             type="button"
                                                             onClick={() =>
-                                                                handleActivate(reader.id)
+                                                                handleActivate(
+                                                                    reader.id
+                                                                )
                                                             }
                                                             className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-emerald-600 shadow-2xs transition hover:bg-emerald-50"
                                                         >
@@ -586,142 +920,159 @@ export default function StaffReadersPage() {
                         )}
                     </div>
 
-                    {/* ── Library Card Modal ── */}
-                    {showLibraryCardModal && selectedLibraryCard && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-[2px]">
-                            <div className="w-full max-w-md rounded-xl border border-slate-200/80 bg-white shadow-xl">
+                    {/* Library Card Modal */}
+                    {showLibraryCardModal &&
+                        selectedLibraryCard && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-[2px]">
+                                <div className="w-full max-w-md rounded-xl border border-slate-200/80 bg-white shadow-xl">
 
-                                {/* Modal Header */}
-                                <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-                                    <div>
-                                        <h2 className="text-base font-semibold text-slate-900">
-                                            Library Card
-                                        </h2>
+                                    <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                                        <div>
+                                            <h2 className="text-base font-semibold text-slate-900">
+                                                Library Card
+                                            </h2>
 
-                                        <p className="mt-0.5 text-xs text-slate-400">
-                                            Reader identification card
-                                        </p>
-                                    </div>
+                                            <p className="mt-0.5 text-xs text-slate-400">
+                                                Reader identification card
+                                            </p>
+                                        </div>
 
-                                    <button
-                                        type="button"
-                                        onClick={closeLibraryCardModal}
-                                        className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-                                    >
-                                        <svg
-                                            className="h-4 w-4"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
+                                        <button
+                                            type="button"
+                                            onClick={
+                                                closeLibraryCardModal
+                                            }
+                                            className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
                                         >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={1.5}
-                                                d="M6 18L18 6M6 6l12 12"
-                                            />
-                                        </svg>
-                                    </button>
-                                </div>
-
-                                {/* Card Preview */}
-                                <div className="p-6">
-                                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-
-                                        <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
-                                            <div>
-                                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                                                    Library Card
-                                                </p>
-
-                                                <h3 className="mt-1 text-lg font-semibold text-slate-900">
-                                                    Library Membership
-                                                </h3>
-                                            </div>
-
-                                            <span
-                                                className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${
-                                                    selectedLibraryCard.status === "ACTIVE"
-                                                        ? "bg-emerald-50 text-emerald-700"
-                                                        : "bg-slate-100 text-slate-600"
-                                                }`}
+                                            <svg
+                                                className="h-4 w-4"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
                                             >
-                                                {selectedLibraryCard.status}
-                                            </span>
-                                        </div>
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={1.5}
+                                                    d="M6 18L18 6M6 6l12 12"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </div>
 
-                                        <div className="mt-5 space-y-3">
+                                    <div className="p-6">
+                                        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
 
-                                            <div>
-                                                <p className="text-[10px] uppercase tracking-wider text-slate-400">
-                                                    Card Number
-                                                </p>
-
-                                                <p className="mt-1 font-mono text-sm font-semibold text-slate-800">
-                                                    {selectedLibraryCard.cardNumber}
-                                                </p>
-                                            </div>
-
-                                            <div>
-                                                <p className="text-[10px] uppercase tracking-wider text-slate-400">
-                                                    Reader Code
-                                                </p>
-
-                                                <p className="mt-1 font-mono text-sm font-semibold text-slate-800">
-                                                    {selectedLibraryCard.reader?.readerCode || "—"}
-                                                </p>
-                                            </div>
-
-                                            <div>
-                                                <p className="text-[10px] uppercase tracking-wider text-slate-400">
-                                                    Full Name
-                                                </p>
-
-                                                <p className="mt-1 text-sm font-medium text-slate-900">
-                                                    {selectedLibraryCard.reader?.fullName || "—"}
-                                                </p>
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
                                                 <div>
-                                                    <p className="text-[10px] uppercase tracking-wider text-slate-400">
-                                                        Issued
+                                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                                                        Library Card
                                                     </p>
 
-                                                    <p className="mt-1 text-sm text-slate-700">
-                                                        {selectedLibraryCard.issuedAt || "—"}
+                                                    <h3 className="mt-1 text-lg font-semibold text-slate-900">
+                                                        Library Membership
+                                                    </h3>
+                                                </div>
+
+                                                <span
+                                                    className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${
+                                                        selectedLibraryCard.status ===
+                                                        "ACTIVE"
+                                                            ? "bg-emerald-50 text-emerald-700"
+                                                            : "bg-slate-100 text-slate-600"
+                                                    }`}
+                                                >
+                                                    {
+                                                        selectedLibraryCard.status
+                                                    }
+                                                </span>
+                                            </div>
+
+                                            <div className="mt-5 space-y-3">
+
+                                                <div>
+                                                    <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                                                        Card Number
+                                                    </p>
+
+                                                    <p className="mt-1 font-mono text-sm font-semibold text-slate-800">
+                                                        {
+                                                            selectedLibraryCard.cardNumber
+                                                        }
                                                     </p>
                                                 </div>
 
                                                 <div>
                                                     <p className="text-[10px] uppercase tracking-wider text-slate-400">
-                                                        Expires
+                                                        Reader Code
                                                     </p>
 
-                                                    <p className="mt-1 text-sm text-slate-700">
-                                                        {selectedLibraryCard.expiredAt || "—"}
+                                                    <p className="mt-1 font-mono text-sm font-semibold text-slate-800">
+                                                        {selectedLibraryCard
+                                                                .reader
+                                                                ?.readerCode ||
+                                                            "—"}
                                                     </p>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                                                        Full Name
+                                                    </p>
+
+                                                    <p className="mt-1 text-sm font-medium text-slate-900">
+                                                        {selectedLibraryCard
+                                                                .reader
+                                                                ?.fullName ||
+                                                            "—"}
+                                                    </p>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                                                            Issued
+                                                        </p>
+
+                                                        <p className="mt-1 text-sm text-slate-700">
+                                                            {selectedLibraryCard
+                                                                    .issuedAt ||
+                                                                "—"}
+                                                        </p>
+                                                    </div>
+
+                                                    <div>
+                                                        <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                                                            Expires
+                                                        </p>
+
+                                                        <p className="mt-1 text-sm text-slate-700">
+                                                            {selectedLibraryCard
+                                                                    .expiredAt ||
+                                                                "—"}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Modal Actions */}
-                                <div className="flex justify-end border-t border-slate-100 px-6 py-3.5">
-                                    <button
-                                        type="button"
-                                        onClick={closeLibraryCardModal}
-                                        className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50"
-                                    >
-                                        Close
-                                    </button>
+                                    <div className="flex justify-end border-t border-slate-100 px-6 py-3.5">
+                                        <button
+                                            type="button"
+                                            onClick={
+                                                closeLibraryCardModal
+                                            }
+                                            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* ── Add / Edit Reader Modal ── */}
+                    {/* Add / Edit Reader Modal */}
                     {showFormModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-[2px]">
                             <div className="w-full max-w-xl rounded-xl border border-slate-200/80 bg-white shadow-xl">
@@ -763,10 +1114,9 @@ export default function StaffReadersPage() {
                                     </button>
                                 </div>
 
-                                {/* Form */}
                                 <form onSubmit={handleSubmit}>
 
-                                    {/* Form Error */}
+                                    {/* General Form Error */}
                                     {formError && (
                                         <div className="mx-6 mt-6 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50/70 px-4 py-3 text-xs text-rose-700 sm:text-sm">
                                             <svg
@@ -793,34 +1143,70 @@ export default function StaffReadersPage() {
                                         <div>
                                             <label className="mb-1.5 block text-xs font-medium text-slate-700">
                                                 Reader Code{" "}
-                                                <span className="text-rose-500">*</span>
+                                                <span className="text-rose-500">
+                                                    *
+                                                </span>
                                             </label>
 
                                             <input
                                                 type="text"
                                                 name="readerCode"
-                                                value={formData.readerCode}
-                                                onChange={handleChange}
+                                                value={
+                                                    formData.readerCode
+                                                }
+                                                onChange={
+                                                    handleChange
+                                                }
                                                 placeholder="e.g. RD-2026-001"
-                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-1 focus:ring-slate-400 sm:text-sm"
+                                                className={`w-full rounded-lg border bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 outline-none transition sm:text-sm ${
+                                                    fieldErrors.readerCode
+                                                        ? "border-rose-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-400"
+                                                        : "border-slate-200 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                                }`}
                                             />
+
+                                            {fieldErrors.readerCode && (
+                                                <p className="mt-1.5 text-xs text-rose-600">
+                                                    {
+                                                        fieldErrors.readerCode
+                                                    }
+                                                </p>
+                                            )}
                                         </div>
 
                                         {/* Full Name */}
                                         <div>
                                             <label className="mb-1.5 block text-xs font-medium text-slate-700">
                                                 Full Name{" "}
-                                                <span className="text-rose-500">*</span>
+                                                <span className="text-rose-500">
+                                                    *
+                                                </span>
                                             </label>
 
                                             <input
                                                 type="text"
                                                 name="fullName"
-                                                value={formData.fullName}
-                                                onChange={handleChange}
+                                                value={
+                                                    formData.fullName
+                                                }
+                                                onChange={
+                                                    handleChange
+                                                }
                                                 placeholder="Enter full legal name"
-                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-1 focus:ring-slate-400 sm:text-sm"
+                                                className={`w-full rounded-lg border bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 outline-none transition sm:text-sm ${
+                                                    fieldErrors.fullName
+                                                        ? "border-rose-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-400"
+                                                        : "border-slate-200 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                                }`}
                                             />
+
+                                            {fieldErrors.fullName && (
+                                                <p className="mt-1.5 text-xs text-rose-600">
+                                                    {
+                                                        fieldErrors.fullName
+                                                    }
+                                                </p>
+                                            )}
                                         </div>
 
                                         {/* Email */}
@@ -832,28 +1218,62 @@ export default function StaffReadersPage() {
                                             <input
                                                 type="email"
                                                 name="email"
-                                                value={formData.email}
-                                                onChange={handleChange}
+                                                value={
+                                                    formData.email
+                                                }
+                                                onChange={
+                                                    handleChange
+                                                }
                                                 placeholder="patron@example.com"
-                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-1 focus:ring-slate-400 sm:text-sm"
+                                                className={`w-full rounded-lg border bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 outline-none transition sm:text-sm ${
+                                                    fieldErrors.email
+                                                        ? "border-rose-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-400"
+                                                        : "border-slate-200 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                                }`}
                                             />
+
+                                            {fieldErrors.email && (
+                                                <p className="mt-1.5 text-xs text-rose-600">
+                                                    {
+                                                        fieldErrors.email
+                                                    }
+                                                </p>
+                                            )}
                                         </div>
 
                                         {/* Phone */}
                                         <div>
                                             <label className="mb-1.5 block text-xs font-medium text-slate-700">
                                                 Phone Number{" "}
-                                                <span className="text-rose-500">*</span>
+                                                <span className="text-rose-500">
+                                                    *
+                                                </span>
                                             </label>
 
                                             <input
-                                                type="text"
+                                                type="tel"
                                                 name="phone"
-                                                value={formData.phone}
-                                                onChange={handleChange}
+                                                value={
+                                                    formData.phone
+                                                }
+                                                onChange={
+                                                    handleChange
+                                                }
                                                 placeholder="e.g. 0901234567"
-                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-1 focus:ring-slate-400 sm:text-sm"
+                                                className={`w-full rounded-lg border bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 outline-none transition sm:text-sm ${
+                                                    fieldErrors.phone
+                                                        ? "border-rose-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-400"
+                                                        : "border-slate-200 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                                }`}
                                             />
+
+                                            {fieldErrors.phone && (
+                                                <p className="mt-1.5 text-xs text-rose-600">
+                                                    {
+                                                        fieldErrors.phone
+                                                    }
+                                                </p>
+                                            )}
                                         </div>
 
                                         {/* Date of Birth */}
@@ -865,10 +1285,22 @@ export default function StaffReadersPage() {
                                             <input
                                                 type="date"
                                                 name="dateOfBirth"
-                                                value={formData.dateOfBirth}
-                                                onChange={handleChange}
+                                                value={
+                                                    formData.dateOfBirth
+                                                }
+                                                onChange={
+                                                    handleChange
+                                                }
                                                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 outline-none transition focus:border-slate-400 focus:ring-1 focus:ring-slate-400 sm:text-sm"
                                             />
+
+                                            {fieldErrors.dateOfBirth && (
+                                                <p className="mt-1.5 text-xs text-rose-600">
+                                                    {
+                                                        fieldErrors.dateOfBirth
+                                                    }
+                                                </p>
+                                            )}
                                         </div>
 
                                         {/* Address */}
@@ -880,19 +1312,54 @@ export default function StaffReadersPage() {
                                             <input
                                                 type="text"
                                                 name="address"
-                                                value={formData.address}
-                                                onChange={handleChange}
+                                                value={
+                                                    formData.address
+                                                }
+                                                onChange={
+                                                    handleChange
+                                                }
                                                 placeholder="e.g. 123 Main St, District 1"
                                                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-1 focus:ring-slate-400 sm:text-sm"
                                             />
+
+                                            {fieldErrors.address && (
+                                                <p className="mt-1.5 text-xs text-rose-600">
+                                                    {
+                                                        fieldErrors.address
+                                                    }
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
+
+                                    {/* Library Card Fee */}
+                                    {!editingReader && (
+                                        <div className="mx-6 mb-6 rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-3.5">
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div>
+                                                    <p className="text-xs font-medium text-emerald-800">
+                                                        Library Card Fee
+                                                    </p>
+
+                                                    <p className="mt-0.5 text-[11px] text-emerald-700/70">
+                                                        A library card is automatically created for the new reader.
+                                                    </p>
+                                                </div>
+
+                                                <p className="shrink-0 text-base font-semibold text-emerald-700">
+                                                    50,000 VND
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Modal Actions */}
                                     <div className="flex justify-end gap-2.5 border-t border-slate-100 px-6 py-3.5">
                                         <button
                                             type="button"
-                                            onClick={closeFormModal}
+                                            onClick={
+                                                closeFormModal
+                                            }
                                             disabled={saving}
                                             className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50"
                                         >

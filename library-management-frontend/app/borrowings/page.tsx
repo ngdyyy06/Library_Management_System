@@ -10,7 +10,7 @@ import {
     getBooks,
     createBorrowing,
     renewBorrowing,
-    getDashboard,
+    getBorrowingRevenue,
 } from "@/app/lib/api";
 
 type Reader = {
@@ -59,7 +59,7 @@ type SelectedBook = {
     quantity: number;
 };
 
-type Dashboard = {
+type BorrowingRevenue = {
     todayRevenue: number;
     monthlyRevenue: number;
 };
@@ -71,8 +71,8 @@ export default function BorrowingsPage() {
     const [readers, setReaders] = useState<Reader[]>([]);
     const [books, setBooks] = useState<Book[]>([]);
 
-    const [dashboard, setDashboard] =
-        useState<Dashboard | null>(null);
+    const [revenue, setRevenue] =
+        useState<BorrowingRevenue | null>(null);
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -132,12 +132,12 @@ export default function BorrowingsPage() {
                 borrowingData,
                 readerData,
                 bookData,
-                dashboardData,
+                revenueData,
             ] = await Promise.all([
                 getBorrowings().catch(() => []),
                 getReaders().catch(() => []),
                 getBooks().catch(() => []),
-                getDashboard().catch(() => null),
+                getBorrowingRevenue().catch(() => null),
             ]);
 
             const rawBorrowings =
@@ -202,22 +202,22 @@ export default function BorrowingsPage() {
                     : []
             );
 
-            if (dashboardData) {
-                setDashboard({
+            if (revenueData) {
+                setRevenue({
                     todayRevenue:
                         Number(
-                            dashboardData.todayRevenue ??
+                            revenueData.todayRevenue ??
                             0
                         ),
 
                     monthlyRevenue:
                         Number(
-                            dashboardData.monthlyRevenue ??
+                            revenueData.monthlyRevenue ??
                             0
                         ),
                 });
             } else {
-                setDashboard(null);
+                setRevenue(null);
             }
         } catch (err: any) {
             console.error(
@@ -853,7 +853,7 @@ export default function BorrowingsPage() {
 
                                     <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
                                         {(
-                                            dashboard?.todayRevenue ??
+                                            revenue?.todayRevenue ??
                                             0
                                         ).toLocaleString(
                                             "vi-VN"
@@ -889,7 +889,7 @@ export default function BorrowingsPage() {
 
                                     <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
                                         {(
-                                            dashboard?.monthlyRevenue ??
+                                            revenue?.monthlyRevenue ??
                                             0
                                         ).toLocaleString(
                                             "vi-VN"
@@ -1095,12 +1095,12 @@ export default function BorrowingsPage() {
                                                 >
                                                     {/* Ticket ID */}
                                                     <td className="px-5 py-3.5">
-                                                            <span className="font-mono text-xs font-semibold text-slate-700">
-                                                                #
-                                                                {
-                                                                    borrowing.id
-                                                                }
-                                                            </span>
+                                                        <span className="font-mono text-xs font-semibold text-slate-700">
+                                                            #
+                                                            {
+                                                                borrowing.id
+                                                            }
+                                                        </span>
                                                     </td>
 
                                                     {/* Reader */}
@@ -1141,19 +1141,19 @@ export default function BorrowingsPage() {
                                                                             }
                                                                             className="flex items-center justify-between gap-3"
                                                                         >
-                                                                                <span className="truncate font-medium text-slate-800">
-                                                                                    {detail
-                                                                                            .book
-                                                                                            ?.title ||
-                                                                                        "Untitled Book"}
-                                                                                </span>
+                                                                            <span className="truncate font-medium text-slate-800">
+                                                                                {detail
+                                                                                        .book
+                                                                                        ?.title ||
+                                                                                    "Untitled Book"}
+                                                                            </span>
 
                                                                             <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
-                                                                                    ×
+                                                                                ×
                                                                                 {
                                                                                     detail.quantity
                                                                                 }
-                                                                                </span>
+                                                                            </span>
                                                                         </div>
                                                                     )
                                                                 )}
@@ -1180,8 +1180,8 @@ export default function BorrowingsPage() {
                                                                 .details
                                                                 ?.length && (
                                                                 <span className="text-slate-400">
-                                                                        No book details
-                                                                    </span>
+                                                                    No book details
+                                                                </span>
                                                             )}
 
                                                         </div>
@@ -1217,33 +1217,33 @@ export default function BorrowingsPage() {
 
                                                     {/* Status */}
                                                     <td className="px-5 py-3.5">
+                                                        <span
+                                                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                                                isReturned
+                                                                    ? "bg-emerald-50 text-emerald-700"
+                                                                    : isBorrowing
+                                                                        ? "bg-amber-50 text-amber-700"
+                                                                        : isOverdue
+                                                                            ? "bg-rose-50 text-rose-700"
+                                                                            : "bg-slate-100 text-slate-600"
+                                                            }`}
+                                                        >
                                                             <span
-                                                                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                                                className={`h-1.5 w-1.5 rounded-full ${
                                                                     isReturned
-                                                                        ? "bg-emerald-50 text-emerald-700"
+                                                                        ? "bg-emerald-500"
                                                                         : isBorrowing
-                                                                            ? "bg-amber-50 text-amber-700"
+                                                                            ? "bg-amber-500"
                                                                             : isOverdue
-                                                                                ? "bg-rose-50 text-rose-700"
-                                                                                : "bg-slate-100 text-slate-600"
+                                                                                ? "bg-rose-500"
+                                                                                : "bg-slate-400"
                                                                 }`}
-                                                            >
-                                                                <span
-                                                                    className={`h-1.5 w-1.5 rounded-full ${
-                                                                        isReturned
-                                                                            ? "bg-emerald-500"
-                                                                            : isBorrowing
-                                                                                ? "bg-amber-500"
-                                                                                : isOverdue
-                                                                                    ? "bg-rose-500"
-                                                                                    : "bg-slate-400"
-                                                                    }`}
-                                                                />
+                                                            />
 
-                                                                {
-                                                                    borrowing.status
-                                                                }
-                                                            </span>
+                                                            {
+                                                                borrowing.status
+                                                            }
+                                                        </span>
                                                     </td>
 
                                                     {/* Action */}
@@ -1282,8 +1282,8 @@ export default function BorrowingsPage() {
                                                                 borrowing.renewalCount >=
                                                                 2 && (
                                                                     <span className="text-[11px] font-medium text-slate-400">
-                                                                            Renewal limit reached
-                                                                        </span>
+                                                                        Renewal limit reached
+                                                                    </span>
                                                                 )}
 
                                                         </div>
@@ -1700,17 +1700,17 @@ export default function BorrowingsPage() {
                                                     </p>
 
                                                     <span className="text-[11px] text-slate-400">
-                                                    {selectedBooks.reduce(
-                                                        (
-                                                            total,
-                                                            item
-                                                        ) =>
-                                                            total +
-                                                            item.quantity,
-                                                        0
-                                                    )}{" "}
+                                                        {selectedBooks.reduce(
+                                                            (
+                                                                total,
+                                                                item
+                                                            ) =>
+                                                                total +
+                                                                item.quantity,
+                                                            0
+                                                        )}{" "}
                                                         total copies
-                                                </span>
+                                                    </span>
 
                                                 </div>
 
@@ -2151,7 +2151,6 @@ export default function BorrowingsPage() {
                                 </div>
                             </div>
                         )}
-
                 </div>
             </div>
         </RoleGuard>

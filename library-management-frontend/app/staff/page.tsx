@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import RoleGuard from "@/app/components/RoleGuard";
-import { getStaffDashboard } from "@/app/lib/api";
+import { getDashboard } from "@/app/lib/api";
 
 export default function StaffHomePage() {
     const router = useRouter();
     const [dashboard, setDashboard] = useState<any>(null);
 
     useEffect(() => {
-        getStaffDashboard()
+        getDashboard()
             .then((data) => {
                 setDashboard(data);
             })
@@ -216,6 +216,86 @@ export default function StaffHomePage() {
 
                             <p className="mt-3 text-[11px] text-slate-400">
                                 Check-in archive
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Revenue Cards */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                        {/* Today's Revenue */}
+                        <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <p className="text-xs font-medium text-slate-500">
+                                        Today's Revenue
+                                    </p>
+
+                                    <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+                                        {Number(
+                                            dashboard?.todayRevenue ?? 0
+                                        ).toLocaleString("vi-VN")}{" "}
+                                        VND
+                                    </p>
+                                </div>
+
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600">
+                                    <svg
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={1.5}
+                                            d="M12 6v12m-3-2.5h6M9.5 9.5c0-1.105 1.119-2 2.5-2s2.5.895 2.5 2-1.119 2-2.5 2-2.5.895-2.5 2 1.119 2 2.5 2 2.5-.895 2.5-2"
+                                        />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <p className="mt-3 text-[11px] text-slate-400">
+                                Borrowing and library card fees collected today
+                            </p>
+                        </div>
+
+                        {/* Monthly Revenue */}
+                        <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <p className="text-xs font-medium text-slate-500">
+                                        Monthly Revenue
+                                    </p>
+
+                                    <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+                                        {Number(
+                                            dashboard?.monthlyRevenue ?? 0
+                                        ).toLocaleString("vi-VN")}{" "}
+                                        VND
+                                    </p>
+                                </div>
+
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600">
+                                    <svg
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={1.5}
+                                            d="M4.5 19.5h15M6 17V9.5m4 7.5V6m4 11V11m4 6V4.5"
+                                        />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <p className="mt-3 text-[11px] text-slate-400">
+                                Borrowing and library card fees collected this month
                             </p>
                         </div>
                     </div>

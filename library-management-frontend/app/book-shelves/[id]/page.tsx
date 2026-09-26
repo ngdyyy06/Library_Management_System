@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import {
     getBookShelfById,
     getCategories,
+    getBooksByCategory,
 } from "@/app/lib/api";
 
 interface BookShelf {
@@ -22,6 +23,13 @@ interface Category {
     defaultShelf?: BookShelf | null;
 }
 
+interface Book {
+    id: number;
+    title: string;
+    isbn?: string;
+    status?: string;
+}
+
 export default function BookShelfDetailPage() {
 
     const params = useParams();
@@ -32,6 +40,9 @@ export default function BookShelfDetailPage() {
 
     const [categories, setCategories] =
         useState<Category[]>([]);
+
+    const [books, setBooks] =
+        useState<Book[]>([]);
 
     const [loading, setLoading] =
         useState(true);
@@ -48,14 +59,61 @@ export default function BookShelfDetailPage() {
                 setLoading(true);
                 setError("");
 
-                const [shelfData, categoryData] =
-                    await Promise.all([
-                        getBookShelfById(shelfId),
-                        getCategories(),
-                    ]);
+                const [
+                    shelfData,
+                    categoryData,
+                ] = await Promise.all([
+                    getBookShelfById(shelfId),
+                    getCategories(),
+                ]);
 
                 setShelf(shelfData);
                 setCategories(categoryData);
+
+                /*
+                 * Lấy các category có shelf hiện tại
+                 */
+                const shelfCategories =
+                    categoryData.filter(
+                        (category: Category) =>
+                            category.defaultShelf?.id === shelfId
+                    );
+
+                /*
+                 * Lấy sách của từng category
+                 */
+                const bookResults =
+                    await Promise.all(
+                        shelfCategories.map(
+                            (category: Category) =>
+                                getBooksByCategory(category.id)
+                                    .catch(() => [])
+                        )
+                    );
+
+                /*
+                 * Gộp tất cả sách lại
+                 */
+                const allBooks: Book[] =
+                    bookResults.flat();
+
+                /*
+                 * Loại bỏ sách trùng.
+                 * Một đầu sách có thể thuộc nhiều category.
+                 */
+                const uniqueBooks =
+                    Array.from(
+                        new Map(
+                            allBooks.map(
+                                (book: Book) => [
+                                    book.id,
+                                    book,
+                                ]
+                            )
+                        ).values()
+                    );
+
+                setBooks(uniqueBooks);
 
             } catch (error: any) {
 
@@ -159,7 +217,7 @@ export default function BookShelfDetailPage() {
                         </h1>
 
                         <p className="mt-1 text-sm text-slate-500">
-                            View physical shelf information and its default category assignments.
+                            View physical shelf information and its assigned books.
                         </p>
 
                     </div>
@@ -266,6 +324,152 @@ export default function BookShelfDetailPage() {
                 </div>
 
 
+                {/* BOOKS ON SHELF */}
+
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+                    <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+
+                        <div>
+
+                            <h2 className="text-sm font-bold text-slate-900">
+                                Books on This Shelf
+                            </h2>
+
+                            <p className="mt-1 text-xs text-slate-400">
+                                Book titles assigned through the shelf's default categories.
+                            </p>
+
+                        </div>
+
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
+                            {books.length}
+                        </span>
+
+                    </div>
+
+
+                    {books.length === 0 ? (
+
+                        <div className="px-6 py-12 text-center">
+
+                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+
+                                <svg
+                                    className="h-6 w-6"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        strokeWidth={1.6}
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v16H6.5A2.5 2.5 0 0 0 4 22V6.5Z"
+                                    />
+
+                                    <path
+                                        strokeWidth={1.6}
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20M4 6.5V22"
+                                    />
+                                </svg>
+
+                            </div>
+
+                            <p className="mt-4 text-sm font-semibold text-slate-700">
+                                No books on this shelf
+                            </p>
+
+                            <p className="mt-1 text-xs text-slate-400">
+                                No book titles are currently assigned to this shelf.
+                            </p>
+
+                        </div>
+
+                    ) : (
+
+                        <div className="divide-y divide-slate-100">
+
+                            {books.map((book) => (
+
+                                <div
+                                    key={book.id}
+                                    className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-slate-50/60"
+                                >
+
+                                    <div className="flex min-w-0 items-center gap-4">
+
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500">
+
+                                            <svg
+                                                className="h-5 w-5"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path
+                                                    strokeWidth={1.6}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    d="M6 4.5A2.5 2.5 0 0 1 8.5 2H20v17H8.5A2.5 2.5 0 0 0 6 21.5V4.5Z"
+                                                />
+
+                                                <path
+                                                    strokeWidth={1.6}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    d="M6 4.5V21.5M10 6h6M10 10h6"
+                                                />
+                                            </svg>
+
+                                        </div>
+
+
+                                        <div className="min-w-0">
+
+                                            <p className="truncate text-sm font-semibold text-slate-800">
+                                                {book.title}
+                                            </p>
+
+                                            <p className="mt-1 text-xs text-slate-400">
+                                                Book ID: #{book.id}
+                                                {book.isbn
+                                                    ? ` • ISBN: ${book.isbn}`
+                                                    : ""}
+                                            </p>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    {book.status && (
+
+                                        <span
+                                            className={`ml-4 shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                                                book.status === "ACTIVE"
+                                                    ? "bg-emerald-50 text-emerald-600"
+                                                    : "bg-slate-100 text-slate-500"
+                                            }`}
+                                        >
+                                            {book.status}
+                                        </span>
+
+                                    )}
+
+                                </div>
+
+                            ))}
+
+                        </div>
+
+                    )}
+
+                </div>
+
+
                 {/* DEFAULT CATEGORIES */}
 
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -357,13 +561,19 @@ export default function BookShelfDetailPage() {
                                         >
                                             {category.status}
                                         </span>
+
                                     </div>
                                 )
                             )}
+
                         </div>
+
                     )}
+
                 </div>
+
             </div>
+
         </div>
     );
 }

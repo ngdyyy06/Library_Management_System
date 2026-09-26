@@ -44,17 +44,38 @@ public class ReaderService {
     @Transactional
     public Reader createReader(CreateReaderRequest request) {
 
-        if (readerRepository.existsByReaderCode(request.getReaderCode())) {
+        String readerCode = request.getReaderCode() != null
+                ? request.getReaderCode().trim()
+                : null;
+
+        String email = request.getEmail() != null
+                ? request.getEmail().trim()
+                : null;
+
+        String phone = request.getPhone() != null
+                ? request.getPhone().trim()
+                : null;
+
+        if (readerRepository.existsByReaderCode(readerCode)) {
             throw new RuntimeException("Reader code already exists!");
         }
 
-        // 1. Tạo Reader
+        if (email != null && !email.isBlank()
+                && readerRepository.existsByEmail(email)) {
+            throw new RuntimeException("Email already exists!");
+        }
+
+        if (phone != null && !phone.isBlank()
+                && readerRepository.existsByPhone(phone)) {
+            throw new RuntimeException("Phone number already exists!");
+        }
+
         Reader reader = new Reader();
 
-        reader.setReaderCode(request.getReaderCode());
+        reader.setReaderCode(readerCode);
         reader.setFullName(request.getFullName());
-        reader.setEmail(request.getEmail());
-        reader.setPhone(request.getPhone());
+        reader.setEmail(email);
+        reader.setPhone(phone);
         reader.setAddress(request.getAddress());
         reader.setDateOfBirth(request.getDateOfBirth());
         reader.setStatus("ACTIVE");
@@ -62,7 +83,6 @@ public class ReaderService {
 
         Reader savedReader = readerRepository.save(reader);
 
-        // 2. Tạo Library Card
         String cardNumber = generateCardNumber();
 
         LibraryCard card = new LibraryCard();
@@ -74,7 +94,6 @@ public class ReaderService {
 
         LibraryCard savedCard = libraryCardRepository.save(card);
 
-        // 3. Thu Card Fee
         LibraryCardPayment payment = new LibraryCardPayment();
         payment.setLibraryCard(savedCard);
         payment.setAmount(CARD_FEE);
@@ -82,7 +101,6 @@ public class ReaderService {
 
         libraryCardPaymentRepository.save(payment);
 
-        // 4. Trả về Reader đã được tạo
         return savedReader;
     }
 
@@ -105,6 +123,18 @@ public class ReaderService {
                 request.getReaderCode(), id)) {
 
             throw new RuntimeException("Reader code already exists");
+        }
+
+        if (readerRepository.existsByEmailAndIdNot(
+                request.getEmail(), id)) {
+
+            throw new RuntimeException("Email already exists");
+        }
+
+        if (readerRepository.existsByPhoneAndIdNot(
+                request.getPhone(), id)) {
+
+            throw new RuntimeException("Phone number already exists");
         }
 
         reader.setReaderCode(request.getReaderCode());

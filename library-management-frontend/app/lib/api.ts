@@ -1732,3 +1732,53 @@ export async function removeCategoryDefaultShelf(
 
     return responseData;
 }
+
+export async function getReaderRevenue() {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/readers/revenue`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message ||
+            "Failed to get reader revenue"
+        );
+    }
+
+    return response.json();
+}
+
+export async function getBorrowingRevenue() {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/borrowings/revenue`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.message ||
+            "Failed to get borrowing revenue"
+        );
+    }
+
+    return response.json();
+}

@@ -7,6 +7,7 @@ import com.library.management.repository.BorrowingDetailRepository;
 import com.library.management.repository.BorrowingRepository;
 import com.library.management.repository.CategoryRepository;
 import com.library.management.repository.ImportReceiptRepository;
+import com.library.management.repository.LibraryCardPaymentRepository;
 import com.library.management.repository.PublisherRepository;
 import com.library.management.repository.ReaderRepository;
 import com.library.management.repository.RenewalPaymentRepository;
@@ -14,6 +15,8 @@ import com.library.management.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Service
 public class DashboardService {
@@ -28,6 +31,7 @@ public class DashboardService {
     private final UserRepository userRepository;
     private final BorrowingDetailRepository borrowingDetailRepository;
     private final RenewalPaymentRepository renewalPaymentRepository;
+    private final LibraryCardPaymentRepository libraryCardPaymentRepository;
 
     public DashboardService(
             BookRepository bookRepository,
@@ -39,7 +43,8 @@ public class DashboardService {
             ImportReceiptRepository importReceiptRepository,
             UserRepository userRepository,
             BorrowingDetailRepository borrowingDetailRepository,
-            RenewalPaymentRepository renewalPaymentRepository) {
+            RenewalPaymentRepository renewalPaymentRepository,
+            LibraryCardPaymentRepository libraryCardPaymentRepository) {
 
         this.bookRepository = bookRepository;
         this.readerRepository = readerRepository;
@@ -51,6 +56,7 @@ public class DashboardService {
         this.userRepository = userRepository;
         this.borrowingDetailRepository = borrowingDetailRepository;
         this.renewalPaymentRepository = renewalPaymentRepository;
+        this.libraryCardPaymentRepository = libraryCardPaymentRepository;
     }
 
     public DashboardResponse getDashboard() {
@@ -73,7 +79,6 @@ public class DashboardService {
         long totalCategories =
                 categoryRepository.count();
 
-        // Chỉ đếm các phiếu đang có trạng thái BORROWING
         long activeBorrowings =
                 borrowingRepository.countByStatus("BORROWING");
 
@@ -95,10 +100,11 @@ public class DashboardService {
         long todayReturns =
                 borrowingDetailRepository.getTodayReturnedBooks();
 
-        // =========================================================
-        // DOANH THU HÔM NAY
-        // = TIỀN PHẠT + PHÍ GIA HẠN
-        // =========================================================
+        /*
+         * ==========================================
+         * BORROWING REVENUE
+         * ==========================================
+         */
 
         long todayFineRevenue =
                 borrowingDetailRepository.getTodayFineRevenue();
@@ -106,25 +112,84 @@ public class DashboardService {
         BigDecimal todayRenewalRevenue =
                 renewalPaymentRepository.getTodayRenewalRevenue();
 
-        long todayRevenue =
+        long todayBorrowingRevenue =
                 todayFineRevenue
                         + todayRenewalRevenue.longValue();
 
-        // =========================================================
-        // DOANH THU THÁNG NÀY
-        // = TIỀN PHẠT + PHÍ GIA HẠN
-        // =========================================================
 
         long monthlyFineRevenue =
                 borrowingDetailRepository.getMonthlyFineRevenue();
 
         BigDecimal monthlyRenewalRevenue =
-                renewalPaymentRepository
-                        .getMonthlyRenewalRevenue();
+                renewalPaymentRepository.getMonthlyRenewalRevenue();
 
-        long monthlyRevenue =
+        long monthlyBorrowingRevenue =
                 monthlyFineRevenue
                         + monthlyRenewalRevenue.longValue();
+
+
+        /*
+         * ==========================================
+         * LIBRARY CARD REVENUE
+         * ==========================================
+         */
+
+        LocalDate today = LocalDate.now();
+
+        LocalDateTime startOfToday =
+                today.atStartOfDay();
+
+        LocalDateTime startOfTomorrow =
+                today.plusDays(1).atStartOfDay();
+
+        BigDecimal todayCardRevenue =
+                libraryCardPaymentRepository.getRevenueBetween(
+                        startOfToday,
+                        startOfTomorrow
+                );
+
+        long todayLibraryCardRevenue =
+                todayCardRevenue.longValue();
+
+
+        LocalDate firstDayOfMonth =
+                today.withDayOfMonth(1);
+
+        LocalDateTime startOfMonth =
+                firstDayOfMonth.atStartOfDay();
+
+        LocalDateTime startOfNextMonth =
+                firstDayOfMonth
+                        .plusMonths(1)
+                        .atStartOfDay();
+
+        BigDecimal monthlyCardRevenue =
+                libraryCardPaymentRepository.getRevenueBetween(
+                        startOfMonth,
+                        startOfNextMonth
+                );
+
+        long monthlyLibraryCardRevenue =
+                monthlyCardRevenue.longValue();
+
+
+        /*
+         * ==========================================
+         * TOTAL ADMIN REVENUE
+         * ==========================================
+         *
+         * Borrowing revenue
+         * + Library card revenue
+         */
+
+        long todayRevenue =
+                todayBorrowingRevenue
+                        + todayLibraryCardRevenue;
+
+        long monthlyRevenue =
+                monthlyBorrowingRevenue
+                        + monthlyLibraryCardRevenue;
+
 
         return new DashboardResponse(
                 totalBooks,
