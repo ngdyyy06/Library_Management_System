@@ -635,13 +635,11 @@ export async function updateBook(
         publishYear?: number;
         description?: string;
         price?: number;
-        totalQuantity: number;
         authorIds?: number[];
         authorNames?: string[];
         categoryIds?: number[];
         categoryNames?: string[];
         primaryCategoryId?: number;
-        availableQuantity: number;
     }
 ) {
     const token = localStorage.getItem("token");
@@ -1220,7 +1218,19 @@ export async function createImportReceipt(data: {
     publisherId: number;
     importDate: string;
     details: {
-        bookId: number;
+        bookId?: number;
+        newBook?: {
+            title: string;
+            isbn: string;
+            publishYear?: number;
+            description?: string;
+            price: number;
+            authorIds?: number[];
+            authorNames?: string[];
+            categoryIds: number[];
+            categoryNames?: string[];
+            primaryCategoryId: number;
+        };
         quantity: number;
         unitPrice: number;
     }[];
@@ -1587,6 +1597,8 @@ export async function updateBookShelf(
     data: {
         shelfCode: string;
         name: string;
+        status?: string;
+        categories?: { id: number }[];
     }
 ) {
     const token = localStorage.getItem("token");
@@ -1607,7 +1619,8 @@ export async function updateBookShelf(
 
     if (!response.ok) {
         throw new Error(
-            responseData.message || "Failed to update book shelf"
+            responseData.message ||
+            "Failed to update book shelf"
         );
     }
 

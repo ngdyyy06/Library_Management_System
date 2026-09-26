@@ -10,22 +10,32 @@ import {
     activateBookShelf,
     deactivateBookShelf,
     getCategories,
-    assignCategoryDefaultShelf,
-    removeCategoryDefaultShelf,
 } from "@/app/lib/api";
+
+interface BookShelfCategory {
+    id: number;
+    name: string;
+    status: string;
+}
 
 interface BookShelf {
     id: number;
     shelfCode: string;
     name: string;
     status: string;
+    usedCapacity: number;
+    maxCapacity: number;
+    availableCapacity: number;
+}
+
+interface BookShelfDetail extends BookShelf {
+    categories?: BookShelfCategory[];
 }
 
 interface Category {
     id: number;
     name: string;
     status: string;
-    defaultShelf?: BookShelf | null;
 }
 
 export default function BookShelvesPage() {
@@ -35,16 +45,34 @@ export default function BookShelvesPage() {
     const [shelves, setShelves] = useState<BookShelf[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
 
+    /*
+     * Store categories belonging to each shelf.
+     *
+     * Example:
+     *
+     * {
+     *   1: [
+     *      { id: 1, name: "Computer Science" }
+     *   ],
+     *
+     *   2: [
+     *      { id: 1, name: "Computer Science" },
+     *      { id: 6, name: "Animal" }
+     *   ]
+     * }
+     *
+     * This allows the same category to belong to
+     * multiple shelves.
+     */
+    const [shelfCategories, setShelfCategories] =
+        useState<Record<number, BookShelfCategory[]>>({});
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
     const [showFormModal, setShowFormModal] = useState(false);
-    const [showDetailModal, setShowDetailModal] = useState(false);
 
     const [editingShelf, setEditingShelf] =
-        useState<BookShelf | null>(null);
-
-    const [selectedShelf, setSelectedShelf] =
         useState<BookShelf | null>(null);
 
     const [shelfCode, setShelfCode] = useState("");
@@ -56,20 +84,64 @@ export default function BookShelvesPage() {
     const [formError, setFormError] = useState("");
     const [saving, setSaving] = useState(false);
 
+    // =========================================================
+    // LOAD DATA
+    // =========================================================
+
     const loadData = async () => {
 
         try {
+
             setLoading(true);
             setError("");
 
-            const [shelfData, categoryData] =
-                await Promise.all([
-                    getBookShelves(),
-                    getCategories(),
-                ]);
+            const [
+                shelfData,
+                categoryData,
+            ] = await Promise.all([
+                getBookShelves(),
+                getCategories(),
+            ]);
 
             setShelves(shelfData);
             setCategories(categoryData);
+
+            /*
+             * Load detail of every shelf.
+             *
+             * We need this because getBookShelves()
+             * returns capacity information but does not
+             * contain the shelf's categories.
+             */
+            const shelfDetailResults =
+                await Promise.all(
+                    shelfData.map(async (shelf: BookShelf) => {
+
+                        const detail =
+                            await getBookShelfById(
+                                shelf.id
+                            );
+
+                        return {
+                            shelfId: shelf.id,
+                            categories:
+                                detail?.categories || [],
+                        };
+                    })
+                );
+
+            const categoryMap:
+                Record<number, BookShelfCategory[]> = {};
+
+            shelfDetailResults.forEach(
+                (item) => {
+
+                    categoryMap[item.shelfId] =
+                        item.categories;
+                }
+            );
+
+            setShelfCategories(categoryMap);
 
         } catch (error: any) {
 
@@ -85,8 +157,14 @@ export default function BookShelvesPage() {
     };
 
     useEffect(() => {
+
         loadData();
+
     }, []);
+
+    // =========================================================
+    // CREATE MODAL
+    // =========================================================
 
     const openCreateModal = () => {
 
@@ -94,6 +172,7 @@ export default function BookShelvesPage() {
 
         setShelfCode("");
         setName("");
+
         setSelectedCategoryIds([]);
 
         setFormError("");
@@ -101,26 +180,65 @@ export default function BookShelvesPage() {
         setShowFormModal(true);
     };
 
-    const openEditModal = (shelf: BookShelf) => {
+    // =========================================================
+    // EDIT MODAL
+    // =========================================================
 
-        setEditingShelf(shelf);
+    const openEditModal = async (
+        shelf: BookShelf
+    ) => {
 
-        setShelfCode(shelf.shelfCode);
-        setName(shelf.name);
+        try {
 
-        const categoryIds = categories
-            .filter(
-                (category) =>
-                    category.defaultShelf?.id === shelf.id
-            )
-            .map((category) => category.id);
+            setFormError("");
 
-        setSelectedCategoryIds(categoryIds);
+            /*
+             * Get the real categories of this shelf.
+             *
+             * Do NOT use Category.defaultShelf here.
+             *
+             * A category can belong to multiple shelves.
+             */
+            const detail: BookShelfDetail =
+                await getBookShelfById(
+                    shelf.id
+                );
 
-        setFormError("");
+            const categoryIds =
+                (detail.categories || [])
+                    .map(
+                        (category) =>
+                            category.id
+                    );
 
-        setShowFormModal(true);
+            setEditingShelf(shelf);
+
+            setShelfCode(
+                shelf.shelfCode
+            );
+
+            setName(
+                shelf.name
+            );
+
+            setSelectedCategoryIds(
+                categoryIds
+            );
+
+            setShowFormModal(true);
+
+        } catch (error: any) {
+
+            setError(
+                error?.message ||
+                "Failed to load shelf details"
+            );
+        }
     };
+
+    // =========================================================
+    // CLOSE MODAL
+    // =========================================================
 
     const closeFormModal = () => {
 
@@ -132,76 +250,46 @@ export default function BookShelvesPage() {
 
         setShelfCode("");
         setName("");
+
         setSelectedCategoryIds([]);
 
         setFormError("");
     };
 
-    const handleCategoryChange = (categoryId: number) => {
+    // =========================================================
+    // CATEGORY CHECKBOX
+    // =========================================================
 
-        setSelectedCategoryIds((current) => {
-
-            if (current.includes(categoryId)) {
-                return current.filter(
-                    (id) => id !== categoryId
-                );
-            }
-
-            return [...current, categoryId];
-        });
-    };
-
-    const syncCategories = async (
-        shelfId: number
+    const handleCategoryChange = (
+        categoryId: number
     ) => {
 
-        const currentCategoryIds = categories
-            .filter(
-                (category) =>
-                    category.defaultShelf?.id === shelfId
-            )
-            .map((category) => category.id);
+        setSelectedCategoryIds(
+            (current) => {
 
-        const selectedIds = new Set(
-            selectedCategoryIds
+                if (
+                    current.includes(
+                        categoryId
+                    )
+                ) {
+
+                    return current.filter(
+                        (id) =>
+                            id !== categoryId
+                    );
+                }
+
+                return [
+                    ...current,
+                    categoryId,
+                ];
+            }
         );
-
-        const currentIds = new Set(
-            currentCategoryIds
-        );
-
-        const assignPromises =
-            selectedCategoryIds
-                .filter(
-                    (categoryId) =>
-                        !currentIds.has(categoryId)
-                )
-                .map(
-                    (categoryId) =>
-                        assignCategoryDefaultShelf(
-                            categoryId,
-                            shelfId
-                        )
-                );
-
-        const removePromises =
-            currentCategoryIds
-                .filter(
-                    (categoryId) =>
-                        !selectedIds.has(categoryId)
-                )
-                .map(
-                    (categoryId) =>
-                        removeCategoryDefaultShelf(
-                            categoryId
-                        )
-                );
-
-        await Promise.all([
-            ...assignPromises,
-            ...removePromises,
-        ]);
     };
+
+    // =========================================================
+    // SUBMIT
+    // =========================================================
 
     const handleSubmit = async (
         event: React.FormEvent
@@ -209,13 +297,29 @@ export default function BookShelvesPage() {
 
         event.preventDefault();
 
+        // -----------------------------------------------------
+        // Validate Shelf Code
+        // -----------------------------------------------------
+
         if (!shelfCode.trim()) {
-            setFormError("Shelf code is required.");
+
+            setFormError(
+                "Shelf code is required."
+            );
+
             return;
         }
 
+        // -----------------------------------------------------
+        // Validate Shelf Name
+        // -----------------------------------------------------
+
         if (!name.trim()) {
-            setFormError("Shelf name is required.");
+
+            setFormError(
+                "Shelf name is required."
+            );
+
             return;
         }
 
@@ -224,33 +328,71 @@ export default function BookShelvesPage() {
             setSaving(true);
             setFormError("");
 
-            let shelfId: number;
+            /*
+             * IMPORTANT:
+             *
+             * categories here represent the categories
+             * belonging to this shelf.
+             *
+             * They do NOT modify Category.defaultShelf.
+             */
+            const shelfRequest = {
+
+                shelfCode:
+                    shelfCode.trim(),
+
+                name:
+                    name.trim(),
+
+                status:
+                    editingShelf
+                        ? editingShelf.status
+                        : "ACTIVE",
+
+                categories:
+                    selectedCategoryIds.map(
+                        (id) => ({
+                            id,
+                        })
+                    ),
+            };
+
+            // =================================================
+            // UPDATE
+            // =================================================
 
             if (editingShelf) {
 
                 await updateBookShelf(
                     editingShelf.id,
-                    {
-                        shelfCode: shelfCode.trim(),
-                        name: name.trim(),
-                    }
+                    shelfRequest
                 );
 
-                shelfId = editingShelf.id;
-
-            } else {
-
-                const createdShelf =
-                    await createBookShelf({
-                        shelfCode: shelfCode.trim(),
-                        name: name.trim(),
-                        status: "ACTIVE",
-                    });
-
-                shelfId = createdShelf.id;
             }
 
-            await syncCategories(shelfId);
+                // =================================================
+                // CREATE
+            // =================================================
+
+            else {
+
+                await createBookShelf(
+                    shelfRequest
+                );
+            }
+
+            /*
+             * DO NOT call syncCategories().
+             *
+             * Previously this changed:
+             *
+             * Category.defaultShelf
+             *
+             * which caused the old shelf to lose the category.
+             *
+             * The shelf categories are already saved by
+             * createBookShelf/updateBookShelf.
+             */
 
             closeFormModal();
 
@@ -269,34 +411,18 @@ export default function BookShelvesPage() {
         }
     };
 
-    const handleViewDetail = async (id: number) => {
-
-        try {
-
-            setError("");
-
-            const shelf = await getBookShelfById(id);
-
-            setSelectedShelf(shelf);
-
-            setShowDetailModal(true);
-
-        } catch (error: any) {
-
-            setError(
-                error?.message ||
-                "Failed to load shelf details"
-            );
-        }
-    };
+    // =========================================================
+    // DEACTIVATE
+    // =========================================================
 
     const handleDeactivate = async (
         shelf: BookShelf
     ) => {
 
-        const confirmed = window.confirm(
-            `Deactivate shelf "${shelf.name}"?`
-        );
+        const confirmed =
+            window.confirm(
+                `Deactivate shelf "${shelf.name}"?`
+            );
 
         if (!confirmed) return;
 
@@ -304,19 +430,11 @@ export default function BookShelvesPage() {
 
             setError("");
 
-            await deactivateBookShelf(shelf.id);
+            await deactivateBookShelf(
+                shelf.id
+            );
 
             await loadData();
-
-            if (
-                selectedShelf &&
-                selectedShelf.id === shelf.id
-            ) {
-                setSelectedShelf({
-                    ...selectedShelf,
-                    status: "INACTIVE",
-                });
-            }
 
         } catch (error: any) {
 
@@ -327,13 +445,18 @@ export default function BookShelvesPage() {
         }
     };
 
+    // =========================================================
+    // ACTIVATE
+    // =========================================================
+
     const handleActivate = async (
         shelf: BookShelf
     ) => {
 
-        const confirmed = window.confirm(
-            `Activate shelf "${shelf.name}"?`
-        );
+        const confirmed =
+            window.confirm(
+                `Activate shelf "${shelf.name}"?`
+            );
 
         if (!confirmed) return;
 
@@ -341,19 +464,11 @@ export default function BookShelvesPage() {
 
             setError("");
 
-            await activateBookShelf(shelf.id);
+            await activateBookShelf(
+                shelf.id
+            );
 
             await loadData();
-
-            if (
-                selectedShelf &&
-                selectedShelf.id === shelf.id
-            ) {
-                setSelectedShelf({
-                    ...selectedShelf,
-                    status: "ACTIVE",
-                });
-            }
 
         } catch (error: any) {
 
@@ -364,34 +479,66 @@ export default function BookShelvesPage() {
         }
     };
 
-    const getCategoryCount = (shelfId: number) => {
+    // =========================================================
+    // GET CATEGORY NAMES
+    // =========================================================
 
-        return categories.filter(
+    const getCategoryNames = (
+        shelfId: number
+    ) => {
+
+        return (
+            shelfCategories[shelfId] || []
+        ).map(
             (category) =>
-                category.defaultShelf?.id === shelfId
-        ).length;
+                category.name
+        );
     };
 
-    const getCategoryNames = (shelfId: number) => {
+    // =========================================================
+    // CAPACITY
+    // =========================================================
 
-        return categories
-            .filter(
-                (category) =>
-                    category.defaultShelf?.id === shelfId
+    const getCapacityPercentage = (
+        shelf: BookShelf
+    ) => {
+
+        if (
+            shelf.maxCapacity <= 0
+        ) {
+
+            return 0;
+        }
+
+        return Math.min(
+            100,
+            Math.round(
+                (
+                    shelf.usedCapacity /
+                    shelf.maxCapacity
+                ) * 100
             )
-            .map((category) => category.name);
+        );
     };
+
+    // =========================================================
+    // UI
+    // =========================================================
 
     return (
+
         <div className="min-h-screen bg-[#f7f8fa] p-6 font-sans sm:p-8">
 
             <div className="mx-auto max-w-7xl space-y-6">
 
-                {/* HEADER */}
+                {/* =================================================
+                    HEADER
+                ================================================= */}
 
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
                     <div>
+
                         <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                             Library Management
                         </p>
@@ -401,8 +548,9 @@ export default function BookShelvesPage() {
                         </h1>
 
                         <p className="mt-1 text-sm text-slate-500">
-                            Manage physical shelves and their default category assignments.
+                            Manage physical shelves and their category assignments.
                         </p>
+
                     </div>
 
                     <button
@@ -410,55 +558,70 @@ export default function BookShelvesPage() {
                         onClick={openCreateModal}
                         className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
                     >
+
                         <svg
                             className="h-4 w-4"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
                         >
+
                             <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                                 strokeWidth={1.8}
                                 d="M12 5v14M5 12h14"
                             />
+
                         </svg>
 
                         Add Shelf
+
                     </button>
 
                 </div>
 
-
-                {/* ERROR */}
+                {/* =================================================
+                    ERROR
+                ================================================= */}
 
                 {error && (
+
                     <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+
                         {error}
+
                     </div>
                 )}
 
-
-                {/* CONTENT */}
+                {/* =================================================
+                    SHELF TABLE
+                ================================================= */}
 
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
                     <div className="border-b border-slate-100 px-6 py-5">
 
                         <div>
+
                             <h2 className="text-sm font-bold text-slate-900">
                                 Shelf List
                             </h2>
 
                             <p className="mt-1 text-xs text-slate-400">
+
                                 {shelves.length} shelf
-                                {shelves.length !== 1 ? "s" : ""}
+                                {shelves.length !== 1
+                                    ? "s"
+                                    : ""}
+
                                 {" "}registered
+
                             </p>
+
                         </div>
 
                     </div>
-
 
                     {loading ? (
 
@@ -488,12 +651,14 @@ export default function BookShelvesPage() {
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
                                 >
+
                                     <path
                                         strokeWidth={1.6}
                                         strokeLinecap="round"
                                         strokeLinejoin="round"
                                         d="M4 7h16M4 12h16M4 17h16"
                                     />
+
                                 </svg>
 
                             </div>
@@ -520,7 +685,7 @@ export default function BookShelvesPage() {
 
                         <div className="overflow-x-auto">
 
-                            <table className="w-full min-w-[1000px]">
+                            <table className="w-full min-w-[1150px]">
 
                                 <thead>
 
@@ -535,7 +700,11 @@ export default function BookShelvesPage() {
                                     </th>
 
                                     <th className="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                        Default Categories
+                                        Capacity
+                                    </th>
+
+                                    <th className="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                        Categories
                                     </th>
 
                                     <th className="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -550,152 +719,231 @@ export default function BookShelvesPage() {
 
                                 </thead>
 
-
                                 <tbody>
 
-                                {shelves.map((shelf) => {
+                                {shelves.map(
+                                    (shelf) => {
 
-                                    const categoryNames =
-                                        getCategoryNames(
-                                            shelf.id
-                                        );
+                                        const categoryNames =
+                                            getCategoryNames(
+                                                shelf.id
+                                            );
 
-                                    return (
-                                        <tr
-                                            key={shelf.id}
-                                            className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60"
-                                        >
+                                        const capacityPercentage =
+                                            getCapacityPercentage(
+                                                shelf
+                                            );
 
-                                            <td className="px-6 py-4">
-                                                <span className="font-mono text-sm font-semibold text-slate-900">
-                                                    {shelf.shelfCode}
-                                                </span>
-                                            </td>
+                                        return (
 
-                                            <td className="px-6 py-4">
-                                                <p className="text-sm font-semibold text-slate-800">
-                                                    {shelf.name}
-                                                </p>
-                                            </td>
+                                            <tr
+                                                key={shelf.id}
+                                                className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60"
+                                            >
 
-                                            <td className="px-6 py-4">
+                                                {/* SHELF */}
 
-                                                {categoryNames.length > 0 ? (
+                                                <td className="px-6 py-4">
 
-                                                    <div className="flex max-w-md flex-wrap gap-1.5">
+                                                    <span className="font-mono text-sm font-semibold text-slate-900">
+                                                        {shelf.shelfCode}
+                                                    </span>
 
-                                                        {categoryNames.map(
-                                                            (categoryName) => (
-                                                                <span
-                                                                    key={categoryName}
-                                                                    className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600"
-                                                                >
-                                                                    {categoryName}
-                                                                </span>
-                                                            )
+                                                </td>
+
+                                                {/* NAME */}
+
+                                                <td className="px-6 py-4">
+
+                                                    <p className="text-sm font-semibold text-slate-800">
+                                                        {shelf.name}
+                                                    </p>
+
+                                                </td>
+
+                                                {/* CAPACITY */}
+
+                                                <td className="px-6 py-4">
+
+                                                    <div className="w-44">
+
+                                                        <div className="flex items-center justify-between">
+
+                                                            <span className="text-xs font-semibold text-slate-700">
+                                                                {shelf.usedCapacity}
+                                                                {" / "}
+                                                                {shelf.maxCapacity}
+                                                            </span>
+
+                                                            <span className="text-[10px] font-medium text-slate-400">
+                                                                {capacityPercentage}%
+                                                            </span>
+
+                                                        </div>
+
+                                                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+
+                                                            <div
+                                                                className={`h-full rounded-full transition-all ${
+                                                                    capacityPercentage >= 90
+                                                                        ? "bg-rose-500"
+                                                                        : capacityPercentage >= 70
+                                                                            ? "bg-amber-500"
+                                                                            : "bg-slate-800"
+                                                                }`}
+                                                                style={{
+                                                                    width:
+                                                                        `${capacityPercentage}%`,
+                                                                }}
+                                                            />
+
+                                                        </div>
+
+                                                        <p className="mt-1 text-[10px] text-slate-400">
+                                                            {shelf.availableCapacity}
+                                                            {" "}available
+                                                        </p>
+
+                                                    </div>
+
+                                                </td>
+
+                                                {/* CATEGORIES */}
+
+                                                <td className="px-6 py-4">
+
+                                                    {categoryNames.length > 0 ? (
+
+                                                        <div className="flex max-w-md flex-wrap gap-1.5">
+
+                                                            {categoryNames.map(
+                                                                (
+                                                                    categoryName
+                                                                ) => (
+
+                                                                    <span
+                                                                        key={
+                                                                            categoryName
+                                                                        }
+                                                                        className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600"
+                                                                    >
+                                                                        {
+                                                                            categoryName
+                                                                        }
+                                                                    </span>
+
+                                                                )
+                                                            )}
+
+                                                        </div>
+
+                                                    ) : (
+
+                                                        <span className="text-xs italic text-slate-400">
+                                                            No categories
+                                                        </span>
+
+                                                    )}
+
+                                                </td>
+
+                                                {/* STATUS */}
+
+                                                <td className="px-6 py-4">
+
+                                                    <span
+                                                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset ${
+                                                            shelf.status ===
+                                                            "ACTIVE"
+                                                                ? "bg-emerald-50 text-emerald-600 ring-emerald-500/20"
+                                                                : "bg-slate-100 text-slate-500 ring-slate-400/20"
+                                                        }`}
+                                                    >
+
+                                                        <span
+                                                            className={`h-1.5 w-1.5 rounded-full ${
+                                                                shelf.status ===
+                                                                "ACTIVE"
+                                                                    ? "bg-emerald-500"
+                                                                    : "bg-slate-400"
+                                                            }`}
+                                                        />
+
+                                                        {shelf.status}
+
+                                                    </span>
+
+                                                </td>
+
+                                                {/* ACTIONS */}
+
+                                                <td className="px-6 py-4">
+
+                                                    <div className="flex justify-end gap-2">
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                router.push(
+                                                                    `/book-shelves/${shelf.id}`
+                                                                )
+                                                            }
+                                                            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                                        >
+                                                            Detail
+                                                        </button>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                openEditModal(
+                                                                    shelf
+                                                                )
+                                                            }
+                                                            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                                        >
+                                                            Edit
+                                                        </button>
+
+                                                        {shelf.status ===
+                                                        "ACTIVE" ? (
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    handleDeactivate(
+                                                                        shelf
+                                                                    )
+                                                                }
+                                                                className="rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                                                            >
+                                                                Deactivate
+                                                            </button>
+
+                                                        ) : (
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    handleActivate(
+                                                                        shelf
+                                                                    )
+                                                                }
+                                                                className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-600 hover:bg-emerald-50"
+                                                            >
+                                                                Activate
+                                                            </button>
+
                                                         )}
 
                                                     </div>
 
-                                                ) : (
+                                                </td>
 
-                                                    <span className="text-xs italic text-slate-400">
-                                                        No default categories
-                                                    </span>
-
-                                                )}
-
-                                            </td>
-
-                                            <td className="px-6 py-4">
-
-                                                <span
-                                                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset ${
-                                                        shelf.status === "ACTIVE"
-                                                            ? "bg-emerald-50 text-emerald-600 ring-emerald-500/20"
-                                                            : "bg-slate-100 text-slate-500 ring-slate-400/20"
-                                                    }`}
-                                                >
-
-                                                    <span
-                                                        className={`h-1.5 w-1.5 rounded-full ${
-                                                            shelf.status === "ACTIVE"
-                                                                ? "bg-emerald-500"
-                                                                : "bg-slate-400"
-                                                        }`}
-                                                    />
-
-                                                    {shelf.status}
-
-                                                </span>
-
-                                            </td>
-
-                                            <td className="px-6 py-4">
-
-                                                <div className="flex justify-end gap-2">
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            router.push(
-                                                                `/book-shelves/${shelf.id}`
-                                                            )
-                                                        }
-                                                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                                                    >
-                                                        Detail
-                                                    </button>
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            openEditModal(
-                                                                shelf
-                                                            )
-                                                        }
-                                                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                                                    >
-                                                        Edit
-                                                    </button>
-
-                                                    {shelf.status === "ACTIVE" ? (
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                handleDeactivate(
-                                                                    shelf
-                                                                )
-                                                            }
-                                                            className="rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50"
-                                                        >
-                                                            Deactivate
-                                                        </button>
-
-                                                    ) : (
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                handleActivate(
-                                                                    shelf
-                                                                )
-                                                            }
-                                                            className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-600 hover:bg-emerald-50"
-                                                        >
-                                                            Activate
-                                                        </button>
-
-                                                    )}
-
-                                                </div>
-
-                                            </td>
-
-                                        </tr>
-                                    );
-                                })}
+                                            </tr>
+                                        );
+                                    }
+                                )}
 
                                 </tbody>
 
@@ -708,8 +956,9 @@ export default function BookShelvesPage() {
 
             </div>
 
-
-            {/* ADD / EDIT MODAL */}
+            {/* =====================================================
+                ADD / EDIT MODAL
+            ===================================================== */}
 
             {showFormModal && (
 
@@ -717,58 +966,77 @@ export default function BookShelvesPage() {
 
                     <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl">
 
+                        {/* HEADER */}
+
                         <div className="flex items-start justify-between border-b border-slate-100 px-6 py-5">
 
                             <div>
 
                                 <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+
                                     {editingShelf
                                         ? "Shelf Management"
                                         : "New Shelf"}
+
                                 </p>
 
                                 <h2 className="mt-1 text-lg font-bold text-slate-900">
+
                                     {editingShelf
                                         ? "Edit Book Shelf"
                                         : "Add Book Shelf"}
+
                                 </h2>
 
                             </div>
 
                             <button
                                 type="button"
-                                onClick={closeFormModal}
+                                onClick={
+                                    closeFormModal
+                                }
                                 className="text-slate-400 hover:text-slate-700"
                             >
+
                                 <svg
                                     className="h-5 w-5"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
                                 >
+
                                     <path
                                         strokeWidth={1.7}
                                         strokeLinecap="round"
                                         strokeLinejoin="round"
                                         d="M6 6l12 12M6 18L18 6"
                                     />
+
                                 </svg>
+
                             </button>
 
                         </div>
 
+                        {/* FORM */}
 
                         <form
-                            onSubmit={handleSubmit}
+                            onSubmit={
+                                handleSubmit
+                            }
                             className="space-y-5 px-6 py-6"
                         >
 
+                            {/* ERROR */}
+
                             {formError && (
+
                                 <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+
                                     {formError}
+
                                 </div>
                             )}
-
 
                             {/* SHELF CODE */}
 
@@ -780,8 +1048,12 @@ export default function BookShelvesPage() {
 
                                 <input
                                     type="text"
-                                    value={shelfCode}
-                                    onChange={(e) =>
+                                    value={
+                                        shelfCode
+                                    }
+                                    onChange={(
+                                        e
+                                    ) =>
                                         setShelfCode(
                                             e.target.value
                                         )
@@ -791,7 +1063,6 @@ export default function BookShelvesPage() {
                                 />
 
                             </div>
-
 
                             {/* SHELF NAME */}
 
@@ -803,8 +1074,12 @@ export default function BookShelvesPage() {
 
                                 <input
                                     type="text"
-                                    value={name}
-                                    onChange={(e) =>
+                                    value={
+                                        name
+                                    }
+                                    onChange={(
+                                        e
+                                    ) =>
                                         setName(
                                             e.target.value
                                         )
@@ -815,22 +1090,22 @@ export default function BookShelvesPage() {
 
                             </div>
 
-
-                            {/* DEFAULT CATEGORIES */}
+                            {/* CATEGORIES */}
 
                             <div>
 
                                 <label className="text-xs font-semibold text-slate-700">
-                                    Default Categories
+                                    Categories
                                 </label>
 
                                 <p className="mt-1 text-[11px] text-slate-400">
-                                    Select categories that should use this shelf by default.
+                                    Select categories that belong to this shelf.
                                 </p>
 
                                 <div className="mt-2 max-h-44 overflow-y-auto rounded-lg border border-slate-200">
 
-                                    {categories.length === 0 ? (
+                                    {categories.length ===
+                                    0 ? (
 
                                         <div className="px-3 py-4 text-xs text-slate-400">
                                             No categories available.
@@ -838,63 +1113,80 @@ export default function BookShelvesPage() {
 
                                     ) : (
 
-                                        categories.map((category) => {
+                                        categories.map(
+                                            (
+                                                category
+                                            ) => {
 
-                                            const checked =
-                                                selectedCategoryIds.includes(
-                                                    category.id
-                                                );
+                                                const checked =
+                                                    selectedCategoryIds.includes(
+                                                        category.id
+                                                    );
 
-                                            return (
-                                                <label
-                                                    key={category.id}
-                                                    className="flex cursor-pointer items-center gap-3 border-b border-slate-100 px-3 py-2.5 last:border-0 hover:bg-slate-50"
-                                                >
+                                                return (
 
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={checked}
-                                                        onChange={() =>
-                                                            handleCategoryChange(
-                                                                category.id
-                                                            )
+                                                    <label
+                                                        key={
+                                                            category.id
                                                         }
-                                                        className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
-                                                    />
+                                                        className="flex cursor-pointer items-center gap-3 border-b border-slate-100 px-3 py-2.5 last:border-0 hover:bg-slate-50"
+                                                    >
 
-                                                    <div className="min-w-0 flex-1">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={
+                                                                checked
+                                                            }
+                                                            onChange={() =>
+                                                                handleCategoryChange(
+                                                                    category.id
+                                                                )
+                                                            }
+                                                            className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                                                        />
 
-                                                        <p className="text-xs font-semibold text-slate-700">
-                                                            {category.name}
-                                                        </p>
+                                                        <div className="min-w-0 flex-1">
 
-                                                        <p className="text-[10px] text-slate-400">
-                                                            {category.status}
-                                                            {category.defaultShelf
-                                                                ? ` • Current shelf: ${category.defaultShelf.name}`
-                                                                : " • No default shelf"}
-                                                        </p>
+                                                            <p className="text-xs font-semibold text-slate-700">
+                                                                {
+                                                                    category.name
+                                                                }
+                                                            </p>
 
-                                                    </div>
+                                                            <p className="text-[10px] text-slate-400">
+                                                                {
+                                                                    category.status
+                                                                }
+                                                            </p>
 
-                                                </label>
-                                            );
-                                        })
+                                                        </div>
+
+                                                    </label>
+                                                );
+                                            }
+                                        )
 
                                     )}
 
                                 </div>
 
                                 <p className="mt-1.5 text-[11px] text-slate-400">
-                                    {selectedCategoryIds.length} categor
-                                    {selectedCategoryIds.length === 1
+
+                                    {
+                                        selectedCategoryIds.length
+                                    }
+
+                                    {" "}categor
+                                    {selectedCategoryIds.length ===
+                                    1
                                         ? "y"
-                                        : "ies"}{" "}
-                                    selected
+                                        : "ies"}
+
+                                    {" "}selected
+
                                 </p>
 
                             </div>
-
 
                             {/* ACTIONS */}
 
@@ -902,8 +1194,12 @@ export default function BookShelvesPage() {
 
                                 <button
                                     type="button"
-                                    onClick={closeFormModal}
-                                    disabled={saving}
+                                    onClick={
+                                        closeFormModal
+                                    }
+                                    disabled={
+                                        saving
+                                    }
                                     className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                                 >
                                     Cancel
@@ -911,202 +1207,23 @@ export default function BookShelvesPage() {
 
                                 <button
                                     type="submit"
-                                    disabled={saving}
+                                    disabled={
+                                        saving
+                                    }
                                     className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
+
                                     {saving
                                         ? "Saving..."
                                         : editingShelf
                                             ? "Save Changes"
                                             : "Create Shelf"}
+
                                 </button>
 
                             </div>
 
                         </form>
-
-                    </div>
-
-                </div>
-            )}
-
-
-            {/* OLD DETAIL MODAL */}
-
-            {showDetailModal && selectedShelf && (
-
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4">
-
-                    <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl">
-
-                        <div className="flex items-start justify-between border-b border-slate-100 px-6 py-5">
-
-                            <div>
-
-                                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                    Shelf Details
-                                </p>
-
-                                <h2 className="mt-1 text-lg font-bold text-slate-900">
-                                    {selectedShelf.name}
-                                </h2>
-
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setShowDetailModal(false)
-                                }
-                                className="text-slate-400 hover:text-slate-700"
-                            >
-                                <svg
-                                    className="h-5 w-5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        strokeWidth={1.7}
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M6 6l12 12M6 18L18 6"
-                                    />
-                                </svg>
-                            </button>
-
-                        </div>
-
-                        <div className="space-y-4 px-6 py-6">
-
-                            <div className="grid grid-cols-2 gap-3">
-
-                                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-
-                                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                        Shelf ID
-                                    </p>
-
-                                    <p className="mt-1 font-mono text-sm font-semibold text-slate-900">
-                                        #{selectedShelf.id}
-                                    </p>
-
-                                </div>
-
-                                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-
-                                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                        Shelf Code
-                                    </p>
-
-                                    <p className="mt-1 font-mono text-sm font-semibold text-slate-900">
-                                        {selectedShelf.shelfCode}
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-                            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-
-                                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                    Shelf Name
-                                </p>
-
-                                <p className="mt-1 text-sm font-semibold text-slate-900">
-                                    {selectedShelf.name}
-                                </p>
-
-                            </div>
-
-                            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-
-                                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                    Status
-                                </p>
-
-                                <span
-                                    className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                                        selectedShelf.status === "ACTIVE"
-                                            ? "bg-emerald-50 text-emerald-600"
-                                            : "bg-slate-100 text-slate-500"
-                                    }`}
-                                >
-                                    <span
-                                        className={`h-1.5 w-1.5 rounded-full ${
-                                            selectedShelf.status === "ACTIVE"
-                                                ? "bg-emerald-500"
-                                                : "bg-slate-400"
-                                        }`}
-                                    />
-
-                                    {selectedShelf.status}
-                                </span>
-
-                            </div>
-
-                            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-
-                                <div className="flex items-center justify-between">
-
-                                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                        Default Categories
-                                    </p>
-
-                                    <span className="text-[11px] font-semibold text-slate-400">
-                                        {getCategoryCount(
-                                            selectedShelf.id
-                                        )}
-                                    </span>
-
-                                </div>
-
-                                <div className="mt-3 flex flex-wrap gap-2">
-
-                                    {getCategoryNames(
-                                        selectedShelf.id
-                                    ).length > 0 ? (
-
-                                        getCategoryNames(
-                                            selectedShelf.id
-                                        ).map((categoryName) => (
-
-                                            <span
-                                                key={categoryName}
-                                                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600"
-                                            >
-                                                {categoryName}
-                                            </span>
-
-                                        ))
-
-                                    ) : (
-
-                                        <span className="text-xs italic text-slate-400">
-                                            No categories are assigned as default shelf.
-                                        </span>
-
-                                    )}
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                        <div className="flex justify-end border-t border-slate-100 px-6 py-4">
-
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setShowDetailModal(false)
-                                }
-                                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                            >
-                                Close
-                            </button>
-
-                        </div>
 
                     </div>
 

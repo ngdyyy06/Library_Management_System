@@ -7,6 +7,8 @@ import {
     getImportReceipts,
     getPublishers,
     getBooks,
+    getAuthors,
+    getCategories,
     createImportReceipt,
     updateImportReceipt,
     activateImportReceipt,
@@ -27,10 +29,16 @@ type Book = {
     status: string;
 };
 
-type ImportDetail = {
-    bookId: number;
-    quantity: number;
-    unitPrice: number;
+type Author = {
+    id: number;
+    name: string;
+    status?: string;
+};
+
+type Category = {
+    id: number;
+    name: string;
+    status?: string;
 };
 
 type ImportReceipt = {
@@ -47,11 +55,47 @@ type ImportReceipt = {
     };
 };
 
+type NewBookForm = {
+    title: string;
+    isbn: string;
+    publishYear: string;
+    price: string;
+    description: string;
+    authorIds: string[];
+    categoryIds: string[];
+    primaryCategoryId: string;
+};
+
 type FormDetail = {
+    type: "EXISTING" | "NEW";
     bookId: string;
     quantity: string;
     unitPrice: string;
+    newBook: NewBookForm;
 };
+
+function createEmptyNewBook(): NewBookForm {
+    return {
+        title: "",
+        isbn: "",
+        publishYear: "",
+        price: "",
+        description: "",
+        authorIds: [],
+        categoryIds: [],
+        primaryCategoryId: "",
+    };
+}
+
+function createEmptyDetail(): FormDetail {
+    return {
+        type: "EXISTING",
+        bookId: "",
+        quantity: "",
+        unitPrice: "",
+        newBook: createEmptyNewBook(),
+    };
+}
 
 export default function ImportReceiptsPage() {
     const router = useRouter();
@@ -59,6 +103,8 @@ export default function ImportReceiptsPage() {
     const [receipts, setReceipts] = useState<ImportReceipt[]>([]);
     const [publishers, setPublishers] = useState<Publisher[]>([]);
     const [books, setBooks] = useState<Book[]>([]);
+    const [authors, setAuthors] = useState<Author[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -73,11 +119,7 @@ export default function ImportReceiptsPage() {
     const [importDate, setImportDate] = useState("");
 
     const [details, setDetails] = useState<FormDetail[]>([
-        {
-            bookId: "",
-            quantity: "",
-            unitPrice: "",
-        },
+        createEmptyDetail(),
     ]);
 
     const [error, setError] = useState("");
@@ -94,15 +136,21 @@ export default function ImportReceiptsPage() {
                 receiptData,
                 publisherData,
                 bookData,
+                authorData,
+                categoryData,
             ] = await Promise.all([
                 getImportReceipts(),
                 getPublishers(),
                 getBooks(),
+                getAuthors(),
+                getCategories(),
             ]);
 
             setReceipts(receiptData || []);
             setPublishers(publisherData || []);
             setBooks(bookData || []);
+            setAuthors(authorData || []);
+            setCategories(categoryData || []);
         } catch (error: any) {
             setError(error.message || "Failed to load data");
         } finally {
@@ -113,14 +161,7 @@ export default function ImportReceiptsPage() {
     function resetForm() {
         setPublisherId("");
         setImportDate("");
-        setDetails([
-            {
-                bookId: "",
-                quantity: "",
-                unitPrice: "",
-            },
-        ]);
-
+        setDetails([createEmptyDetail()]);
         setEditingId(null);
         setError("");
     }
@@ -148,9 +189,11 @@ export default function ImportReceiptsPage() {
 
             setDetails(
                 receiptDetails.map((detail: any) => ({
+                    type: "EXISTING",
                     bookId: String(detail.book.id),
                     quantity: String(detail.quantity),
                     unitPrice: String(detail.unitPrice),
+                    newBook: createEmptyNewBook(),
                 }))
             );
 
@@ -163,11 +206,7 @@ export default function ImportReceiptsPage() {
     function addDetailRow() {
         setDetails([
             ...details,
-            {
-                bookId: "",
-                quantity: "",
-                unitPrice: "",
-            },
+            createEmptyDetail(),
         ]);
     }
 
@@ -177,7 +216,9 @@ export default function ImportReceiptsPage() {
         }
 
         setDetails(
-            details.filter((_, currentIndex) => currentIndex !== index)
+            details.filter(
+                (_, currentIndex) => currentIndex !== index
+            )
         );
     }
 
@@ -195,6 +236,90 @@ export default function ImportReceiptsPage() {
                     }
                     : detail
             )
+        );
+    }
+
+    function updateNewBook(
+        index: number,
+        field: keyof NewBookForm,
+        value: string
+    ) {
+        setDetails(
+            details.map((detail, currentIndex) => {
+                if (currentIndex !== index) {
+                    return detail;
+                }
+
+                return {
+                    ...detail,
+                    newBook: {
+                        ...detail.newBook,
+                        [field]: value,
+                    },
+                };
+            })
+        );
+    }
+
+    function updateNewBookAuthors(
+        index: number,
+        authorId: string
+    ) {
+        setDetails(
+            details.map((detail, currentIndex) => {
+                if (currentIndex !== index) {
+                    return detail;
+                }
+
+                const currentIds = detail.newBook.authorIds;
+
+                const nextIds = currentIds.includes(authorId)
+                    ? currentIds.filter((id) => id !== authorId)
+                    : [...currentIds, authorId];
+
+                return {
+                    ...detail,
+                    newBook: {
+                        ...detail.newBook,
+                        authorIds: nextIds,
+                    },
+                };
+            })
+        );
+    }
+
+    function updateNewBookCategories(
+        index: number,
+        categoryId: string
+    ) {
+        setDetails(
+            details.map((detail, currentIndex) => {
+                if (currentIndex !== index) {
+                    return detail;
+                }
+
+                const currentIds = detail.newBook.categoryIds;
+
+                const nextIds = currentIds.includes(categoryId)
+                    ? currentIds.filter((id) => id !== categoryId)
+                    : [...currentIds, categoryId];
+
+                let primaryCategoryId =
+                    detail.newBook.primaryCategoryId;
+
+                if (!nextIds.includes(primaryCategoryId)) {
+                    primaryCategoryId = "";
+                }
+
+                return {
+                    ...detail,
+                    newBook: {
+                        ...detail.newBook,
+                        categoryIds: nextIds,
+                        primaryCategoryId,
+                    },
+                };
+            })
         );
     }
 
@@ -227,38 +352,129 @@ export default function ImportReceiptsPage() {
         }
 
         for (const detail of details) {
-            if (!detail.bookId) {
-                setError("Please select a book for every row");
-                return;
-            }
-
             if (!detail.quantity || Number(detail.quantity) <= 0) {
                 setError("Quantity must be greater than 0");
                 return;
             }
 
-            if (detail.unitPrice === "" || Number(detail.unitPrice) < 0) {
+            if (
+                detail.unitPrice === "" ||
+                Number(detail.unitPrice) < 0
+            ) {
                 setError("Unit price cannot be negative");
                 return;
+            }
+
+            if (detail.type === "EXISTING") {
+                if (!detail.bookId) {
+                    setError("Please select a book for every existing book row");
+                    return;
+                }
+            }
+
+            if (detail.type === "NEW") {
+                const newBook = detail.newBook;
+
+                if (!newBook.title.trim()) {
+                    setError("Book title is required");
+                    return;
+                }
+
+                if (!newBook.isbn.trim()) {
+                    setError("ISBN is required");
+                    return;
+                }
+
+                if (
+                    newBook.price === "" ||
+                    Number(newBook.price) < 0
+                ) {
+                    setError("Book price cannot be negative");
+                    return;
+                }
+
+                if (newBook.categoryIds.length === 0) {
+                    setError("Please select at least one category");
+                    return;
+                }
+
+                if (!newBook.primaryCategoryId) {
+                    setError("Please select a primary category");
+                    return;
+                }
+
+                if (
+                    !newBook.categoryIds.includes(
+                        newBook.primaryCategoryId
+                    )
+                ) {
+                    setError(
+                        "Primary category must be one of the selected categories"
+                    );
+                    return;
+                }
             }
         }
 
         try {
             setSaving(true);
 
-            const requestData = {
-                publisherId: Number(publisherId),
-                importDate,
-                details: details.map((detail) => ({
-                    bookId: Number(detail.bookId),
-                    quantity: Number(detail.quantity),
-                    unitPrice: Number(detail.unitPrice),
-                })),
-            };
-
             if (editingId) {
-                await updateImportReceipt(editingId, requestData);
+                const requestData = {
+                    publisherId: Number(publisherId),
+                    importDate,
+                    details: details.map((detail) => ({
+                        bookId: Number(detail.bookId),
+                        quantity: Number(detail.quantity),
+                        unitPrice: Number(detail.unitPrice),
+                    })),
+                };
+
+                await updateImportReceipt(
+                    editingId,
+                    requestData
+                );
             } else {
+                const requestData = {
+                    publisherId: Number(publisherId),
+                    importDate,
+                    details: details.map((detail) => {
+                        if (detail.type === "EXISTING") {
+                            return {
+                                bookId: Number(detail.bookId),
+                                quantity: Number(detail.quantity),
+                                unitPrice: Number(detail.unitPrice),
+                            };
+                        }
+
+                        const newBook = detail.newBook;
+
+                        return {
+                            newBook: {
+                                title: newBook.title.trim(),
+                                isbn: newBook.isbn.trim(),
+                                publishYear:
+                                    newBook.publishYear === ""
+                                        ? undefined
+                                        : Number(newBook.publishYear),
+                                description:
+                                    newBook.description.trim() || undefined,
+                                price: Number(newBook.price),
+                                authorIds:
+                                    newBook.authorIds.length > 0
+                                        ? newBook.authorIds.map(Number)
+                                        : undefined,
+                                categoryIds:
+                                    newBook.categoryIds.map(Number),
+                                primaryCategoryId:
+                                    Number(newBook.primaryCategoryId),
+                            },
+                            quantity: Number(detail.quantity),
+                            unitPrice: Number(detail.unitPrice),
+                        };
+                    }),
+                };
+
                 await createImportReceipt(requestData);
             }
 
@@ -267,7 +483,10 @@ export default function ImportReceiptsPage() {
             setShowForm(false);
             resetForm();
         } catch (error: any) {
-            setError(error.message || "Failed to save import receipt");
+            setError(
+                error.message ||
+                "Failed to save import receipt"
+            );
         } finally {
             setSaving(false);
         }
@@ -287,7 +506,10 @@ export default function ImportReceiptsPage() {
             await activateImportReceipt(id);
             await loadData();
         } catch (error: any) {
-            setError(error.message || "Failed to activate import receipt");
+            setError(
+                error.message ||
+                "Failed to activate import receipt"
+            );
         }
     }
 
@@ -305,7 +527,10 @@ export default function ImportReceiptsPage() {
             await deactivateImportReceipt(id);
             await loadData();
         } catch (error: any) {
-            setError(error.message || "Failed to deactivate import receipt");
+            setError(
+                error.message ||
+                "Failed to deactivate import receipt"
+            );
         }
     }
 
@@ -315,11 +540,16 @@ export default function ImportReceiptsPage() {
 
             const matchesSearch =
                 !keyword ||
-                receipt.receiptCode.toLowerCase().includes(keyword) ||
-                receipt.publisher.name.toLowerCase().includes(keyword);
+                receipt.receiptCode
+                    .toLowerCase()
+                    .includes(keyword) ||
+                receipt.publisher.name
+                    .toLowerCase()
+                    .includes(keyword);
 
             const matchesStatus =
-                statusFilter === "ALL" || receipt.status === statusFilter;
+                statusFilter === "ALL" ||
+                receipt.status === statusFilter;
 
             return matchesSearch && matchesStatus;
         });
@@ -354,6 +584,7 @@ export default function ImportReceiptsPage() {
                             Manage incoming book shipments, publishers, and procurement records.
                         </p>
                     </div>
+
                     <button
                         type="button"
                         onClick={openCreateForm}
@@ -376,7 +607,7 @@ export default function ImportReceiptsPage() {
                     </button>
                 </div>
 
-                {/* Error Message */}
+                {/* Error */}
                 {error && (
                     <div className="flex items-start justify-between gap-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                         <div className="flex items-center gap-2.5">
@@ -483,7 +714,9 @@ export default function ImportReceiptsPage() {
                             <input
                                 type="text"
                                 value={search}
-                                onChange={(event) => setSearch(event.target.value)}
+                                onChange={(event) =>
+                                    setSearch(event.target.value)
+                                }
                                 placeholder="Search by receipt code or publisher..."
                                 className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
                             />
@@ -497,14 +730,20 @@ export default function ImportReceiptsPage() {
                             <select
                                 value={statusFilter}
                                 onChange={(event) =>
-                                    setStatusFilter(event.target.value)
+                                    setStatusFilter(
+                                        event.target.value
+                                    )
                                 }
                                 className="h-10 min-w-[160px] rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
                             >
-                                <option value="ALL">All Statuses</option>
+                                <option value="ALL">
+                                    All Statuses
+                                </option>
+
                                 <option value="COMPLETED">
                                     Active
                                 </option>
+
                                 <option value="INACTIVE">
                                     Inactive
                                 </option>
@@ -522,10 +761,7 @@ export default function ImportReceiptsPage() {
                             </p>
                         </div>
                     ) : filteredReceipts.length === 0 ? (
-
-                        /* Empty State */
                         <div className="flex min-h-[320px] flex-col items-center justify-center px-6 text-center">
-
                             <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400">
                                 <svg
                                     className="h-5 w-5"
@@ -551,13 +787,9 @@ export default function ImportReceiptsPage() {
                                 Try adjusting your search or create a new import receipt.
                             </p>
                         </div>
-
                     ) : (
-
-                        /* Table */
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[950px] border-collapse text-left">
-
                                 <thead>
                                 <tr className="border-b border-slate-200 bg-slate-50/70">
                                     <th className="px-5 py-3.5 text-xs font-medium text-slate-500">
@@ -587,13 +819,11 @@ export default function ImportReceiptsPage() {
                                 </thead>
 
                                 <tbody className="divide-y divide-slate-100">
-
                                 {filteredReceipts.map((receipt) => (
                                     <tr
                                         key={receipt.id}
                                         className="group transition-colors hover:bg-slate-50/60"
                                     >
-
                                         <td className="px-5 py-4">
                                             <span className="font-mono text-sm font-medium text-[#183b63]">
                                                 {receipt.receiptCode}
@@ -614,7 +844,9 @@ export default function ImportReceiptsPage() {
 
                                         <td className="px-5 py-4">
                                             <span className="text-sm font-medium text-slate-800">
-                                                {formatCurrency(receipt.totalAmount)}
+                                                {formatCurrency(
+                                                    receipt.totalAmount
+                                                )}
                                             </span>
 
                                             <span className="ml-1 text-xs text-slate-400">
@@ -639,7 +871,6 @@ export default function ImportReceiptsPage() {
                                         <td className="px-5 py-4">
                                             <div className="flex items-center justify-end gap-2">
 
-                                                {/* Detail */}
                                                 <button
                                                     type="button"
                                                     onClick={() =>
@@ -659,18 +890,23 @@ export default function ImportReceiptsPage() {
                                                         strokeLinejoin="round"
                                                     >
                                                         <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" />
-                                                        <circle cx="12" cy="12" r="2.5" />
+                                                        <circle
+                                                            cx="12"
+                                                            cy="12"
+                                                            r="2.5"
+                                                        />
                                                     </svg>
 
                                                     Detail
                                                 </button>
 
-                                                {/* Edit */}
                                                 {receipt.status === "COMPLETED" && (
                                                     <button
                                                         type="button"
                                                         onClick={() =>
-                                                            openEditForm(receipt)
+                                                            openEditForm(
+                                                                receipt
+                                                            )
                                                         }
                                                         className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#183b63]"
                                                     >
@@ -678,7 +914,6 @@ export default function ImportReceiptsPage() {
                                                     </button>
                                                 )}
 
-                                                {/* Activate / Deactivate */}
                                                 {receipt.status === "COMPLETED" ? (
                                                     <button
                                                         type="button"
@@ -704,13 +939,10 @@ export default function ImportReceiptsPage() {
                                                         Activate
                                                     </button>
                                                 )}
-
                                             </div>
                                         </td>
-
                                     </tr>
                                 ))}
-
                                 </tbody>
                             </table>
                         </div>
@@ -721,11 +953,10 @@ export default function ImportReceiptsPage() {
                 {showForm && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 px-4 py-6 backdrop-blur-[2px]">
 
-                        <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
+                        <div className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
 
                             {/* Modal Header */}
                             <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-6 py-5">
-
                                 <div>
                                     <h2 className="text-lg font-semibold tracking-tight text-slate-900">
                                         {editingId
@@ -734,7 +965,9 @@ export default function ImportReceiptsPage() {
                                     </h2>
 
                                     <p className="mt-1 text-sm text-slate-500">
-                                        Enter the publisher, import date, and book details.
+                                        {editingId
+                                            ? "Update the import date, quantities, and unit prices."
+                                            : "Enter the publisher, import date, and book details."}
                                     </p>
                                 </div>
 
@@ -761,7 +994,7 @@ export default function ImportReceiptsPage() {
                                 </button>
                             </div>
 
-                            {/* Modal Content */}
+                            {/* Form */}
                             <form
                                 onSubmit={handleSubmit}
                                 className="overflow-y-auto"
@@ -853,139 +1086,662 @@ export default function ImportReceiptsPage() {
                                                 </h3>
 
                                                 <p className="mt-1 text-xs text-slate-400">
-                                                    Add the books included in this receipt.
+                                                    Add existing books or create new books as part of this receipt.
                                                 </p>
                                             </div>
 
-                                            <button
-                                                type="button"
-                                                onClick={addDetailRow}
-                                                className="inline-flex h-9 items-center justify-center gap-1.5 self-start rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#183b63] sm:self-auto"
-                                            >
-                                                <svg
-                                                    className="h-3.5 w-3.5"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="1.7"
-                                                    strokeLinecap="round"
+                                            {!editingId && (
+                                                <button
+                                                    type="button"
+                                                    onClick={addDetailRow}
+                                                    className="inline-flex h-9 items-center justify-center gap-1.5 self-start rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#183b63] sm:self-auto"
                                                 >
-                                                    <path d="M12 5v14" />
-                                                    <path d="M5 12h14" />
-                                                </svg>
+                                                    <svg
+                                                        className="h-3.5 w-3.5"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="1.7"
+                                                        strokeLinecap="round"
+                                                    >
+                                                        <path d="M12 5v14" />
+                                                        <path d="M5 12h14" />
+                                                    </svg>
 
-                                                Add Book
-                                            </button>
+                                                    Add Book
+                                                </button>
+                                            )}
 
                                         </div>
 
-                                        <div className="overflow-hidden rounded-xl border border-slate-200">
-                                            <div className="overflow-x-auto">
+                                        <div className="space-y-4">
 
-                                                <table className="w-full min-w-[700px] border-collapse text-left">
+                                            {details.map(
+                                                (detail, index) => {
+                                                    const quantity =
+                                                        Number(
+                                                            detail.quantity
+                                                        ) || 0;
 
-                                                    <thead>
-                                                    <tr className="border-b border-slate-200 bg-slate-50">
-                                                        <th className="px-4 py-3 text-xs font-medium text-slate-500">
-                                                            Book Title
-                                                        </th>
+                                                    const unitPrice =
+                                                        Number(
+                                                            detail.unitPrice
+                                                        ) || 0;
 
-                                                        <th className="w-28 px-4 py-3 text-xs font-medium text-slate-500">
-                                                            Quantity
-                                                        </th>
+                                                    const amount =
+                                                        quantity *
+                                                        unitPrice;
 
-                                                        <th className="w-40 px-4 py-3 text-xs font-medium text-slate-500">
-                                                            Unit Price
-                                                        </th>
+                                                    return (
+                                                        <div
+                                                            key={index}
+                                                            className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+                                                        >
 
-                                                        <th className="w-36 px-4 py-3 text-right text-xs font-medium text-slate-500">
-                                                            Subtotal
-                                                        </th>
+                                                            {/* Row Header */}
+                                                            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
 
-                                                        <th className="w-12 px-4 py-3" />
-                                                    </tr>
-                                                    </thead>
+                                                                <div className="flex items-center gap-3">
+                                                                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-white text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                                                                        {index + 1}
+                                                                    </span>
 
-                                                    <tbody className="divide-y divide-slate-100">
+                                                                    <div>
+                                                                        <p className="text-xs font-semibold text-slate-800">
+                                                                            Book Item
+                                                                        </p>
 
-                                                    {details.map(
-                                                        (detail, index) => {
-                                                            const quantity =
-                                                                Number(
-                                                                    detail.quantity
-                                                                ) || 0;
+                                                                        <p className="text-[11px] text-slate-400">
+                                                                            {detail.type ===
+                                                                            "EXISTING"
+                                                                                ? "Existing book"
+                                                                                : "New book"}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
 
-                                                            const unitPrice =
-                                                                Number(
-                                                                    detail.unitPrice
-                                                                ) || 0;
-
-                                                            const amount =
-                                                                quantity *
-                                                                unitPrice;
-
-                                                            return (
-                                                                <tr
-                                                                    key={index}
-                                                                    className="bg-white"
-                                                                >
-                                                                    <td className="px-4 py-3">
-                                                                        <select
-                                                                            value={
-                                                                                detail.bookId
-                                                                            }
-                                                                            onChange={(
-                                                                                event
-                                                                            ) =>
-                                                                                updateDetail(
-                                                                                    index,
-                                                                                    "bookId",
-                                                                                    event
-                                                                                        .target
-                                                                                        .value
-                                                                                )
-                                                                            }
-                                                                            className="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs text-slate-800 outline-none transition hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                                                                {!editingId && (
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={
+                                                                            details.length ===
+                                                                            1
+                                                                        }
+                                                                        onClick={() =>
+                                                                            removeDetailRow(
+                                                                                index
+                                                                            )
+                                                                        }
+                                                                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-30"
+                                                                        title="Remove item"
+                                                                        aria-label="Remove item"
+                                                                    >
+                                                                        <svg
+                                                                            className="h-4 w-4"
+                                                                            viewBox="0 0 24 24"
+                                                                            fill="none"
+                                                                            stroke="currentColor"
+                                                                            strokeWidth="1.6"
+                                                                            strokeLinecap="round"
+                                                                            strokeLinejoin="round"
                                                                         >
-                                                                            <option value="">
-                                                                                Select a book...
-                                                                            </option>
+                                                                            <path d="M4 7h16" />
+                                                                            <path d="M10 11v6" />
+                                                                            <path d="M14 11v6" />
+                                                                            <path d="M5 7l1 14h10l1-14" />
+                                                                            <path d="M9 7V4h6v3" />
+                                                                        </svg>
+                                                                    </button>
+                                                                )}
+                                                            </div>
 
-                                                                            {books
-                                                                                .filter(
-                                                                                    (
-                                                                                        book
-                                                                                    ) =>
-                                                                                        book.status ===
-                                                                                        "ACTIVE"
-                                                                                )
-                                                                                .map(
-                                                                                    (
-                                                                                        book
-                                                                                    ) => (
-                                                                                        <option
-                                                                                            key={
-                                                                                                book.id
-                                                                                            }
-                                                                                            value={
-                                                                                                book.id
-                                                                                            }
-                                                                                        >
-                                                                                            {
-                                                                                                book.title
-                                                                                            }{" "}
-                                                                                            (ISBN:{" "}
-                                                                                            {
-                                                                                                book.isbn
-                                                                                            }
-                                                                                            )
-                                                                                        </option>
+                                                            <div className="space-y-5 p-4">
+
+                                                                {/* Type */}
+                                                                {!editingId && (
+                                                                    <div>
+                                                                        <label className="mb-2 block text-xs font-medium text-slate-700">
+                                                                            Book Type
+                                                                        </label>
+
+                                                                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() =>
+                                                                                    updateDetail(
+                                                                                        index,
+                                                                                        "type",
+                                                                                        "EXISTING"
                                                                                     )
-                                                                                )}
-                                                                        </select>
-                                                                    </td>
+                                                                                }
+                                                                                className={`rounded-lg border px-3 py-2.5 text-left transition ${
+                                                                                    detail.type ===
+                                                                                    "EXISTING"
+                                                                                        ? "border-[#183b63] bg-[#183b63]/5 ring-1 ring-[#183b63]/10"
+                                                                                        : "border-slate-200 bg-white hover:border-slate-300"
+                                                                                }`}
+                                                                            >
+                                                                                <p className="text-xs font-semibold text-slate-800">
+                                                                                    Existing Book
+                                                                                </p>
 
-                                                                    <td className="px-4 py-3">
+                                                                                <p className="mt-0.5 text-[11px] text-slate-400">
+                                                                                    Select a book already in the catalog.
+                                                                                </p>
+                                                                            </button>
+
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() =>
+                                                                                    updateDetail(
+                                                                                        index,
+                                                                                        "type",
+                                                                                        "NEW"
+                                                                                    )
+                                                                                }
+                                                                                className={`rounded-lg border px-3 py-2.5 text-left transition ${
+                                                                                    detail.type ===
+                                                                                    "NEW"
+                                                                                        ? "border-[#183b63] bg-[#183b63]/5 ring-1 ring-[#183b63]/10"
+                                                                                        : "border-slate-200 bg-white hover:border-slate-300"
+                                                                                }`}
+                                                                            >
+                                                                                <p className="text-xs font-semibold text-slate-800">
+                                                                                    New Book
+                                                                                </p>
+
+                                                                                <p className="mt-0.5 text-[11px] text-slate-400">
+                                                                                    Create a new catalog book.
+                                                                                </p>
+                                                                            </button>
+
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Existing Book */}
+                                                                {detail.type ===
+                                                                    "EXISTING" && (
+                                                                        <div>
+                                                                            <label className="mb-2 block text-xs font-medium text-slate-700">
+                                                                                Book
+                                                                                <span className="ml-1 text-red-500">
+                                                                                *
+                                                                            </span>
+                                                                            </label>
+
+                                                                            <select
+                                                                                value={
+                                                                                    detail.bookId
+                                                                                }
+                                                                                onChange={(
+                                                                                    event
+                                                                                ) =>
+                                                                                    updateDetail(
+                                                                                        index,
+                                                                                        "bookId",
+                                                                                        event
+                                                                                            .target
+                                                                                            .value
+                                                                                    )
+                                                                                }
+                                                                                className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                                                                            >
+                                                                                <option value="">
+                                                                                    Select a book...
+                                                                                </option>
+
+                                                                                {books
+                                                                                    .filter(
+                                                                                        (
+                                                                                            book
+                                                                                        ) =>
+                                                                                            book.status ===
+                                                                                            "ACTIVE"
+                                                                                    )
+                                                                                    .map(
+                                                                                        (
+                                                                                            book
+                                                                                        ) => (
+                                                                                            <option
+                                                                                                key={
+                                                                                                    book.id
+                                                                                                }
+                                                                                                value={
+                                                                                                    book.id
+                                                                                                }
+                                                                                            >
+                                                                                                {
+                                                                                                    book.title
+                                                                                                }{" "}
+                                                                                                (ISBN:{" "}
+                                                                                                {
+                                                                                                    book.isbn
+                                                                                                }
+                                                                                                )
+                                                                                            </option>
+                                                                                        )
+                                                                                    )}
+                                                                            </select>
+                                                                        </div>
+                                                                    )}
+
+                                                                {/* New Book */}
+                                                                {detail.type ===
+                                                                    "NEW" && (
+                                                                        <div className="space-y-5 rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+
+                                                                            <div>
+                                                                                <h4 className="text-xs font-semibold text-slate-800">
+                                                                                    New Book Information
+                                                                                </h4>
+
+                                                                                <p className="mt-1 text-[11px] text-slate-400">
+                                                                                    Publisher is inherited from the import receipt.
+                                                                                </p>
+                                                                            </div>
+
+                                                                            {/* Basic Information */}
+                                                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+
+                                                                                <div className="md:col-span-2">
+                                                                                    <label className="mb-2 block text-xs font-medium text-slate-700">
+                                                                                        Title
+                                                                                        <span className="ml-1 text-red-500">
+                                                                                        *
+                                                                                    </span>
+                                                                                    </label>
+
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        value={
+                                                                                            detail
+                                                                                                .newBook
+                                                                                                .title
+                                                                                        }
+                                                                                        onChange={(
+                                                                                            event
+                                                                                        ) =>
+                                                                                            updateNewBook(
+                                                                                                index,
+                                                                                                "title",
+                                                                                                event
+                                                                                                    .target
+                                                                                                    .value
+                                                                                            )
+                                                                                        }
+                                                                                        placeholder="Enter book title..."
+                                                                                        className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                                                                                    />
+                                                                                </div>
+
+                                                                                <div>
+                                                                                    <label className="mb-2 block text-xs font-medium text-slate-700">
+                                                                                        ISBN
+                                                                                        <span className="ml-1 text-red-500">
+                                                                                        *
+                                                                                    </span>
+                                                                                    </label>
+
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        value={
+                                                                                            detail
+                                                                                                .newBook
+                                                                                                .isbn
+                                                                                        }
+                                                                                        onChange={(
+                                                                                            event
+                                                                                        ) =>
+                                                                                            updateNewBook(
+                                                                                                index,
+                                                                                                "isbn",
+                                                                                                event
+                                                                                                    .target
+                                                                                                    .value
+                                                                                            )
+                                                                                        }
+                                                                                        placeholder="Enter ISBN..."
+                                                                                        className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                                                                                    />
+                                                                                </div>
+
+                                                                                <div>
+                                                                                    <label className="mb-2 block text-xs font-medium text-slate-700">
+                                                                                        Publish Year
+                                                                                    </label>
+
+                                                                                    <input
+                                                                                        type="number"
+                                                                                        min="0"
+                                                                                        value={
+                                                                                            detail
+                                                                                                .newBook
+                                                                                                .publishYear
+                                                                                        }
+                                                                                        onChange={(
+                                                                                            event
+                                                                                        ) =>
+                                                                                            updateNewBook(
+                                                                                                index,
+                                                                                                "publishYear",
+                                                                                                event
+                                                                                                    .target
+                                                                                                    .value
+                                                                                            )
+                                                                                        }
+                                                                                        placeholder="e.g. 2024"
+                                                                                        className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                                                                                    />
+                                                                                </div>
+
+                                                                                <div>
+                                                                                    <label className="mb-2 block text-xs font-medium text-slate-700">
+                                                                                        Book Price
+                                                                                        <span className="ml-1 text-red-500">
+                                                                                        *
+                                                                                    </span>
+                                                                                    </label>
+
+                                                                                    <input
+                                                                                        type="number"
+                                                                                        min="0"
+                                                                                        value={
+                                                                                            detail
+                                                                                                .newBook
+                                                                                                .price
+                                                                                        }
+                                                                                        onChange={(
+                                                                                            event
+                                                                                        ) =>
+                                                                                            updateNewBook(
+                                                                                                index,
+                                                                                                "price",
+                                                                                                event
+                                                                                                    .target
+                                                                                                    .value
+                                                                                            )
+                                                                                        }
+                                                                                        placeholder="0"
+                                                                                        className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                                                                                    />
+                                                                                </div>
+
+                                                                                <div className="md:col-span-2">
+                                                                                    <label className="mb-2 block text-xs font-medium text-slate-700">
+                                                                                        Description
+                                                                                    </label>
+
+                                                                                    <textarea
+                                                                                        value={
+                                                                                            detail
+                                                                                                .newBook
+                                                                                                .description
+                                                                                        }
+                                                                                        onChange={(
+                                                                                            event
+                                                                                        ) =>
+                                                                                            updateNewBook(
+                                                                                                index,
+                                                                                                "description",
+                                                                                                event
+                                                                                                    .target
+                                                                                                    .value
+                                                                                            )
+                                                                                        }
+                                                                                        rows={3}
+                                                                                        placeholder="Enter book description..."
+                                                                                        className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                                                                                    />
+                                                                                </div>
+
+                                                                            </div>
+
+                                                                            {/* Authors */}
+                                                                            <div>
+                                                                                <label className="mb-2 block text-xs font-medium text-slate-700">
+                                                                                    Authors
+                                                                                </label>
+
+                                                                                <div className="max-h-36 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
+
+                                                                                    {authors.filter(
+                                                                                        (
+                                                                                            author
+                                                                                        ) =>
+                                                                                            author.status ===
+                                                                                            undefined ||
+                                                                                            author.status ===
+                                                                                            "ACTIVE"
+                                                                                    ).length ===
+                                                                                    0 ? (
+                                                                                        <p className="px-2 py-2 text-xs text-slate-400">
+                                                                                            No active authors available.
+                                                                                        </p>
+                                                                                    ) : (
+                                                                                        <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+
+                                                                                            {authors
+                                                                                                .filter(
+                                                                                                    (
+                                                                                                        author
+                                                                                                    ) =>
+                                                                                                        author.status ===
+                                                                                                        undefined ||
+                                                                                                        author.status ===
+                                                                                                        "ACTIVE"
+                                                                                                )
+                                                                                                .map(
+                                                                                                    (
+                                                                                                        author
+                                                                                                    ) => (
+                                                                                                        <label
+                                                                                                            key={
+                                                                                                                author.id
+                                                                                                            }
+                                                                                                            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                                                                                                        >
+                                                                                                            <input
+                                                                                                                type="checkbox"
+                                                                                                                checked={detail.newBook.authorIds.includes(
+                                                                                                                    String(
+                                                                                                                        author.id
+                                                                                                                    )
+                                                                                                                )}
+                                                                                                                onChange={() =>
+                                                                                                                    updateNewBookAuthors(
+                                                                                                                        index,
+                                                                                                                        String(
+                                                                                                                            author.id
+                                                                                                                        )
+                                                                                                                    )
+                                                                                                                }
+                                                                                                                className="h-3.5 w-3.5 rounded border-slate-300"
+                                                                                                            />
+
+                                                                                                            <span>
+                                                                                                            {
+                                                                                                                author.name
+                                                                                                            }
+                                                                                                        </span>
+                                                                                                        </label>
+                                                                                                    )
+                                                                                                )}
+
+                                                                                        </div>
+                                                                                    )}
+
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {/* Categories */}
+                                                                            <div>
+                                                                                <label className="mb-2 block text-xs font-medium text-slate-700">
+                                                                                    Categories
+                                                                                    <span className="ml-1 text-red-500">
+                                                                                    *
+                                                                                </span>
+                                                                                </label>
+
+                                                                                <div className="max-h-36 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
+
+                                                                                    {categories.filter(
+                                                                                        (
+                                                                                            category
+                                                                                        ) =>
+                                                                                            category.status ===
+                                                                                            undefined ||
+                                                                                            category.status ===
+                                                                                            "ACTIVE"
+                                                                                    ).length ===
+                                                                                    0 ? (
+                                                                                        <p className="px-2 py-2 text-xs text-slate-400">
+                                                                                            No active categories available.
+                                                                                        </p>
+                                                                                    ) : (
+                                                                                        <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+
+                                                                                            {categories
+                                                                                                .filter(
+                                                                                                    (
+                                                                                                        category
+                                                                                                    ) =>
+                                                                                                        category.status ===
+                                                                                                        undefined ||
+                                                                                                        category.status ===
+                                                                                                        "ACTIVE"
+                                                                                                )
+                                                                                                .map(
+                                                                                                    (
+                                                                                                        category
+                                                                                                    ) => (
+                                                                                                        <label
+                                                                                                            key={
+                                                                                                                category.id
+                                                                                                            }
+                                                                                                            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                                                                                                        >
+                                                                                                            <input
+                                                                                                                type="checkbox"
+                                                                                                                checked={detail.newBook.categoryIds.includes(
+                                                                                                                    String(
+                                                                                                                        category.id
+                                                                                                                    )
+                                                                                                                )}
+                                                                                                                onChange={() =>
+                                                                                                                    updateNewBookCategories(
+                                                                                                                        index,
+                                                                                                                        String(
+                                                                                                                            category.id
+                                                                                                                        )
+                                                                                                                    )
+                                                                                                                }
+                                                                                                                className="h-3.5 w-3.5 rounded border-slate-300"
+                                                                                                            />
+
+                                                                                                            <span>
+                                                                                                            {
+                                                                                                                category.name
+                                                                                                            }
+                                                                                                        </span>
+                                                                                                        </label>
+                                                                                                    )
+                                                                                                )}
+
+                                                                                        </div>
+                                                                                    )}
+
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {/* Primary Category */}
+                                                                            <div>
+                                                                                <label className="mb-2 block text-xs font-medium text-slate-700">
+                                                                                    Primary Category
+                                                                                    <span className="ml-1 text-red-500">
+                                                                                    *
+                                                                                </span>
+                                                                                </label>
+
+                                                                                <select
+                                                                                    value={
+                                                                                        detail
+                                                                                            .newBook
+                                                                                            .primaryCategoryId
+                                                                                    }
+                                                                                    onChange={(
+                                                                                        event
+                                                                                    ) =>
+                                                                                        updateNewBook(
+                                                                                            index,
+                                                                                            "primaryCategoryId",
+                                                                                            event
+                                                                                                .target
+                                                                                                .value
+                                                                                        )
+                                                                                    }
+                                                                                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                                                                                >
+                                                                                    <option value="">
+                                                                                        Select primary category...
+                                                                                    </option>
+
+                                                                                    {categories
+                                                                                        .filter(
+                                                                                            (
+                                                                                                category
+                                                                                            ) =>
+                                                                                                category.status ===
+                                                                                                undefined ||
+                                                                                                category.status ===
+                                                                                                "ACTIVE"
+                                                                                        )
+                                                                                        .filter(
+                                                                                            (
+                                                                                                category
+                                                                                            ) =>
+                                                                                                detail.newBook.categoryIds.includes(
+                                                                                                    String(
+                                                                                                        category.id
+                                                                                                    )
+                                                                                                )
+                                                                                        )
+                                                                                        .map(
+                                                                                            (
+                                                                                                category
+                                                                                            ) => (
+                                                                                                <option
+                                                                                                    key={
+                                                                                                        category.id
+                                                                                                    }
+                                                                                                    value={
+                                                                                                        category.id
+                                                                                                    }
+                                                                                                >
+                                                                                                    {
+                                                                                                        category.name
+                                                                                                    }
+                                                                                                </option>
+                                                                                            )
+                                                                                        )}
+                                                                                </select>
+                                                                            </div>
+
+                                                                        </div>
+                                                                    )}
+
+                                                                {/* Quantity / Unit Price */}
+                                                                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+
+                                                                    <div>
+                                                                        <label className="mb-2 block text-xs font-medium text-slate-700">
+                                                                            Quantity
+                                                                            <span className="ml-1 text-red-500">
+                                                                                *
+                                                                            </span>
+                                                                        </label>
+
                                                                         <input
                                                                             type="number"
                                                                             min="1"
@@ -1004,11 +1760,18 @@ export default function ImportReceiptsPage() {
                                                                                         .value
                                                                                 )
                                                                             }
-                                                                            className="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs text-slate-800 outline-none transition hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                                                                            className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
                                                                         />
-                                                                    </td>
+                                                                    </div>
 
-                                                                    <td className="px-4 py-3">
+                                                                    <div>
+                                                                        <label className="mb-2 block text-xs font-medium text-slate-700">
+                                                                            Unit Price
+                                                                            <span className="ml-1 text-red-500">
+                                                                                *
+                                                                            </span>
+                                                                        </label>
+
                                                                         <input
                                                                             type="number"
                                                                             min="0"
@@ -1027,61 +1790,35 @@ export default function ImportReceiptsPage() {
                                                                                         .value
                                                                                 )
                                                                             }
-                                                                            className="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs text-slate-800 outline-none transition hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                                                                            className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
                                                                         />
-                                                                    </td>
+                                                                    </div>
 
-                                                                    <td className="px-4 py-3 text-right">
-                                                                        <span className="text-xs font-medium text-slate-800">
+                                                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5">
+
+                                                                        <p className="text-[11px] font-medium text-slate-400">
+                                                                            Subtotal
+                                                                        </p>
+
+                                                                        <p className="mt-1 text-sm font-semibold text-slate-800">
                                                                             {formatCurrency(
                                                                                 amount
                                                                             )}{" "}
-                                                                            VND
-                                                                        </span>
-                                                                    </td>
+                                                                            <span className="text-[11px] font-medium text-slate-400">
+                                                                                VND
+                                                                            </span>
+                                                                        </p>
 
-                                                                    <td className="px-4 py-3 text-center">
-                                                                        <button
-                                                                            type="button"
-                                                                            disabled={
-                                                                                details.length ===
-                                                                                1
-                                                                            }
-                                                                            onClick={() =>
-                                                                                removeDetailRow(
-                                                                                    index
-                                                                                )
-                                                                            }
-                                                                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-30"
-                                                                            title="Remove item"
-                                                                            aria-label="Remove item"
-                                                                        >
-                                                                            <svg
-                                                                                className="h-4 w-4"
-                                                                                viewBox="0 0 24 24"
-                                                                                fill="none"
-                                                                                stroke="currentColor"
-                                                                                strokeWidth="1.6"
-                                                                                strokeLinecap="round"
-                                                                                strokeLinejoin="round"
-                                                                            >
-                                                                                <path d="M4 7h16" />
-                                                                                <path d="M10 11v6" />
-                                                                                <path d="M14 11v6" />
-                                                                                <path d="M5 7l1 14h10l1-14" />
-                                                                                <path d="M9 7V4h6v3" />
-                                                                            </svg>
-                                                                        </button>
-                                                                    </td>
-                                                                </tr>
-                                                            );
-                                                        }
-                                                    )}
+                                                                    </div>
 
-                                                    </tbody>
-                                                </table>
+                                                                </div>
 
-                                            </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+                                            )}
+
                                         </div>
                                     </div>
 
@@ -1109,7 +1846,7 @@ export default function ImportReceiptsPage() {
 
                                 </div>
 
-                                {/* Modal Footer */}
+                                {/* Footer */}
                                 <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-200 bg-slate-50/60 px-6 py-4 sm:flex-row sm:justify-end">
 
                                     <button

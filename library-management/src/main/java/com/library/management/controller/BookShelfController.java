@@ -1,5 +1,7 @@
 package com.library.management.controller;
 
+import com.library.management.dto.BookShelfDetailResponse;
+import com.library.management.dto.BookShelfListResponse;
 import com.library.management.entity.BookShelf;
 import com.library.management.service.BookShelfService;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +20,7 @@ public class BookShelfController {
     }
 
     @GetMapping
-    public ResponseEntity<List<BookShelf>> getAllShelves() {
+    public ResponseEntity<List<BookShelfListResponse>> getAllShelves() {
 
         return ResponseEntity.ok(
                 bookShelfService.getAllShelves()
@@ -73,6 +75,15 @@ public class BookShelfController {
 
         return ResponseEntity.ok(
                 bookShelfService.activateShelf(id)
+        );
+    }
+
+    @GetMapping("/{id}/detail")
+    public ResponseEntity<BookShelfDetailResponse> getShelfDetail(
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(
+                bookShelfService.getShelfDetail(id)
         );
     }
 }

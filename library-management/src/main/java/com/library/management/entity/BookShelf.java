@@ -1,6 +1,11 @@
 package com.library.management.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "book_shelves")
@@ -19,14 +24,24 @@ public class BookShelf {
     @Column(nullable = false)
     private String status;
 
-    public BookShelf() {
-    }
+    @JsonIgnore
+    @OneToMany(
+            mappedBy = "shelf",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<BookShelfAllocation> allocations = new ArrayList<>();
 
-    public BookShelf(Long id, String shelfCode, String name, String status) {
-        this.id = id;
-        this.shelfCode = shelfCode;
-        this.name = name;
-        this.status = status;
+    @JsonIgnoreProperties("defaultShelf")
+    @ManyToMany
+    @JoinTable(
+            name = "book_shelf_categories",
+            joinColumns = @JoinColumn(name = "shelf_id"),
+            inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    private List<Category> categories = new ArrayList<>();
+
+    public BookShelf() {
     }
 
     public Long getId() {
@@ -59,5 +74,21 @@ public class BookShelf {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public List<BookShelfAllocation> getAllocations() {
+        return allocations;
+    }
+
+    public void setAllocations(List<BookShelfAllocation> allocations) {
+        this.allocations = allocations;
+    }
+
+    public List<Category> getCategories() {
+        return categories;
+    }
+
+    public void setCategories(List<Category> categories) {
+        this.categories = categories;
     }
 }

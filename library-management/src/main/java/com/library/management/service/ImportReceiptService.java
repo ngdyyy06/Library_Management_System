@@ -1,7 +1,9 @@
 package com.library.management.service;
 
+import com.library.management.dto.CreateBookRequest;
 import com.library.management.dto.CreateImportReceiptRequest;
 import com.library.management.dto.ImportReceiptDetailRequest;
+import com.library.management.dto.NewImportBookRequest;
 import com.library.management.entity.Book;
 import com.library.management.entity.ImportReceipt;
 import com.library.management.entity.ImportReceiptDetail;
@@ -28,23 +30,29 @@ public class ImportReceiptService {
     private final BookRepository bookRepository;
     private final PublisherRepository publisherRepository;
     private final UserRepository userRepository;
+    private final BookShelfService bookShelfService;
+    private final BookService bookService;
 
     public ImportReceiptService(
             ImportReceiptRepository importReceiptRepository,
             ImportReceiptDetailRepository importReceiptDetailRepository,
             BookRepository bookRepository,
             PublisherRepository publisherRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            BookShelfService bookShelfService,
+            BookService bookService) {
 
         this.importReceiptRepository = importReceiptRepository;
         this.importReceiptDetailRepository = importReceiptDetailRepository;
         this.bookRepository = bookRepository;
         this.publisherRepository = publisherRepository;
         this.userRepository = userRepository;
+        this.bookShelfService = bookShelfService;
+        this.bookService = bookService;
     }
 
     // =========================================================
-    // CREATE
+    // CREATE IMPORT RECEIPT
     // =========================================================
 
     @Transactional
@@ -87,34 +95,206 @@ public class ImportReceiptService {
 
         BigDecimal totalAmount = BigDecimal.ZERO;
 
+        /*
+         * This Set tracks existing books.
+         *
+         * New books are checked separately by ISBN
+         * through BookService.
+         */
         Set<Long> bookIds = new HashSet<>();
+
+        Set<String> newBookIsbns = new HashSet<>();
 
         for (ImportReceiptDetailRequest detailRequest
                 : request.getDetails()) {
 
-            if (!bookIds.add(detailRequest.getBookId())) {
+            // =================================================
+            // Validate Existing Book / New Book
+            // =================================================
+
+            boolean hasExistingBook =
+                    detailRequest.getBookId() != null;
+
+            boolean hasNewBook =
+                    detailRequest.getNewBook() != null;
+
+            if (hasExistingBook && hasNewBook) {
+
                 throw new RuntimeException(
-                        "Duplicate book in import receipt");
+                        "Import detail cannot contain both bookId and newBook"
+                );
             }
 
-            Book book = bookRepository
-                    .findById(detailRequest.getBookId())
-                    .orElseThrow(() ->
-                            new RuntimeException("Book not found"));
+            if (!hasExistingBook && !hasNewBook) {
 
-            if (!"ACTIVE".equals(book.getStatus())) {
                 throw new RuntimeException(
-                        "Book is inactive: " + book.getTitle());
+                        "Import detail must contain either bookId or newBook"
+                );
             }
 
-            int quantity = detailRequest.getQuantity();
+            // =================================================
+            // Quantity
+            // =================================================
+
+            int quantity =
+                    detailRequest.getQuantity();
 
             BigDecimal unitPrice =
                     detailRequest.getUnitPrice();
 
             BigDecimal amount =
                     unitPrice.multiply(
-                            BigDecimal.valueOf(quantity));
+                            BigDecimal.valueOf(quantity)
+                    );
+
+            Book book;
+
+            // =================================================
+            // EXISTING BOOK
+            // =================================================
+
+            if (hasExistingBook) {
+
+                Long bookId =
+                        detailRequest.getBookId();
+
+                if (!bookIds.add(bookId)) {
+
+                    throw new RuntimeException(
+                            "Duplicate book in import receipt"
+                    );
+                }
+
+                book = bookRepository
+                        .findById(bookId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Book not found: " + bookId
+                                )
+                        );
+
+                if (!"ACTIVE".equals(book.getStatus())) {
+
+                    throw new RuntimeException(
+                            "Book is inactive: "
+                                    + book.getTitle()
+                    );
+                }
+            }
+
+            // =================================================
+            // NEW BOOK
+            // =================================================
+
+            else {
+
+                NewImportBookRequest newBookRequest =
+                        detailRequest.getNewBook();
+
+                String isbn =
+                        newBookRequest.getIsbn()
+                                .trim();
+
+                String normalizedIsbn =
+                        isbn.toLowerCase();
+
+                if (!newBookIsbns.add(normalizedIsbn)) {
+
+                    throw new RuntimeException(
+                            "Duplicate new book ISBN in import receipt: "
+                                    + isbn
+                    );
+                }
+
+                /*
+                 * New Book uses the publisher of the
+                 * Import Receipt.
+                 */
+                CreateBookRequest createBookRequest =
+                        new CreateBookRequest();
+
+                createBookRequest.setTitle(
+                        newBookRequest.getTitle().trim()
+                );
+
+                createBookRequest.setIsbn(isbn);
+
+                createBookRequest.setPublisherId(
+                        publisher.getId()
+                );
+
+                createBookRequest.setPublishYear(
+                        newBookRequest.getPublishYear()
+                );
+
+                createBookRequest.setDescription(
+                        newBookRequest.getDescription()
+                );
+
+                createBookRequest.setPrice(
+                        newBookRequest.getPrice()
+                );
+
+                createBookRequest.setAuthorIds(
+                        newBookRequest.getAuthorIds()
+                );
+
+                createBookRequest.setAuthorNames(
+                        newBookRequest.getAuthorNames()
+                );
+
+                createBookRequest.setCategoryIds(
+                        newBookRequest.getCategoryIds()
+                );
+
+                createBookRequest.setCategoryNames(
+                        newBookRequest.getCategoryNames()
+                );
+
+                createBookRequest.setPrimaryCategoryId(
+                        newBookRequest.getPrimaryCategoryId()
+                );
+
+                /*
+                 * BookService creates the Book with:
+                 *
+                 * totalQuantity = 0
+                 * availableQuantity = 0
+                 *
+                 * because physical quantity belongs
+                 * to Import Receipt.
+                 */
+                book = bookService.createBook(
+                        createBookRequest
+                );
+            }
+
+            // =================================================
+            // UPDATE INVENTORY
+            // =================================================
+
+            book.setTotalQuantity(
+                    book.getTotalQuantity() + quantity
+            );
+
+            book.setAvailableQuantity(
+                    book.getAvailableQuantity() + quantity
+            );
+
+            bookRepository.save(book);
+
+            // =================================================
+            // ALLOCATE TO SHELF
+            // =================================================
+
+            bookShelfService.allocateBook(
+                    book,
+                    quantity
+            );
+
+            // =================================================
+            // CREATE RECEIPT DETAIL
+            // =================================================
 
             ImportReceiptDetail detail =
                     new ImportReceiptDetail();
@@ -127,25 +307,19 @@ public class ImportReceiptService {
 
             importReceiptDetailRepository.save(detail);
 
-            // Update inventory
-            book.setTotalQuantity(
-                    book.getTotalQuantity() + quantity);
-
-            book.setAvailableQuantity(
-                    book.getAvailableQuantity() + quantity);
-
-            bookRepository.save(book);
-
-            totalAmount = totalAmount.add(amount);
+            totalAmount =
+                    totalAmount.add(amount);
         }
 
         savedReceipt.setTotalAmount(totalAmount);
 
-        return importReceiptRepository.save(savedReceipt);
+        return importReceiptRepository.save(
+                savedReceipt
+        );
     }
 
     // =========================================================
-    // UPDATE
+    // UPDATE IMPORT RECEIPT
     // =========================================================
 
     @Transactional
@@ -154,47 +328,76 @@ public class ImportReceiptService {
             CreateImportReceiptRequest request) {
 
         ImportReceipt receipt =
-                importReceiptRepository
-                        .findById(id)
+                importReceiptRepository.findById(id)
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "Import receipt not found"));
+                                        "Import receipt not found"
+                                ));
 
         if (!"COMPLETED".equals(receipt.getStatus())) {
+
             throw new RuntimeException(
-                    "Only completed import receipts can be updated");
+                    "Only completed import receipts can be updated"
+            );
         }
 
         if (request.getImportDate() != null) {
+
             receipt.setImportDate(
-                    request.getImportDate());
+                    request.getImportDate()
+            );
         }
 
         List<ImportReceiptDetail> oldDetails =
                 importReceiptDetailRepository
                         .findByImportReceiptId(id);
 
-        if (oldDetails.size() != request.getDetails().size()) {
+        if (oldDetails.size()
+                != request.getDetails().size()) {
+
             throw new RuntimeException(
-                    "Adding or removing books from an import receipt is not allowed");
+                    "Adding or removing books from an import receipt is not allowed"
+            );
         }
 
-        Set<Long> requestBookIds = new HashSet<>();
+        Set<Long> requestBookIds =
+                new HashSet<>();
 
         for (ImportReceiptDetailRequest detailRequest
                 : request.getDetails()) {
+
+            /*
+             * Updating an existing receipt works with
+             * existing Book IDs only.
+             */
+            if (detailRequest.getBookId() == null) {
+
+                throw new RuntimeException(
+                        "New books cannot be added while updating an existing import receipt"
+                );
+            }
+
+            if (detailRequest.getNewBook() != null) {
+
+                throw new RuntimeException(
+                        "New book data is not allowed when updating an existing import receipt"
+                );
+            }
 
             if (!requestBookIds.add(
                     detailRequest.getBookId())) {
 
                 throw new RuntimeException(
-                        "Duplicate book in import receipt");
+                        "Duplicate book in import receipt"
+                );
             }
         }
 
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        BigDecimal totalAmount =
+                BigDecimal.ZERO;
 
-        for (ImportReceiptDetail oldDetail : oldDetails) {
+        for (ImportReceiptDetail oldDetail
+                : oldDetails) {
 
             Long bookId =
                     oldDetail.getBook().getId();
@@ -208,9 +411,11 @@ public class ImportReceiptService {
                             .findFirst()
                             .orElseThrow(() ->
                                     new RuntimeException(
-                                            "Book detail not found"));
+                                            "Book detail not found"
+                                    ));
 
-            Book book = oldDetail.getBook();
+            Book book =
+                    oldDetail.getBook();
 
             int oldQuantity =
                     oldDetail.getQuantity();
@@ -221,154 +426,233 @@ public class ImportReceiptService {
             int difference =
                     newQuantity - oldQuantity;
 
-            /*
-             * Quantity decreased
-             */
-            if (difference < 0) {
+            // =================================================
+            // Quantity increased
+            // =================================================
 
-                int decrease = Math.abs(difference);
+            if (difference > 0) {
 
-                if (book.getAvailableQuantity() < decrease) {
+                book.setTotalQuantity(
+                        book.getTotalQuantity()
+                                + difference
+                );
+
+                book.setAvailableQuantity(
+                        book.getAvailableQuantity()
+                                + difference
+                );
+
+                bookRepository.save(book);
+
+                bookShelfService.allocateBook(
+                        book,
+                        difference
+                );
+            }
+
+            // =================================================
+            // Quantity decreased
+            // =================================================
+
+            else if (difference < 0) {
+
+                int decrease =
+                        Math.abs(difference);
+
+                if (book.getAvailableQuantity()
+                        < decrease) {
+
                     throw new RuntimeException(
-                            "Cannot decrease quantity because some books are currently borrowed");
+                            "Cannot decrease quantity because some books are currently borrowed"
+                    );
                 }
 
-                book.setTotalQuantity(
-                        book.getTotalQuantity() - decrease);
-
-                book.setAvailableQuantity(
-                        book.getAvailableQuantity() - decrease);
-            }
-
-            /*
-             * Quantity increased
-             */
-            else if (difference > 0) {
+                bookShelfService.removeBookQuantity(
+                        book,
+                        decrease
+                );
 
                 book.setTotalQuantity(
-                        book.getTotalQuantity() + difference);
+                        book.getTotalQuantity()
+                                - decrease
+                );
 
                 book.setAvailableQuantity(
-                        book.getAvailableQuantity() + difference);
-            }
+                        book.getAvailableQuantity()
+                                - decrease
+                );
 
-            bookRepository.save(book);
+                bookRepository.save(book);
+            }
 
             BigDecimal unitPrice =
                     newDetail.getUnitPrice();
 
             BigDecimal amount =
                     unitPrice.multiply(
-                            BigDecimal.valueOf(newQuantity));
+                            BigDecimal.valueOf(
+                                    newQuantity
+                            )
+                    );
 
-            oldDetail.setQuantity(newQuantity);
-            oldDetail.setUnitPrice(unitPrice);
-            oldDetail.setAmount(amount);
+            oldDetail.setQuantity(
+                    newQuantity
+            );
 
-            importReceiptDetailRepository.save(oldDetail);
+            oldDetail.setUnitPrice(
+                    unitPrice
+            );
 
-            totalAmount = totalAmount.add(amount);
+            oldDetail.setAmount(
+                    amount
+            );
+
+            importReceiptDetailRepository.save(
+                    oldDetail
+            );
+
+            totalAmount =
+                    totalAmount.add(amount);
         }
 
-        receipt.setTotalAmount(totalAmount);
+        receipt.setTotalAmount(
+                totalAmount
+        );
 
-        return importReceiptRepository.save(receipt);
+        return importReceiptRepository.save(
+                receipt
+        );
     }
 
     // =========================================================
-    // DEACTIVATE
+    // DEACTIVATE IMPORT RECEIPT
     // =========================================================
 
     @Transactional
-    public ImportReceipt deactivateImportReceipt(Long id) {
+    public ImportReceipt deactivateImportReceipt(
+            Long id) {
 
         ImportReceipt receipt =
-                importReceiptRepository
-                        .findById(id)
+                importReceiptRepository.findById(id)
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "Import receipt not found"));
+                                        "Import receipt not found"
+                                ));
 
-        if (!"COMPLETED".equals(receipt.getStatus())) {
+        if (!"COMPLETED".equals(
+                receipt.getStatus())) {
+
             throw new RuntimeException(
-                    "Only completed import receipts can be deactivated");
+                    "Only completed import receipts can be deactivated"
+            );
         }
 
         List<ImportReceiptDetail> details =
                 importReceiptDetailRepository
                         .findByImportReceiptId(id);
 
-        for (ImportReceiptDetail detail : details) {
+        for (ImportReceiptDetail detail
+                : details) {
 
-            Book book = detail.getBook();
+            Book book =
+                    detail.getBook();
 
-            int quantity = detail.getQuantity();
+            int quantity =
+                    detail.getQuantity();
 
-            /*
-             * Only available books can be removed
-             * from the inventory.
-             */
-            if (book.getAvailableQuantity() < quantity) {
+            if (book.getAvailableQuantity()
+                    < quantity) {
+
                 throw new RuntimeException(
                         "Cannot deactivate import receipt because some books are currently borrowed: "
-                                + book.getTitle());
+                                + book.getTitle()
+                );
             }
 
+            bookShelfService.removeBookQuantity(
+                    book,
+                    quantity
+            );
+
             book.setTotalQuantity(
-                    book.getTotalQuantity() - quantity);
+                    book.getTotalQuantity()
+                            - quantity
+            );
 
             book.setAvailableQuantity(
-                    book.getAvailableQuantity() - quantity);
+                    book.getAvailableQuantity()
+                            - quantity
+            );
 
             bookRepository.save(book);
         }
 
         receipt.setStatus("INACTIVE");
 
-        return importReceiptRepository.save(receipt);
+        return importReceiptRepository.save(
+                receipt
+        );
     }
 
     // =========================================================
-    // ACTIVATE
+    // ACTIVATE IMPORT RECEIPT
     // =========================================================
 
     @Transactional
-    public ImportReceipt activateImportReceipt(Long id) {
+    public ImportReceipt activateImportReceipt(
+            Long id) {
 
         ImportReceipt receipt =
-                importReceiptRepository
-                        .findById(id)
+                importReceiptRepository.findById(id)
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "Import receipt not found"));
+                                        "Import receipt not found"
+                                ));
 
-        if (!"INACTIVE".equals(receipt.getStatus())) {
+        if (!"INACTIVE".equals(
+                receipt.getStatus())) {
+
             throw new RuntimeException(
-                    "Only inactive import receipts can be activated");
+                    "Only inactive import receipts can be activated"
+            );
         }
 
         List<ImportReceiptDetail> details =
                 importReceiptDetailRepository
                         .findByImportReceiptId(id);
 
-        for (ImportReceiptDetail detail : details) {
+        for (ImportReceiptDetail detail
+                : details) {
 
-            Book book = detail.getBook();
+            Book book =
+                    detail.getBook();
 
-            int quantity = detail.getQuantity();
+            int quantity =
+                    detail.getQuantity();
 
             book.setTotalQuantity(
-                    book.getTotalQuantity() + quantity);
+                    book.getTotalQuantity()
+                            + quantity
+            );
 
             book.setAvailableQuantity(
-                    book.getAvailableQuantity() + quantity);
+                    book.getAvailableQuantity()
+                            + quantity
+            );
 
             bookRepository.save(book);
+
+            bookShelfService.allocateBook(
+                    book,
+                    quantity
+            );
         }
 
         receipt.setStatus("COMPLETED");
 
-        return importReceiptRepository.save(receipt);
+        return importReceiptRepository.save(
+                receipt
+        );
     }
 
     // =========================================================
@@ -384,12 +668,15 @@ public class ImportReceiptService {
     // GET BY ID
     // =========================================================
 
-    public ImportReceipt getImportReceiptById(Long id) {
+    public ImportReceipt getImportReceiptById(
+            Long id) {
 
         return importReceiptRepository
                 .findById(id)
                 .orElseThrow(() ->
                         new RuntimeException(
-                                "Import receipt not found"));
+                                "Import receipt not found"
+                        )
+                );
     }
 }

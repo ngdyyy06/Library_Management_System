@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
     getBooks,
     getAuthors,
-    createBook,
     updateBook,
     activateBook,
     deactivateBook,
@@ -20,7 +19,6 @@ export default function BooksPage() {
     const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const [showAddForm, setShowAddForm] = useState(false);
     const [editingBook, setEditingBook] = useState<any | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<
@@ -35,8 +33,6 @@ export default function BooksPage() {
         publisher: "",
         publishYear: "",
         price: "",
-        totalQuantity: "",
-        availableQuantity: "",
         description: "",
         authorIds: [] as number[],
         authorNames: "",
@@ -103,13 +99,9 @@ export default function BooksPage() {
     const loadCategories = async () => {
         try {
             const data = await getCategories();
-
             setCategories(data || []);
         } catch (error) {
-            console.error(
-                "Failed to load categories:",
-                error
-            );
+            console.error("Failed to load categories:", error);
         }
     };
 
@@ -124,8 +116,6 @@ export default function BooksPage() {
             publisher: "",
             publishYear: "",
             price: "",
-            totalQuantity: "",
-            availableQuantity: "",
             description: "",
             authorIds: [],
             authorNames: "",
@@ -195,119 +185,6 @@ export default function BooksPage() {
     };
 
     // =========================================================
-    // ADD BOOK
-    // =========================================================
-
-    const handleAddBook = async () => {
-        if (!formData.title.trim()) {
-            alert("Please enter a book title!");
-            return;
-        }
-
-        if (!formData.isbn.trim()) {
-            alert("Please enter an ISBN code!");
-            return;
-        }
-
-        if (formData.categoryIds.length === 0) {
-            alert("Please select at least one category!");
-            return;
-        }
-
-        if (!formData.primaryCategoryId) {
-            alert("Please select a primary category!");
-            return;
-        }
-
-        const primaryCategory =
-            categories.find(
-                (category) =>
-                    Number(category.id) ===
-                    Number(formData.primaryCategoryId)
-            );
-
-        if (!primaryCategory) {
-            alert("Primary category not found!");
-            return;
-        }
-
-        if (!primaryCategory.defaultShelf) {
-            alert(
-                "The selected primary category does not have a default shelf."
-            );
-            return;
-        }
-
-        try {
-            const authorNames = formData.authorNames
-                .split(",")
-                .map((name) => name.trim())
-                .filter((name) => name.length > 0);
-
-            const newBook = await createBook({
-                title: formData.title.trim(),
-
-                isbn: formData.isbn.trim(),
-
-                publisherId: formData.publisher
-                    ? Number(formData.publisher)
-                    : undefined,
-
-                publishYear: formData.publishYear
-                    ? Number(formData.publishYear)
-                    : undefined,
-
-                price: formData.price
-                    ? Number(formData.price)
-                    : undefined,
-
-                totalQuantity:
-                    Number(formData.totalQuantity) || 0,
-
-                description:
-                    formData.description.trim(),
-
-                authorIds: formData.authorIds,
-
-                authorNames,
-
-                categoryIds:
-                formData.categoryIds,
-
-                primaryCategoryId:
-                    Number(
-                        formData.primaryCategoryId
-                    ),
-            });
-
-            setBooks((prev) => [
-                ...prev,
-                newBook,
-            ]);
-
-            resetForm();
-            setShowAddForm(false);
-
-            await Promise.all([
-                loadBooks(),
-                loadAuthors(),
-                loadCategories(),
-            ]);
-        } catch (error) {
-            console.error(
-                "Failed to create book:",
-                error
-            );
-
-            alert(
-                error instanceof Error
-                    ? error.message
-                    : "Failed to create book"
-            );
-        }
-    };
-
-    // =========================================================
     // EDIT BOOK
     // =========================================================
 
@@ -327,9 +204,7 @@ export default function BooksPage() {
 
         const primaryCategoryId =
             book.primaryCategory?.id
-                ? String(
-                    book.primaryCategory.id
-                )
+                ? String(book.primaryCategory.id)
                 : "";
 
         setFormData({
@@ -353,27 +228,13 @@ export default function BooksPage() {
                     ? String(book.price)
                     : "",
 
-            totalQuantity:
-                book.totalQuantity !== undefined &&
-                book.totalQuantity !== null
-                    ? String(book.totalQuantity)
-                    : "",
-
-            availableQuantity:
-                book.availableQuantity !== undefined &&
-                book.availableQuantity !== null
-                    ? String(book.availableQuantity)
-                    : "",
-
-            description:
-                book.description || "",
+            description: book.description || "",
 
             authorIds: selectedAuthorIds,
 
             authorNames: "",
 
-            categoryIds:
-            selectedCategoryIds,
+            categoryIds: selectedCategoryIds,
 
             primaryCategoryId,
         });
@@ -428,58 +289,34 @@ export default function BooksPage() {
             const updatedBook = await updateBook(
                 editingBook.id,
                 {
-                    title:
-                        formData.title.trim(),
+                    title: formData.title.trim(),
 
-                    isbn:
-                        formData.isbn.trim(),
+                    isbn: formData.isbn.trim(),
 
-                    publisherId:
-                        formData.publisher
-                            ? Number(
-                                formData.publisher
-                            )
-                            : undefined,
+                    publisherId: formData.publisher
+                        ? Number(formData.publisher)
+                        : undefined,
 
-                    publishYear:
-                        formData.publishYear
-                            ? Number(
-                                formData.publishYear
-                            )
-                            : undefined,
+                    publishYear: formData.publishYear
+                        ? Number(formData.publishYear)
+                        : undefined,
 
-                    price:
-                        formData.price
-                            ? Number(
-                                formData.price
-                            )
-                            : undefined,
-
-                    totalQuantity:
-                        Number(
-                            formData.totalQuantity
-                        ) || 0,
-
-                    availableQuantity:
-                        Number(
-                            formData.availableQuantity
-                        ) || 0,
+                    price: formData.price
+                        ? Number(formData.price)
+                        : undefined,
 
                     description:
                         formData.description.trim(),
 
-                    authorIds:
-                    formData.authorIds,
+                    authorIds: formData.authorIds,
 
                     authorNames,
 
-                    categoryIds:
-                    formData.categoryIds,
+                    categoryIds: formData.categoryIds,
 
-                    primaryCategoryId:
-                        Number(
-                            formData.primaryCategoryId
-                        ),
+                    primaryCategoryId: Number(
+                        formData.primaryCategoryId
+                    ),
                 }
             );
 
@@ -517,9 +354,7 @@ export default function BooksPage() {
     // DEACTIVATE BOOK
     // =========================================================
 
-    const handleDeactivate = async (
-        book: any
-    ) => {
+    const handleDeactivate = async (book: any) => {
         const confirmed = window.confirm(
             `Are you sure you want to deactivate "${book.title}"?`
         );
@@ -547,9 +382,7 @@ export default function BooksPage() {
     // ACTIVATE BOOK
     // =========================================================
 
-    const handleActivate = async (
-        book: any
-    ) => {
+    const handleActivate = async (book: any) => {
         try {
             await activateBook(book.id);
             await loadBooks();
@@ -573,8 +406,7 @@ export default function BooksPage() {
 
     const filteredBooks = useMemo(() => {
         return books.filter((b) => {
-            const query =
-                searchTerm.toLowerCase();
+            const query = searchTerm.toLowerCase();
 
             const categoryNames =
                 b.categories
@@ -586,16 +418,14 @@ export default function BooksPage() {
                     .toLowerCase() || "";
 
             const primaryCategoryName =
-                b.primaryCategory?.name
-                    ?.toLowerCase() || "";
+                b.primaryCategory?.name?.toLowerCase() ||
+                "";
 
             const shelfName =
-                b.shelf?.name
-                    ?.toLowerCase() || "";
+                b.shelf?.name?.toLowerCase() || "";
 
             const shelfCode =
-                b.shelf?.shelfCode
-                    ?.toLowerCase() || "";
+                b.shelf?.shelfCode?.toLowerCase() || "";
 
             const matchesSearch =
                 (b.title || "")
@@ -626,10 +456,7 @@ export default function BooksPage() {
                 matchesStatus = !isActive;
             }
 
-            return (
-                matchesSearch &&
-                matchesStatus
-            );
+            return matchesSearch && matchesStatus;
         });
     }, [
         books,
@@ -700,20 +527,16 @@ export default function BooksPage() {
                         </h1>
 
                         <p className="mt-1 max-w-3xl text-sm text-slate-500">
-                            Manage book titles, publications, authors, categories, shelves, inventory, and circulation availability.
+                            Manage book titles, publications,
+                            authors, categories, shelves, and
+                            catalog information. Inventory is
+                            added through Import Receipts.
                         </p>
                     </div>
 
-                    <button
-                        onClick={() => {
-                            resetForm();
-                            setEditingBook(null);
-                            setShowAddForm(true);
-                        }}
-                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-black px-4 text-sm font-medium text-white shadow-sm transition hover:bg-[#1f1f1f] focus:outline-none focus:ring-2 focus:ring-black/20 active:scale-[0.98]"
-                    >
+                    <div className="inline-flex items-center gap-2 self-start rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-500 shadow-sm sm:self-center">
                         <svg
-                            className="h-4 w-4"
+                            className="h-4 w-4 text-slate-400"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -721,13 +544,13 @@ export default function BooksPage() {
                             <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
-                                strokeWidth="1.8"
-                                d="M12 5v14M5 12h14"
+                                strokeWidth="1.7"
+                                d="M12 9v4m0 4h.01M10.29 3.86 2.82 17a2 2 0 0 0 1.74 3h14.88a2 2 0 0 0 1.74-3L13.71 3.86a2 2 0 0 0-3.42 0Z"
                             />
                         </svg>
 
-                        Add Book
-                    </button>
+                        Inventory managed via Import Receipts
+                    </div>
                 </div>
 
                 {/* ========================================================= */}
@@ -854,9 +677,7 @@ export default function BooksPage() {
                             </h2>
 
                             <p className="mt-1 text-xs text-slate-400">
-                                Showing{" "}
-                                {filteredBooks.length}{" "}
-                                of{" "}
+                                Showing {filteredBooks.length} of{" "}
                                 {totalTitles} titles
                             </p>
                         </div>
@@ -883,9 +704,7 @@ export default function BooksPage() {
                                 <input
                                     type="text"
                                     placeholder="Search books..."
-                                    value={
-                                        searchTerm
-                                    }
+                                    value={searchTerm}
                                     onChange={(e) =>
                                         setSearchTerm(
                                             e.target.value
@@ -898,9 +717,7 @@ export default function BooksPage() {
                             {/* Status Filter */}
 
                             <select
-                                value={
-                                    statusFilter
-                                }
+                                value={statusFilter}
                                 onChange={(e) =>
                                     setStatusFilter(
                                         e.target.value as
@@ -960,10 +777,9 @@ export default function BooksPage() {
 
                             <p className="mt-1 max-w-md text-xs text-slate-400">
                                 {searchTerm ||
-                                statusFilter !==
-                                "ALL"
+                                statusFilter !== "ALL"
                                     ? "Try adjusting your search criteria or status filter."
-                                    : "Get started by adding a new book title to the catalog."}
+                                    : "Books are created and added to inventory through Import Receipts."}
                             </p>
                         </div>
                     ) : (
@@ -1024,8 +840,7 @@ export default function BooksPage() {
                                         const isActive =
                                             book.status ===
                                             "ACTIVE" ||
-                                            book.active ===
-                                            true;
+                                            book.active === true;
 
                                         const hasStock =
                                             (book.availableQuantity ||
@@ -1033,19 +848,14 @@ export default function BooksPage() {
 
                                         return (
                                             <tr
-                                                key={
-                                                    book.id
-                                                }
+                                                key={book.id}
                                                 className="transition-colors hover:bg-slate-50/60"
                                             >
                                                 {/* ID */}
 
                                                 <td className="py-4 pl-6 pr-3 align-top">
                                                     <span className="font-mono text-xs font-medium text-slate-400">
-                                                        #
-                                                        {
-                                                            book.id
-                                                        }
+                                                        #{book.id}
                                                     </span>
                                                 </td>
 
@@ -1078,16 +888,12 @@ export default function BooksPage() {
 
                                                         <div className="min-w-0">
                                                             <div className="truncate text-sm font-semibold text-slate-900 transition group-hover:text-slate-600">
-                                                                {
-                                                                    book.title
-                                                                }
+                                                                {book.title}
                                                             </div>
 
                                                             {book.description ? (
                                                                 <p className="mt-1 line-clamp-1 text-[11px] leading-4 text-slate-400">
-                                                                    {
-                                                                        book.description
-                                                                    }
+                                                                    {book.description}
                                                                 </p>
                                                             ) : (
                                                                 <span className="mt-1 block text-[11px] text-slate-400">
@@ -1102,10 +908,7 @@ export default function BooksPage() {
 
                                                 <td className="px-4 py-4 align-top">
                                                     <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-[11px] text-slate-600">
-                                                        {
-                                                            book.isbn ||
-                                                            "—"
-                                                        }
+                                                        {book.isbn || "—"}
                                                     </span>
                                                 </td>
 
@@ -1137,12 +940,10 @@ export default function BooksPage() {
                                                             1 ? (
                                                                 <p className="mt-1 text-[10px] text-slate-400">
                                                                     +
-                                                                    {
-                                                                        book
+                                                                    {book
                                                                             .categories
                                                                             .length -
-                                                                        1
-                                                                    }{" "}
+                                                                        1}{" "}
                                                                     other categor
                                                                     {book
                                                                         .categories
@@ -1192,20 +993,14 @@ export default function BooksPage() {
                                                 {/* Year */}
 
                                                 <td className="px-4 py-4 align-top font-medium text-slate-600">
-                                                    {
-                                                        book.publishYear ||
-                                                        "—"
-                                                    }
+                                                    {book.publishYear || "—"}
                                                 </td>
 
                                                 {/* Total */}
 
                                                 <td className="px-4 py-4 text-center align-top">
                                                     <span className="font-semibold text-slate-800">
-                                                        {
-                                                            book.totalQuantity ||
-                                                            0
-                                                        }
+                                                        {book.totalQuantity || 0}
                                                     </span>
                                                 </td>
 
@@ -1312,568 +1107,6 @@ export default function BooksPage() {
             </div>
 
             {/* ========================================================= */}
-            {/* ADD BOOK MODAL                                            */}
-            {/* ========================================================= */}
-
-            {showAddForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
-                    <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl">
-
-                        {/* Modal Header */}
-
-                        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
-                            <div>
-                                <h3 className="text-base font-semibold text-slate-900">
-                                    Add New Book
-                                </h3>
-
-                                <p className="mt-1 text-xs text-slate-400">
-                                    Register a new book title in the catalog.
-                                </p>
-                            </div>
-
-                            <button
-                                onClick={() => {
-                                    setShowAddForm(
-                                        false
-                                    );
-                                    resetForm();
-                                }}
-                                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                            >
-                                <svg
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="1.8"
-                                        d="M6 6l12 12M18 6 6 18"
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-5 px-6 py-6 sm:grid-cols-2">
-
-                            {/* Title */}
-
-                            <div className="sm:col-span-2">
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    Book Title{" "}
-                                    <span className="text-rose-500">
-                                        *
-                                    </span>
-                                </label>
-
-                                <input
-                                    type="text"
-                                    placeholder="Enter book title"
-                                    value={
-                                        formData.title
-                                    }
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            title: e
-                                                .target
-                                                .value,
-                                        })
-                                    }
-                                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                />
-                            </div>
-
-                            {/* ISBN */}
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    ISBN Code{" "}
-                                    <span className="text-rose-500">
-                                        *
-                                    </span>
-                                </label>
-
-                                <input
-                                    type="text"
-                                    placeholder="e.g. 978-0132350884"
-                                    value={
-                                        formData.isbn
-                                    }
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            isbn: e
-                                                .target
-                                                .value,
-                                        })
-                                    }
-                                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                />
-                            </div>
-
-                            {/* Publisher */}
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    Publisher
-                                </label>
-
-                                <select
-                                    value={
-                                        formData.publisher
-                                    }
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            publisher:
-                                            e.target
-                                                .value,
-                                        })
-                                    }
-                                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                >
-                                    <option value="">
-                                        Select Publisher
-                                    </option>
-
-                                    {publishers.map(
-                                        (pub) => (
-                                            <option
-                                                key={
-                                                    pub.id
-                                                }
-                                                value={
-                                                    pub.id
-                                                }
-                                            >
-                                                {
-                                                    pub.name
-                                                }
-                                            </option>
-                                        )
-                                    )}
-                                </select>
-                            </div>
-
-                            {/* Categories */}
-
-                            <div className="sm:col-span-2">
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    Categories{" "}
-                                    <span className="text-rose-500">
-                                        *
-                                    </span>
-                                </label>
-
-                                <select
-                                    multiple
-                                    value={formData.categoryIds.map(
-                                        String
-                                    )}
-                                    onChange={
-                                        handleCategoryChange
-                                    }
-                                    className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                    size={Math.min(
-                                        Math.max(
-                                            categories.filter(
-                                                (
-                                                    category
-                                                ) =>
-                                                    category.status ===
-                                                    "ACTIVE"
-                                            ).length,
-                                            3
-                                        ),
-                                        6
-                                    )}
-                                >
-                                    {categories
-                                        .filter(
-                                            (
-                                                category
-                                            ) =>
-                                                category.status ===
-                                                "ACTIVE"
-                                        )
-                                        .map(
-                                            (
-                                                category
-                                            ) => (
-                                                <option
-                                                    key={
-                                                        category.id
-                                                    }
-                                                    value={
-                                                        category.id
-                                                    }
-                                                >
-                                                    {
-                                                        category.name
-                                                    }
-                                                </option>
-                                            )
-                                        )}
-                                </select>
-
-                                <p className="mt-1.5 text-[11px] text-slate-400">
-                                    Hold Ctrl to select multiple categories.
-                                </p>
-                            </div>
-
-                            {/* Primary Category */}
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    Primary Category{" "}
-                                    <span className="text-rose-500">
-                                        *
-                                    </span>
-                                </label>
-
-                                <select
-                                    value={
-                                        formData.primaryCategoryId
-                                    }
-                                    onChange={
-                                        handlePrimaryCategoryChange
-                                    }
-                                    disabled={
-                                        formData.categoryIds
-                                            .length ===
-                                        0
-                                    }
-                                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
-                                >
-                                    <option value="">
-                                        {formData
-                                            .categoryIds
-                                            .length ===
-                                        0
-                                            ? "Select categories first"
-                                            : "Select Primary Category"}
-                                    </option>
-
-                                    {categories
-                                        .filter(
-                                            (
-                                                category
-                                            ) =>
-                                                category.status ===
-                                                "ACTIVE" &&
-                                                formData.categoryIds.includes(
-                                                    Number(
-                                                        category.id
-                                                    )
-                                                )
-                                        )
-                                        .map(
-                                            (
-                                                category
-                                            ) => (
-                                                <option
-                                                    key={
-                                                        category.id
-                                                    }
-                                                    value={
-                                                        category.id
-                                                    }
-                                                >
-                                                    {
-                                                        category.name
-                                                    }
-                                                </option>
-                                            )
-                                        )}
-                                </select>
-                            </div>
-
-                            {/* Default Shelf */}
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    Default Shelf
-                                </label>
-
-                                <div className="mt-1.5 min-h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                                    {selectedShelf ? (
-                                        <div>
-                                            <div className="font-mono text-xs font-semibold text-slate-800">
-                                                {
-                                                    selectedShelf.shelfCode
-                                                }
-                                            </div>
-
-                                            <div className="mt-0.5 text-[11px] text-slate-500">
-                                                {
-                                                    selectedShelf.name
-                                                }
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <span className="text-sm text-slate-400">
-                                            Select a primary category
-                                        </span>
-                                    )}
-                                </div>
-
-                                <p className="mt-1.5 text-[11px] text-slate-400">
-                                    Shelf is determined automatically from the primary category.
-                                </p>
-                            </div>
-
-                            {/* Existing Authors */}
-
-                            <div className="sm:col-span-2">
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    Existing Authors
-                                </label>
-
-                                <select
-                                    multiple
-                                    value={formData.authorIds.map(
-                                        String
-                                    )}
-                                    onChange={(e) => {
-                                        const selectedIds =
-                                            Array.from(
-                                                e
-                                                    .target
-                                                    .selectedOptions
-                                            ).map(
-                                                (
-                                                    opt
-                                                ) =>
-                                                    Number(
-                                                        opt.value
-                                                    )
-                                            );
-
-                                        setFormData({
-                                            ...formData,
-                                            authorIds:
-                                            selectedIds,
-                                        });
-                                    }}
-                                    className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                    size={Math.min(
-                                        Math.max(
-                                            authors.filter(
-                                                (
-                                                    author
-                                                ) =>
-                                                    author.status ===
-                                                    "ACTIVE"
-                                            ).length,
-                                            3
-                                        ),
-                                        5
-                                    )}
-                                >
-                                    {authors
-                                        .filter(
-                                            (
-                                                author
-                                            ) =>
-                                                author.status ===
-                                                "ACTIVE"
-                                        )
-                                        .map(
-                                            (
-                                                author
-                                            ) => (
-                                                <option
-                                                    key={
-                                                        author.id
-                                                    }
-                                                    value={
-                                                        author.id
-                                                    }
-                                                >
-                                                    {
-                                                        author.name
-                                                    }
-                                                </option>
-                                            )
-                                        )}
-                                </select>
-
-                                <p className="mt-1.5 text-[11px] text-slate-400">
-                                    Hold Ctrl to select multiple existing authors.
-                                </p>
-                            </div>
-
-                            {/* New Authors */}
-
-                            <div className="sm:col-span-2">
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    New Author Names
-                                </label>
-
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Robert C. Martin, Martin Fowler"
-                                    value={
-                                        formData.authorNames
-                                    }
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            authorNames:
-                                            e.target
-                                                .value,
-                                        })
-                                    }
-                                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                />
-
-                                <p className="mt-1.5 text-[11px] leading-4 text-slate-400">
-                                    Enter multiple author names separated by commas. Existing names will be reused automatically; new names will be added to Author Management.
-                                </p>
-                            </div>
-
-                            {/* Publish Year */}
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    Publish Year
-                                </label>
-
-                                <input
-                                    type="number"
-                                    placeholder="e.g. 2024"
-                                    value={
-                                        formData.publishYear
-                                    }
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            publishYear:
-                                            e.target
-                                                .value,
-                                        })
-                                    }
-                                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                />
-                            </div>
-
-                            {/* Price */}
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    Price (VND)
-                                </label>
-
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="e.g. 150000"
-                                    value={
-                                        formData.price
-                                    }
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            price: e
-                                                .target
-                                                .value,
-                                        })
-                                    }
-                                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                />
-                            </div>
-
-                            {/* Total Quantity */}
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    Total Quantity{" "}
-                                    <span className="text-rose-500">
-                                        *
-                                    </span>
-                                </label>
-
-                                <input
-                                    type="number"
-                                    min="0"
-                                    placeholder="e.g. 10"
-                                    value={
-                                        formData.totalQuantity
-                                    }
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            totalQuantity:
-                                            e.target
-                                                .value,
-                                        })
-                                    }
-                                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                />
-                            </div>
-
-                            {/* Description */}
-
-                            <div className="sm:col-span-2">
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    Description / Synopsis
-                                </label>
-
-                                <textarea
-                                    rows={4}
-                                    placeholder="Enter a brief book overview or synopsis..."
-                                    value={
-                                        formData.description
-                                    }
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            description:
-                                            e.target
-                                                .value,
-                                        })
-                                    }
-                                    className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-
-                        <div className="flex justify-end gap-2 border-t border-slate-200 px-6 py-4">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setShowAddForm(
-                                        false
-                                    );
-                                    resetForm();
-                                }}
-                                className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                            >
-                                Cancel
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={
-                                    handleAddBook
-                                }
-                                className="inline-flex h-10 items-center justify-center rounded-lg bg-black px-4 text-sm font-medium text-white shadow-sm transition hover:bg-[#1f1f1f] focus:outline-none focus:ring-2 focus:ring-black/20 active:scale-[0.98]"
-                            >
-                                Create Book
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ========================================================= */}
             {/* EDIT BOOK MODAL                                           */}
             {/* ========================================================= */}
 
@@ -1891,18 +1124,15 @@ export default function BooksPage() {
 
                                 <p className="mt-1 text-xs text-slate-400">
                                     Update catalog entry #
-                                    {
-                                        editingBook.id
-                                    }
-                                    .
+                                    {editingBook.id}.
+                                    Inventory quantities are
+                                    managed through Import Receipts.
                                 </p>
                             </div>
 
                             <button
                                 onClick={() => {
-                                    setEditingBook(
-                                        null
-                                    );
+                                    setEditingBook(null);
                                     resetForm();
                                 }}
                                 className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
@@ -1923,11 +1153,11 @@ export default function BooksPage() {
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-5 px-6 py-6 sm:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-5 px-6 py-6">
 
                             {/* Title */}
 
-                            <div className="sm:col-span-2">
+                            <div>
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Book Title{" "}
                                     <span className="text-rose-500">
@@ -1937,95 +1167,83 @@ export default function BooksPage() {
 
                                 <input
                                     type="text"
-                                    value={
-                                        formData.title
-                                    }
+                                    value={formData.title}
                                     onChange={(e) =>
                                         setFormData({
                                             ...formData,
-                                            title: e
-                                                .target
-                                                .value,
+                                            title: e.target.value,
                                         })
                                     }
                                     className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                 />
                             </div>
 
-                            {/* ISBN */}
+                            {/* ISBN + Publisher */}
 
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    ISBN Code{" "}
-                                    <span className="text-rose-500">
-                                        *
-                                    </span>
-                                </label>
+                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
 
-                                <input
-                                    type="text"
-                                    value={
-                                        formData.isbn
-                                    }
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            isbn: e
-                                                .target
-                                                .value,
-                                        })
-                                    }
-                                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                />
-                            </div>
+                                {/* ISBN */}
 
-                            {/* Publisher */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700">
+                                        ISBN Code{" "}
+                                        <span className="text-rose-500">
+                                            *
+                                        </span>
+                                    </label>
 
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    Publisher
-                                </label>
+                                    <input
+                                        type="text"
+                                        value={formData.isbn}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                isbn: e.target.value,
+                                            })
+                                        }
+                                        className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                    />
+                                </div>
 
-                                <select
-                                    value={
-                                        formData.publisher
-                                    }
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            publisher:
-                                            e.target
-                                                .value,
-                                        })
-                                    }
-                                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                >
-                                    <option value="">
-                                        Select Publisher
-                                    </option>
+                                {/* Publisher */}
 
-                                    {publishers.map(
-                                        (pub) => (
-                                            <option
-                                                key={
-                                                    pub.id
-                                                }
-                                                value={
-                                                    pub.id
-                                                }
-                                            >
-                                                {
-                                                    pub.name
-                                                }
-                                            </option>
-                                        )
-                                    )}
-                                </select>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700">
+                                        Publisher
+                                    </label>
+
+                                    <select
+                                        value={formData.publisher}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                publisher:
+                                                e.target.value,
+                                            })
+                                        }
+                                        className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                    >
+                                        <option value="">
+                                            Select Publisher
+                                        </option>
+
+                                        {publishers.map(
+                                            (pub) => (
+                                                <option
+                                                    key={pub.id}
+                                                    value={pub.id}
+                                                >
+                                                    {pub.name}
+                                                </option>
+                                            )
+                                        )}
+                                    </select>
+                                </div>
                             </div>
 
                             {/* Categories */}
 
-                            <div className="sm:col-span-2">
+                            <div>
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Categories{" "}
                                     <span className="text-rose-500">
@@ -2038,9 +1256,7 @@ export default function BooksPage() {
                                     value={formData.categoryIds.map(
                                         String
                                     )}
-                                    onChange={
-                                        handleCategoryChange
-                                    }
+                                    onChange={handleCategoryChange}
                                     className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                     size={Math.min(
                                         Math.max(
@@ -2051,9 +1267,7 @@ export default function BooksPage() {
                                     )}
                                 >
                                     {categories.map(
-                                        (
-                                            category
-                                        ) => (
+                                        (category) => (
                                             <option
                                                 key={
                                                     category.id
@@ -2062,9 +1276,7 @@ export default function BooksPage() {
                                                     category.id
                                                 }
                                             >
-                                                {
-                                                    category.name
-                                                }
+                                                {category.name}
                                                 {category.status ===
                                                 "INACTIVE"
                                                     ? " (Inactive)"
@@ -2075,238 +1287,192 @@ export default function BooksPage() {
                                 </select>
 
                                 <p className="mt-1.5 text-[11px] text-slate-400">
-                                    Hold Ctrl to select multiple categories.
+                                    Hold Ctrl to select multiple
+                                    categories.
                                 </p>
                             </div>
 
-                            {/* Primary Category */}
+                            {/* Primary Category + Default Shelf */}
 
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    Primary Category{" "}
-                                    <span className="text-rose-500">
-                                        *
-                                    </span>
-                                </label>
+                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
 
-                                <select
-                                    value={
-                                        formData.primaryCategoryId
-                                    }
-                                    onChange={
-                                        handlePrimaryCategoryChange
-                                    }
-                                    disabled={
-                                        formData.categoryIds
-                                            .length ===
-                                        0
-                                    }
-                                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
-                                >
-                                    <option value="">
-                                        {formData
-                                            .categoryIds
-                                            .length ===
-                                        0
-                                            ? "Select categories first"
-                                            : "Select Primary Category"}
-                                    </option>
+                                {/* Primary Category */}
 
-                                    {categories
-                                        .filter(
-                                            (
-                                                category
-                                            ) =>
-                                                formData.categoryIds.includes(
-                                                    Number(
-                                                        category.id
-                                                    )
-                                                )
-                                        )
-                                        .map(
-                                            (
-                                                category
-                                            ) => (
-                                                <option
-                                                    key={
-                                                        category.id
-                                                    }
-                                                    value={
-                                                        category.id
-                                                    }
-                                                >
-                                                    {
-                                                        category.name
-                                                    }
-                                                    {category.status ===
-                                                    "INACTIVE"
-                                                        ? " (Inactive)"
-                                                        : ""}
-                                                </option>
-                                            )
-                                        )}
-                                </select>
-                            </div>
-
-                            {/* Default Shelf */}
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    Default Shelf
-                                </label>
-
-                                <div className="mt-1.5 min-h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                                    {selectedShelf ? (
-                                        <div>
-                                            <div className="font-mono text-xs font-semibold text-slate-800">
-                                                {
-                                                    selectedShelf.shelfCode
-                                                }
-                                            </div>
-
-                                            <div className="mt-0.5 text-[11px] text-slate-500">
-                                                {
-                                                    selectedShelf.name
-                                                }
-                                            </div>
-                                        </div>
-                                    ) : editingBook?.shelf &&
-                                    editingBook?.primaryCategory?.id ===
-                                    Number(
-                                        formData.primaryCategoryId
-                                    ) ? (
-                                        <div>
-                                            <div className="font-mono text-xs font-semibold text-slate-800">
-                                                {
-                                                    editingBook
-                                                        .shelf
-                                                        .shelfCode
-                                                }
-                                            </div>
-
-                                            <div className="mt-0.5 text-[11px] text-slate-500">
-                                                {
-                                                    editingBook
-                                                        .shelf
-                                                        .name
-                                                }
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <span className="text-sm text-slate-400">
-                                            Select a primary category
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700">
+                                        Primary Category{" "}
+                                        <span className="text-rose-500">
+                                            *
                                         </span>
-                                    )}
+                                    </label>
+
+                                    <select
+                                        value={
+                                            formData.primaryCategoryId
+                                        }
+                                        onChange={
+                                            handlePrimaryCategoryChange
+                                        }
+                                        disabled={
+                                            formData.categoryIds
+                                                .length === 0
+                                        }
+                                        className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+                                    >
+                                        <option value="">
+                                            {formData.categoryIds
+                                                .length === 0
+                                                ? "Select categories first"
+                                                : "Select Primary Category"}
+                                        </option>
+
+                                        {categories
+                                            .filter(
+                                                (category) =>
+                                                    formData.categoryIds.includes(
+                                                        Number(
+                                                            category.id
+                                                        )
+                                                    )
+                                            )
+                                            .map(
+                                                (
+                                                    category
+                                                ) => (
+                                                    <option
+                                                        key={
+                                                            category.id
+                                                        }
+                                                        value={
+                                                            category.id
+                                                        }
+                                                    >
+                                                        {
+                                                            category.name
+                                                        }
+                                                        {category.status ===
+                                                        "INACTIVE"
+                                                            ? " (Inactive)"
+                                                            : ""}
+                                                    </option>
+                                                )
+                                            )}
+                                    </select>
                                 </div>
 
-                                <p className="mt-1.5 text-[11px] text-slate-400">
-                                    Shelf is determined automatically from the primary category.
-                                </p>
+                                {/* Default Shelf */}
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700">
+                                        Default Shelf
+                                    </label>
+
+                                    <div className="mt-1.5 min-h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                                        {selectedShelf ? (
+                                            <div>
+                                                <div className="font-mono text-xs font-semibold text-slate-800">
+                                                    {
+                                                        selectedShelf.shelfCode
+                                                    }
+                                                </div>
+
+                                                <div className="mt-0.5 text-[11px] text-slate-500">
+                                                    {
+                                                        selectedShelf.name
+                                                    }
+                                                </div>
+                                            </div>
+                                        ) : editingBook?.shelf &&
+                                        editingBook?.primaryCategory?.id ===
+                                        Number(
+                                            formData.primaryCategoryId
+                                        ) ? (
+                                            <div>
+                                                <div className="font-mono text-xs font-semibold text-slate-800">
+                                                    {
+                                                        editingBook
+                                                            .shelf
+                                                            .shelfCode
+                                                    }
+                                                </div>
+
+                                                <div className="mt-0.5 text-[11px] text-slate-500">
+                                                    {
+                                                        editingBook
+                                                            .shelf
+                                                            .name
+                                                    }
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <span className="text-sm text-slate-400">
+                                                Select a primary
+                                                category
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <p className="mt-1.5 text-[11px] text-slate-400">
+                                        Shelf is determined
+                                        automatically from the
+                                        primary category.
+                                    </p>
+                                </div>
                             </div>
 
-                            {/* Publish Year */}
+                            {/* Publish Year + Price */}
 
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    Publish Year
-                                </label>
+                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
 
-                                <input
-                                    type="number"
-                                    value={
-                                        formData.publishYear
-                                    }
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            publishYear:
-                                            e.target
-                                                .value,
-                                        })
-                                    }
-                                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                />
-                            </div>
+                                {/* Publish Year */}
 
-                            {/* Price */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700">
+                                        Publish Year
+                                    </label>
 
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    Price (VND)
-                                </label>
+                                    <input
+                                        type="number"
+                                        value={
+                                            formData.publishYear
+                                        }
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                publishYear:
+                                                e.target.value,
+                                            })
+                                        }
+                                        className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                    />
+                                </div>
 
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={
-                                        formData.price
-                                    }
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            price: e
-                                                .target
-                                                .value,
-                                        })
-                                    }
-                                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                />
-                            </div>
+                                {/* Price */}
 
-                            {/* Total Quantity */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700">
+                                        Price (VND)
+                                    </label>
 
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    Total Quantity
-                                </label>
-
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value={
-                                        formData.totalQuantity
-                                    }
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            totalQuantity:
-                                            e.target
-                                                .value,
-                                        })
-                                    }
-                                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                />
-                            </div>
-
-                            {/* Available Quantity */}
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700">
-                                    Available Quantity
-                                </label>
-
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value={
-                                        formData.availableQuantity
-                                    }
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            availableQuantity:
-                                            e.target
-                                                .value,
-                                        })
-                                    }
-                                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                />
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={formData.price}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                price: e.target.value,
+                                            })
+                                        }
+                                        className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                    />
+                                </div>
                             </div>
 
                             {/* Existing Authors */}
 
-                            <div className="sm:col-span-2">
+                            <div>
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Existing Authors
                                 </label>
@@ -2319,13 +1485,10 @@ export default function BooksPage() {
                                     onChange={(e) => {
                                         const selectedIds =
                                             Array.from(
-                                                e
-                                                    .target
+                                                e.target
                                                     .selectedOptions
                                             ).map(
-                                                (
-                                                    opt
-                                                ) =>
+                                                (opt) =>
                                                     Number(
                                                         opt.value
                                                     )
@@ -2347,9 +1510,7 @@ export default function BooksPage() {
                                     )}
                                 >
                                     {authors.map(
-                                        (
-                                            author
-                                        ) => (
+                                        (author) => (
                                             <option
                                                 key={
                                                     author.id
@@ -2358,9 +1519,7 @@ export default function BooksPage() {
                                                     author.id
                                                 }
                                             >
-                                                {
-                                                    author.name
-                                                }
+                                                {author.name}
                                                 {author.status ===
                                                 "INACTIVE"
                                                     ? " (Inactive)"
@@ -2371,13 +1530,14 @@ export default function BooksPage() {
                                 </select>
 
                                 <p className="mt-1.5 text-[11px] text-slate-400">
-                                    Hold Ctrl to select multiple existing authors.
+                                    Hold Ctrl to select multiple
+                                    existing authors.
                                 </p>
                             </div>
 
                             {/* New Authors */}
 
-                            <div className="sm:col-span-2">
+                            <div>
                                 <label className="block text-xs font-semibold text-slate-700">
                                     New Author Names
                                 </label>
@@ -2392,21 +1552,24 @@ export default function BooksPage() {
                                         setFormData({
                                             ...formData,
                                             authorNames:
-                                            e.target
-                                                .value,
+                                            e.target.value,
                                         })
                                     }
                                     className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                 />
 
                                 <p className="mt-1.5 text-[11px] leading-4 text-slate-400">
-                                    Enter multiple author names separated by commas. Existing names will be reused automatically; new names will be added to Author Management.
+                                    Enter multiple author names
+                                    separated by commas. Existing
+                                    names will be reused
+                                    automatically; new names will
+                                    be added to Author Management.
                                 </p>
                             </div>
 
                             {/* Description */}
 
-                            <div className="sm:col-span-2">
+                            <div>
                                 <label className="block text-xs font-semibold text-slate-700">
                                     Description
                                 </label>
@@ -2420,8 +1583,7 @@ export default function BooksPage() {
                                         setFormData({
                                             ...formData,
                                             description:
-                                            e.target
-                                                .value,
+                                            e.target.value,
                                         })
                                     }
                                     className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -2435,9 +1597,7 @@ export default function BooksPage() {
                             <button
                                 type="button"
                                 onClick={() => {
-                                    setEditingBook(
-                                        null
-                                    );
+                                    setEditingBook(null);
                                     resetForm();
                                 }}
                                 className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
@@ -2447,9 +1607,7 @@ export default function BooksPage() {
 
                             <button
                                 type="button"
-                                onClick={
-                                    handleUpdateBook
-                                }
+                                onClick={handleUpdateBook}
                                 className="inline-flex h-10 items-center justify-center rounded-lg bg-black px-4 text-sm font-medium text-white shadow-sm transition hover:bg-[#1f1f1f] focus:outline-none focus:ring-2 focus:ring-black/20 active:scale-[0.98]"
                             >
                                 Save Changes

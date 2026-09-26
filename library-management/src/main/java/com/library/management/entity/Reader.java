@@ -26,7 +26,7 @@ public class Reader {
     private String email;
 
     // Số điện thoại
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String phone;
 
     // Địa chỉ

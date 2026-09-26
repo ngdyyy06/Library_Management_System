@@ -9,7 +9,6 @@ import com.library.management.entity.Publisher;
 import com.library.management.exception.ResourceNotFoundException;
 import com.library.management.repository.AuthorRepository;
 import com.library.management.repository.BookRepository;
-import com.library.management.repository.BookShelfRepository;
 import com.library.management.repository.CategoryRepository;
 import com.library.management.repository.PublisherRepository;
 import org.springframework.stereotype.Service;
@@ -28,20 +27,20 @@ public class BookService {
     private final AuthorRepository authorRepository;
     private final PublisherRepository publisherRepository;
     private final CategoryRepository categoryRepository;
-    private final BookShelfRepository bookShelfRepository;
+    private final BookShelfService bookShelfService;
 
     public BookService(
             BookRepository bookRepository,
             AuthorRepository authorRepository,
             PublisherRepository publisherRepository,
             CategoryRepository categoryRepository,
-            BookShelfRepository bookShelfRepository) {
+            BookShelfService bookShelfService) {
 
         this.bookRepository = bookRepository;
         this.authorRepository = authorRepository;
         this.publisherRepository = publisherRepository;
         this.categoryRepository = categoryRepository;
-        this.bookShelfRepository = bookShelfRepository;
+        this.bookShelfService = bookShelfService;
     }
 
     // =========================================================
@@ -263,6 +262,13 @@ public class BookService {
                 );
 
         // =====================================================
+        // Save old Primary Category
+        // =====================================================
+
+        Category oldPrimaryCategory =
+                book.getPrimaryCategory();
+
+        // =====================================================
         // Check duplicate ISBN
         // =====================================================
 
@@ -359,8 +365,9 @@ public class BookService {
                 );
             }
 
-            applyPrimaryCategoryAndShelf(
+            updatePrimaryCategoryAndShelf(
                     book,
+                    oldPrimaryCategory,
                     request.getPrimaryCategoryId(),
                     categories
             );
@@ -371,8 +378,9 @@ public class BookService {
              * Categories are unchanged,
              * but the primary category is changed.
              */
-            applyPrimaryCategoryAndShelf(
+            updatePrimaryCategoryAndShelf(
                     book,
+                    oldPrimaryCategory,
                     request.getPrimaryCategoryId(),
                     book.getCategories()
             );
@@ -538,6 +546,7 @@ public class BookService {
 
     // =========================================================
     // APPLY PRIMARY CATEGORY + SHELF
+    // Used when creating a new book.
     // =========================================================
 
     private void applyPrimaryCategoryAndShelf(
@@ -610,5 +619,186 @@ public class BookService {
         // =====================================================
 
         book.setShelf(defaultShelf);
+    }
+
+    // =========================================================
+    // UPDATE PRIMARY CATEGORY + SHELF
+    // Used when editing an existing book.
+    // =========================================================
+
+    private void updatePrimaryCategoryAndShelf(
+            Book book,
+            Category oldPrimaryCategory,
+            Long newPrimaryCategoryId,
+            Set<Category> categories) {
+
+        // =====================================================
+        // Validate new Primary Category
+        // =====================================================
+
+        if (newPrimaryCategoryId == null) {
+
+            throw new RuntimeException(
+                    "Primary category is required"
+            );
+        }
+
+        // =====================================================
+        // Find new Primary Category
+        // =====================================================
+
+        Category newPrimaryCategory =
+                categoryRepository.findById(newPrimaryCategoryId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Primary category not found"
+                                )
+                        );
+
+        // =====================================================
+        // Primary Category must belong to book categories
+        // =====================================================
+
+        boolean belongsToBook =
+                categories.stream()
+                        .anyMatch(category ->
+                                category.getId()
+                                        .equals(newPrimaryCategory.getId()));
+
+        if (!belongsToBook) {
+
+            throw new RuntimeException(
+                    "Primary category must be one of the book categories"
+            );
+        }
+
+        // =====================================================
+        // Find new Default Shelf
+        // =====================================================
+
+        BookShelf newDefaultShelf =
+                newPrimaryCategory.getDefaultShelf();
+
+        if (newDefaultShelf == null) {
+
+            throw new RuntimeException(
+                    "Primary category does not have a default shelf"
+            );
+        }
+
+        // =====================================================
+        // Check whether Primary Category changed
+        // =====================================================
+
+        boolean primaryCategoryChanged =
+                oldPrimaryCategory == null
+                        || !oldPrimaryCategory.getId()
+                        .equals(newPrimaryCategory.getId());
+
+        // =====================================================
+        // Move physical copies between shelves
+        // =====================================================
+
+        if (primaryCategoryChanged) {
+
+            /*
+             * Get the quantity that is actually allocated
+             * on shelves.
+             *
+             * Example:
+             *
+             * totalQuantity     = 3
+             * availableQuantity = 2
+             * shelf allocation  = 2
+             *
+             * Only 2 copies are physically available
+             * on the shelf. The other copy may be borrowed.
+             */
+            int allocatedQuantity =
+                    bookShelfService.getAllocatedQuantity(
+                            book.getId()
+                    );
+
+            // =================================================
+            // Remove old shelf allocation
+            // =================================================
+
+            if (allocatedQuantity > 0) {
+
+                bookShelfService.removeBookQuantity(
+                        book,
+                        allocatedQuantity
+                );
+            }
+
+            // =================================================
+            // Change Primary Category
+            // =================================================
+
+            book.setPrimaryCategory(
+                    newPrimaryCategory
+            );
+
+            /*
+             * Normally allocatedQuantity should contain
+             * the number of available copies on shelves.
+             *
+             * However, some older books may have:
+             *
+             * totalQuantity     > 0
+             * availableQuantity > 0
+             * allocation        = 0
+             *
+             * Doraemon is currently in this state.
+             *
+             * In that case, use availableQuantity to repair
+             * the shelf allocation when the Primary Category
+             * is changed.
+             */
+            int quantityToAllocate;
+
+            if (allocatedQuantity > 0) {
+
+                quantityToAllocate = allocatedQuantity;
+
+            } else {
+
+                quantityToAllocate =
+                        book.getAvailableQuantity() != null
+                                ? book.getAvailableQuantity()
+                                : 0;
+            }
+
+            // =================================================
+            // Allocate available copies to new shelf
+            // =================================================
+
+            if (quantityToAllocate > 0) {
+
+                bookShelfService.allocateBook(
+                        book,
+                        quantityToAllocate
+                );
+            }
+
+        } else {
+
+            /*
+             * Primary category did not change.
+             *
+             * Only update the primary category reference.
+             */
+            book.setPrimaryCategory(
+                    newPrimaryCategory
+            );
+        }
+
+        // =====================================================
+        // Update Book Shelf reference
+        // =====================================================
+
+        book.setShelf(
+                newDefaultShelf
+        );
     }
 }

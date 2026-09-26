@@ -23,18 +23,6 @@ public class Category {
     public Category() {
     }
 
-    public Category(
-            Long id,
-            String name,
-            String status,
-            BookShelf defaultShelf
-    ) {
-        this.id = id;
-        this.name = name;
-        this.status = status;
-        this.defaultShelf = defaultShelf;
-    }
-
     public Long getId() {
         return id;
     }
