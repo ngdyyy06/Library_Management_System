@@ -115,4 +115,13 @@ public class BorrowingController {
 
         return ResponseEntity.ok(details);
     }
+
+    @GetMapping("/reader/{readerId}")
+    public ResponseEntity<List<Borrowing>> getBorrowingsByReaderId(
+            @PathVariable Long readerId) {
+
+        return ResponseEntity.ok(
+                borrowingService.getBorrowingsByReaderId(readerId)
+        );
+    }
 }

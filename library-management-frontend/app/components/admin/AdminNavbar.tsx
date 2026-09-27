@@ -155,6 +155,25 @@ export default function AdminNavbar() {
                     ),
                 },
                 {
+                    name: "Return History",
+                    href: "/staff/return-history",
+                    icon: (
+                        <svg
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.7}
+                                d="M7 7h13M7 7l4-4M7 7l4 4M17 17H4M17 17l-4-4M17 17l-4 4"
+                            />
+                        </svg>
+                    ),
+                },
+                {
                     name: "Import Receipts",
                     href: "/import-receipts",
                     icon: (

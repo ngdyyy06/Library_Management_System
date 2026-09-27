@@ -122,7 +122,11 @@ export default function ImportReceiptsPage() {
         createEmptyDetail(),
     ]);
 
+    // Lỗi ngoài trang
     const [error, setError] = useState("");
+
+    // Lỗi riêng của form
+    const [formError, setFormError] = useState("");
 
     useEffect(() => {
         loadData();
@@ -163,11 +167,13 @@ export default function ImportReceiptsPage() {
         setImportDate("");
         setDetails([createEmptyDetail()]);
         setEditingId(null);
-        setError("");
+        setFormError("");
     }
 
     function openCreateForm() {
         resetForm();
+
+        setError("");
 
         setImportDate(
             new Date().toISOString().split("T")[0]
@@ -179,6 +185,7 @@ export default function ImportReceiptsPage() {
     async function openEditForm(receipt: ImportReceipt) {
         try {
             setError("");
+            setFormError("");
 
             const receiptDetails =
                 await getImportReceiptDetails(receipt.id);
@@ -201,6 +208,11 @@ export default function ImportReceiptsPage() {
         } catch (error: any) {
             setError(error.message || "Failed to load receipt");
         }
+    }
+
+    function closeForm() {
+        setShowForm(false);
+        resetForm();
     }
 
     function addDetailRow() {
@@ -227,6 +239,8 @@ export default function ImportReceiptsPage() {
         field: keyof FormDetail,
         value: string
     ) {
+        setFormError("");
+
         setDetails(
             details.map((detail, currentIndex) =>
                 currentIndex === index
@@ -244,6 +258,8 @@ export default function ImportReceiptsPage() {
         field: keyof NewBookForm,
         value: string
     ) {
+        setFormError("");
+
         setDetails(
             details.map((detail, currentIndex) => {
                 if (currentIndex !== index) {
@@ -265,6 +281,8 @@ export default function ImportReceiptsPage() {
         index: number,
         authorId: string
     ) {
+        setFormError("");
+
         setDetails(
             details.map((detail, currentIndex) => {
                 if (currentIndex !== index) {
@@ -292,6 +310,8 @@ export default function ImportReceiptsPage() {
         index: number,
         categoryId: string
     ) {
+        setFormError("");
+
         setDetails(
             details.map((detail, currentIndex) => {
                 if (currentIndex !== index) {
@@ -332,28 +352,40 @@ export default function ImportReceiptsPage() {
         }, 0);
     }
 
-    async function handleSubmit(event: React.FormEvent) {
+    async function handleSubmit(
+        event: React.FormEvent
+    ) {
         event.preventDefault();
-        setError("");
+
+        setFormError("");
 
         if (!publisherId) {
-            setError("Please select a publisher");
+            setFormError("Please select a publisher.");
             return;
         }
 
         if (!importDate) {
-            setError("Please select an import date");
+            setFormError("Please select an import date.");
             return;
         }
 
         if (details.length === 0) {
-            setError("Import receipt must contain at least one book");
+            setFormError(
+                "Import receipt must contain at least one book."
+            );
             return;
         }
 
-        for (const detail of details) {
-            if (!detail.quantity || Number(detail.quantity) <= 0) {
-                setError("Quantity must be greater than 0");
+        for (let index = 0; index < details.length; index++) {
+            const detail = details[index];
+
+            if (
+                !detail.quantity ||
+                Number(detail.quantity) <= 0
+            ) {
+                setFormError(
+                    `Book item ${index + 1}: quantity must be greater than 0.`
+                );
                 return;
             }
 
@@ -361,13 +393,17 @@ export default function ImportReceiptsPage() {
                 detail.unitPrice === "" ||
                 Number(detail.unitPrice) < 0
             ) {
-                setError("Unit price cannot be negative");
+                setFormError(
+                    `Book item ${index + 1}: unit price cannot be negative.`
+                );
                 return;
             }
 
             if (detail.type === "EXISTING") {
                 if (!detail.bookId) {
-                    setError("Please select a book for every existing book row");
+                    setFormError(
+                        `Book item ${index + 1}: please select a book.`
+                    );
                     return;
                 }
             }
@@ -376,12 +412,16 @@ export default function ImportReceiptsPage() {
                 const newBook = detail.newBook;
 
                 if (!newBook.title.trim()) {
-                    setError("Book title is required");
+                    setFormError(
+                        `Book item ${index + 1}: book title is required.`
+                    );
                     return;
                 }
 
                 if (!newBook.isbn.trim()) {
-                    setError("ISBN is required");
+                    setFormError(
+                        `Book item ${index + 1}: ISBN is required.`
+                    );
                     return;
                 }
 
@@ -389,17 +429,23 @@ export default function ImportReceiptsPage() {
                     newBook.price === "" ||
                     Number(newBook.price) < 0
                 ) {
-                    setError("Book price cannot be negative");
+                    setFormError(
+                        `Book item ${index + 1}: book price cannot be negative.`
+                    );
                     return;
                 }
 
                 if (newBook.categoryIds.length === 0) {
-                    setError("Please select at least one category");
+                    setFormError(
+                        `Book item ${index + 1}: please select at least one category.`
+                    );
                     return;
                 }
 
                 if (!newBook.primaryCategoryId) {
-                    setError("Please select a primary category");
+                    setFormError(
+                        `Book item ${index + 1}: please select a primary category.`
+                    );
                     return;
                 }
 
@@ -408,8 +454,8 @@ export default function ImportReceiptsPage() {
                         newBook.primaryCategoryId
                     )
                 ) {
-                    setError(
-                        "Primary category must be one of the selected categories"
+                    setFormError(
+                        `Book item ${index + 1}: primary category must be one of the selected categories.`
                     );
                     return;
                 }
@@ -456,36 +502,50 @@ export default function ImportReceiptsPage() {
                                 publishYear:
                                     newBook.publishYear === ""
                                         ? undefined
-                                        : Number(newBook.publishYear),
+                                        : Number(
+                                            newBook.publishYear
+                                        ),
                                 description:
-                                    newBook.description.trim() || undefined,
+                                    newBook.description.trim() ||
+                                    undefined,
                                 price: Number(newBook.price),
                                 authorIds:
                                     newBook.authorIds.length > 0
-                                        ? newBook.authorIds.map(Number)
+                                        ? newBook.authorIds.map(
+                                            Number
+                                        )
                                         : undefined,
                                 categoryIds:
-                                    newBook.categoryIds.map(Number),
+                                    newBook.categoryIds.map(
+                                        Number
+                                    ),
                                 primaryCategoryId:
-                                    Number(newBook.primaryCategoryId),
+                                    Number(
+                                        newBook.primaryCategoryId
+                                    ),
                             },
-                            quantity: Number(detail.quantity),
-                            unitPrice: Number(detail.unitPrice),
+                            quantity: Number(
+                                detail.quantity
+                            ),
+                            unitPrice: Number(
+                                detail.unitPrice
+                            ),
                         };
                     }),
                 };
 
-                await createImportReceipt(requestData);
+                await createImportReceipt(
+                    requestData
+                );
             }
 
             await loadData();
 
-            setShowForm(false);
-            resetForm();
+            closeForm();
         } catch (error: any) {
-            setError(
+            setFormError(
                 error.message ||
-                "Failed to save import receipt"
+                "Failed to save import receipt."
             );
         } finally {
             setSaving(false);
@@ -553,20 +613,28 @@ export default function ImportReceiptsPage() {
 
             return matchesSearch && matchesStatus;
         });
-    }, [receipts, search, statusFilter]);
+    }, [
+        receipts,
+        search,
+        statusFilter,
+    ]);
 
     const totalReceipts = receipts.length;
 
     const activeReceipts = receipts.filter(
-        (receipt) => receipt.status === "COMPLETED"
+        (receipt) =>
+            receipt.status === "COMPLETED"
     ).length;
 
     const inactiveReceipts = receipts.filter(
-        (receipt) => receipt.status === "INACTIVE"
+        (receipt) =>
+            receipt.status === "INACTIVE"
     ).length;
 
     function formatCurrency(value: number) {
-        return new Intl.NumberFormat("vi-VN").format(value);
+        return new Intl.NumberFormat(
+            "vi-VN"
+        ).format(value);
     }
 
     return (
@@ -607,7 +675,7 @@ export default function ImportReceiptsPage() {
                     </button>
                 </div>
 
-                {/* Error */}
+                {/* Page Error */}
                 {error && (
                     <div className="flex items-start justify-between gap-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                         <div className="flex items-center gap-2.5">
@@ -620,8 +688,14 @@ export default function ImportReceiptsPage() {
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                             >
-                                <circle cx="12" cy="12" r="9" />
+                                <circle
+                                    cx="12"
+                                    cy="12"
+                                    r="9"
+                                />
+
                                 <path d="M12 8v4" />
+
                                 <path d="M12 16h.01" />
                             </svg>
 
@@ -630,7 +704,9 @@ export default function ImportReceiptsPage() {
 
                         <button
                             type="button"
-                            onClick={() => setError("")}
+                            onClick={() =>
+                                setError("")
+                            }
                             className="shrink-0 text-xs font-medium text-red-700 transition hover:text-red-900"
                         >
                             Dismiss
@@ -707,7 +783,12 @@ export default function ImportReceiptsPage() {
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                             >
-                                <circle cx="11" cy="11" r="7" />
+                                <circle
+                                    cx="11"
+                                    cy="11"
+                                    r="7"
+                                />
+
                                 <path d="m20 20-4-4" />
                             </svg>
 
@@ -715,7 +796,9 @@ export default function ImportReceiptsPage() {
                                 type="text"
                                 value={search}
                                 onChange={(event) =>
-                                    setSearch(event.target.value)
+                                    setSearch(
+                                        event.target.value
+                                    )
                                 }
                                 placeholder="Search by receipt code or publisher..."
                                 className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
@@ -728,7 +811,9 @@ export default function ImportReceiptsPage() {
                             </span>
 
                             <select
-                                value={statusFilter}
+                                value={
+                                    statusFilter
+                                }
                                 onChange={(event) =>
                                     setStatusFilter(
                                         event.target.value
@@ -819,130 +904,144 @@ export default function ImportReceiptsPage() {
                                 </thead>
 
                                 <tbody className="divide-y divide-slate-100">
-                                {filteredReceipts.map((receipt) => (
-                                    <tr
-                                        key={receipt.id}
-                                        className="group transition-colors hover:bg-slate-50/60"
-                                    >
-                                        <td className="px-5 py-4">
-                                            <span className="font-mono text-sm font-medium text-[#183b63]">
-                                                {receipt.receiptCode}
-                                            </span>
-                                        </td>
-
-                                        <td className="px-5 py-4">
-                                            <span className="text-sm font-medium text-slate-800">
-                                                {receipt.publisher.name}
-                                            </span>
-                                        </td>
-
-                                        <td className="px-5 py-4">
-                                            <span className="text-sm text-slate-500">
-                                                {receipt.importDate}
-                                            </span>
-                                        </td>
-
-                                        <td className="px-5 py-4">
-                                            <span className="text-sm font-medium text-slate-800">
-                                                {formatCurrency(
-                                                    receipt.totalAmount
-                                                )}
-                                            </span>
-
-                                            <span className="ml-1 text-xs text-slate-400">
-                                                VND
-                                            </span>
-                                        </td>
-
-                                        <td className="px-5 py-4">
-                                            {receipt.status === "COMPLETED" ? (
-                                                <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                                    Active
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
-                                                    <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-                                                    Inactive
-                                                </span>
-                                            )}
-                                        </td>
-
-                                        <td className="px-5 py-4">
-                                            <div className="flex items-center justify-end gap-2">
-
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        router.push(
-                                                            `/import-receipts/${receipt.id}`
-                                                        )
+                                {filteredReceipts.map(
+                                    (receipt) => (
+                                        <tr
+                                            key={
+                                                receipt.id
+                                            }
+                                            className="group transition-colors hover:bg-slate-50/60"
+                                        >
+                                            <td className="px-5 py-4">
+                                                <span className="font-mono text-sm font-medium text-[#183b63]">
+                                                    {
+                                                        receipt.receiptCode
                                                     }
-                                                    className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#183b63]"
-                                                >
-                                                    <svg
-                                                        className="h-3.5 w-3.5"
-                                                        viewBox="0 0 24 24"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        strokeWidth="1.6"
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                    >
-                                                        <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" />
-                                                        <circle
-                                                            cx="12"
-                                                            cy="12"
-                                                            r="2.5"
-                                                        />
-                                                    </svg>
+                                                </span>
+                                            </td>
 
-                                                    Detail
-                                                </button>
+                                            <td className="px-5 py-4">
+                                                <span className="text-sm font-medium text-slate-800">
+                                                    {
+                                                        receipt.publisher
+                                                            .name
+                                                    }
+                                                </span>
+                                            </td>
 
-                                                {receipt.status === "COMPLETED" && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            openEditForm(
-                                                                receipt
-                                                            )
-                                                        }
-                                                        className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#183b63]"
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                )}
+                                            <td className="px-5 py-4">
+                                                <span className="text-sm text-slate-500">
+                                                    {
+                                                        receipt.importDate
+                                                    }
+                                                </span>
+                                            </td>
 
-                                                {receipt.status === "COMPLETED" ? (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            handleDeactivate(
-                                                                receipt.id
-                                                            )
-                                                        }
-                                                        className="inline-flex h-8 items-center rounded-md border border-red-200 bg-white px-3 text-xs font-medium text-red-600 transition hover:bg-red-50"
-                                                    >
-                                                        Deactivate
-                                                    </button>
+                                            <td className="px-5 py-4">
+                                                <span className="text-sm font-medium text-slate-800">
+                                                    {formatCurrency(
+                                                        receipt.totalAmount
+                                                    )}
+                                                </span>
+
+                                                <span className="ml-1 text-xs text-slate-400">
+                                                    VND
+                                                </span>
+                                            </td>
+
+                                            <td className="px-5 py-4">
+                                                {receipt.status ===
+                                                "COMPLETED" ? (
+                                                    <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                                        Active
+                                                    </span>
                                                 ) : (
+                                                    <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                                                        Inactive
+                                                    </span>
+                                                )}
+                                            </td>
+
+                                            <td className="px-5 py-4">
+                                                <div className="flex items-center justify-end gap-2">
+
                                                     <button
                                                         type="button"
                                                         onClick={() =>
-                                                            handleActivate(
-                                                                receipt.id
+                                                            router.push(
+                                                                `/import-receipts/${receipt.id}`
                                                             )
                                                         }
-                                                        className="inline-flex h-8 items-center rounded-md border border-emerald-200 bg-white px-3 text-xs font-medium text-emerald-600 transition hover:bg-emerald-50"
+                                                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#183b63]"
                                                     >
-                                                        Activate
+                                                        <svg
+                                                            className="h-3.5 w-3.5"
+                                                            viewBox="0 0 24 24"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            strokeWidth="1.6"
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                        >
+                                                            <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" />
+                                                            <circle
+                                                                cx="12"
+                                                                cy="12"
+                                                                r="2.5"
+                                                            />
+                                                        </svg>
+
+                                                        Detail
                                                     </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+
+                                                    {receipt.status ===
+                                                        "COMPLETED" && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    openEditForm(
+                                                                        receipt
+                                                                    )
+                                                                }
+                                                                className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#183b63]"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                        )}
+
+                                                    {receipt.status ===
+                                                    "COMPLETED" ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                handleDeactivate(
+                                                                    receipt.id
+                                                                )
+                                                            }
+                                                            className="inline-flex h-8 items-center rounded-md border border-red-200 bg-white px-3 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                                                        >
+                                                            Deactivate
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                handleActivate(
+                                                                    receipt.id
+                                                                )
+                                                            }
+                                                            className="inline-flex h-8 items-center rounded-md border border-emerald-200 bg-white px-3 text-xs font-medium text-emerald-600 transition hover:bg-emerald-50"
+                                                        >
+                                                            Activate
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )
+                                )}
                                 </tbody>
                             </table>
                         </div>
@@ -973,10 +1072,7 @@ export default function ImportReceiptsPage() {
 
                                 <button
                                     type="button"
-                                    onClick={() => {
-                                        setShowForm(false);
-                                        resetForm();
-                                    }}
+                                    onClick={closeForm}
                                     className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                                     aria-label="Close"
                                 >
@@ -996,10 +1092,59 @@ export default function ImportReceiptsPage() {
 
                             {/* Form */}
                             <form
-                                onSubmit={handleSubmit}
+                                onSubmit={
+                                    handleSubmit
+                                }
                                 className="overflow-y-auto"
                             >
                                 <div className="space-y-7 px-6 py-6">
+
+                                    {/* FORM ERROR */}
+                                    {formError && (
+                                        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm text-red-700">
+                                            <svg
+                                                className="mt-0.5 h-4 w-4 shrink-0"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="1.7"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            >
+                                                <circle
+                                                    cx="12"
+                                                    cy="12"
+                                                    r="9"
+                                                />
+
+                                                <path d="M12 8v4" />
+
+                                                <path d="M12 16h.01" />
+                                            </svg>
+
+                                            <div className="flex-1">
+                                                <p className="font-medium">
+                                                    Unable to save import receipt
+                                                </p>
+
+                                                <p className="mt-0.5 text-red-600">
+                                                    {formError}
+                                                </p>
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setFormError(
+                                                        ""
+                                                    )
+                                                }
+                                                className="shrink-0 text-xs font-medium text-red-600 hover:text-red-800"
+                                            >
+                                                Dismiss
+                                            </button>
+                                        </div>
+                                    )}
 
                                     {/* Receipt Information */}
                                     <div>
@@ -1024,12 +1169,22 @@ export default function ImportReceiptsPage() {
                                                 </label>
 
                                                 <select
-                                                    value={publisherId}
-                                                    onChange={(event) =>
-                                                        setPublisherId(
-                                                            event.target.value
-                                                        )
+                                                    value={
+                                                        publisherId
                                                     }
+                                                    onChange={(
+                                                        event
+                                                    ) => {
+                                                        setFormError(
+                                                            ""
+                                                        );
+
+                                                        setPublisherId(
+                                                            event
+                                                                .target
+                                                                .value
+                                                        );
+                                                    }}
                                                     className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
                                                 >
                                                     <option value="">
@@ -1038,18 +1193,30 @@ export default function ImportReceiptsPage() {
 
                                                     {publishers
                                                         .filter(
-                                                            (publisher) =>
+                                                            (
+                                                                publisher
+                                                            ) =>
                                                                 publisher.status ===
                                                                 "ACTIVE"
                                                         )
-                                                        .map((publisher) => (
-                                                            <option
-                                                                key={publisher.id}
-                                                                value={publisher.id}
-                                                            >
-                                                                {publisher.name}
-                                                            </option>
-                                                        ))}
+                                                        .map(
+                                                            (
+                                                                publisher
+                                                            ) => (
+                                                                <option
+                                                                    key={
+                                                                        publisher.id
+                                                                    }
+                                                                    value={
+                                                                        publisher.id
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        publisher.name
+                                                                    }
+                                                                </option>
+                                                            )
+                                                        )}
                                                 </select>
                                             </div>
 
@@ -1063,12 +1230,22 @@ export default function ImportReceiptsPage() {
 
                                                 <input
                                                     type="date"
-                                                    value={importDate}
-                                                    onChange={(event) =>
-                                                        setImportDate(
-                                                            event.target.value
-                                                        )
+                                                    value={
+                                                        importDate
                                                     }
+                                                    onChange={(
+                                                        event
+                                                    ) => {
+                                                        setFormError(
+                                                            ""
+                                                        );
+
+                                                        setImportDate(
+                                                            event
+                                                                .target
+                                                                .value
+                                                        );
+                                                    }}
                                                     className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
                                                 />
                                             </div>
@@ -1093,7 +1270,9 @@ export default function ImportReceiptsPage() {
                                             {!editingId && (
                                                 <button
                                                     type="button"
-                                                    onClick={addDetailRow}
+                                                    onClick={
+                                                        addDetailRow
+                                                    }
                                                     className="inline-flex h-9 items-center justify-center gap-1.5 self-start rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#183b63] sm:self-auto"
                                                 >
                                                     <svg
@@ -1117,16 +1296,21 @@ export default function ImportReceiptsPage() {
                                         <div className="space-y-4">
 
                                             {details.map(
-                                                (detail, index) => {
+                                                (
+                                                    detail,
+                                                    index
+                                                ) => {
                                                     const quantity =
                                                         Number(
                                                             detail.quantity
-                                                        ) || 0;
+                                                        ) ||
+                                                        0;
 
                                                     const unitPrice =
                                                         Number(
                                                             detail.unitPrice
-                                                        ) || 0;
+                                                        ) ||
+                                                        0;
 
                                                     const amount =
                                                         quantity *
@@ -1134,7 +1318,9 @@ export default function ImportReceiptsPage() {
 
                                                     return (
                                                         <div
-                                                            key={index}
+                                                            key={
+                                                                index
+                                                            }
                                                             className="overflow-hidden rounded-xl border border-slate-200 bg-white"
                                                         >
 
@@ -1143,7 +1329,10 @@ export default function ImportReceiptsPage() {
 
                                                                 <div className="flex items-center gap-3">
                                                                     <span className="flex h-7 w-7 items-center justify-center rounded-md bg-white text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                                                                        {index + 1}
+                                                                        {
+                                                                            index +
+                                                                            1
+                                                                        }
                                                                     </span>
 
                                                                     <div>
@@ -1267,8 +1456,8 @@ export default function ImportReceiptsPage() {
                                                                             <label className="mb-2 block text-xs font-medium text-slate-700">
                                                                                 Book
                                                                                 <span className="ml-1 text-red-500">
-                                                                                *
-                                                                            </span>
+                                                                                    *
+                                                                                </span>
                                                                             </label>
 
                                                                             <select
@@ -1349,8 +1538,8 @@ export default function ImportReceiptsPage() {
                                                                                     <label className="mb-2 block text-xs font-medium text-slate-700">
                                                                                         Title
                                                                                         <span className="ml-1 text-red-500">
-                                                                                        *
-                                                                                    </span>
+                                                                                            *
+                                                                                        </span>
                                                                                     </label>
 
                                                                                     <input
@@ -1380,8 +1569,8 @@ export default function ImportReceiptsPage() {
                                                                                     <label className="mb-2 block text-xs font-medium text-slate-700">
                                                                                         ISBN
                                                                                         <span className="ml-1 text-red-500">
-                                                                                        *
-                                                                                    </span>
+                                                                                            *
+                                                                                        </span>
                                                                                     </label>
 
                                                                                     <input
@@ -1440,8 +1629,8 @@ export default function ImportReceiptsPage() {
                                                                                     <label className="mb-2 block text-xs font-medium text-slate-700">
                                                                                         Book Price
                                                                                         <span className="ml-1 text-red-500">
-                                                                                        *
-                                                                                    </span>
+                                                                                            *
+                                                                                        </span>
                                                                                     </label>
 
                                                                                     <input
@@ -1490,7 +1679,9 @@ export default function ImportReceiptsPage() {
                                                                                                     .value
                                                                                             )
                                                                                         }
-                                                                                        rows={3}
+                                                                                        rows={
+                                                                                            3
+                                                                                        }
                                                                                         placeholder="Enter book description..."
                                                                                         className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
                                                                                     />
@@ -1561,10 +1752,10 @@ export default function ImportReceiptsPage() {
                                                                                                             />
 
                                                                                                             <span>
-                                                                                                            {
-                                                                                                                author.name
-                                                                                                            }
-                                                                                                        </span>
+                                                                                                                {
+                                                                                                                    author.name
+                                                                                                                }
+                                                                                                            </span>
                                                                                                         </label>
                                                                                                     )
                                                                                                 )}
@@ -1580,8 +1771,8 @@ export default function ImportReceiptsPage() {
                                                                                 <label className="mb-2 block text-xs font-medium text-slate-700">
                                                                                     Categories
                                                                                     <span className="ml-1 text-red-500">
-                                                                                    *
-                                                                                </span>
+                                                                                        *
+                                                                                    </span>
                                                                                 </label>
 
                                                                                 <div className="max-h-36 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
@@ -1641,10 +1832,10 @@ export default function ImportReceiptsPage() {
                                                                                                             />
 
                                                                                                             <span>
-                                                                                                            {
-                                                                                                                category.name
-                                                                                                            }
-                                                                                                        </span>
+                                                                                                                {
+                                                                                                                    category.name
+                                                                                                                }
+                                                                                                            </span>
                                                                                                         </label>
                                                                                                     )
                                                                                                 )}
@@ -1660,8 +1851,8 @@ export default function ImportReceiptsPage() {
                                                                                 <label className="mb-2 block text-xs font-medium text-slate-700">
                                                                                     Primary Category
                                                                                     <span className="ml-1 text-red-500">
-                                                                                    *
-                                                                                </span>
+                                                                                        *
+                                                                                    </span>
                                                                                 </label>
 
                                                                                 <select
@@ -1795,7 +1986,6 @@ export default function ImportReceiptsPage() {
                                                                     </div>
 
                                                                     <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5">
-
                                                                         <p className="text-[11px] font-medium text-slate-400">
                                                                             Subtotal
                                                                         </p>
@@ -1808,7 +1998,6 @@ export default function ImportReceiptsPage() {
                                                                                 VND
                                                                             </span>
                                                                         </p>
-
                                                                     </div>
 
                                                                 </div>
@@ -1851,10 +2040,9 @@ export default function ImportReceiptsPage() {
 
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            setShowForm(false);
-                                            resetForm();
-                                        }}
+                                        onClick={
+                                            closeForm
+                                        }
                                         className="h-10 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-800"
                                     >
                                         Cancel

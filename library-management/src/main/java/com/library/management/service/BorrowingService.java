@@ -42,6 +42,11 @@ public class BorrowingService {
         this.returnHistoryRepository = returnHistoryRepository;
     }
 
+    public List<Borrowing> getBorrowingsByReaderId(Long readerId) {
+
+        return borrowingRepository.findByReaderId(readerId);
+    }
+
     // =========================================================
     // GET ALL BORROWINGS
     // =========================================================

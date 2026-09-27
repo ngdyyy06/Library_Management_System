@@ -3,19 +3,67 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import RoleGuard from "@/app/components/RoleGuard";
-import { getDashboard } from "@/app/lib/api";
+import {
+  getDashboard,
+  getBorrowingRevenue,
+  getReaderRevenue,
+} from "@/app/lib/api";
+
+type RevenueData = {
+  todayRevenue: number;
+  monthlyRevenue: number;
+};
 
 export default function Home() {
   const router = useRouter();
-  const [dashboard, setDashboard] = useState<any>(null);
+
+  const [dashboard, setDashboard] =
+      useState<any>(null);
+
+  const [borrowingRevenue, setBorrowingRevenue] =
+      useState<RevenueData | null>(null);
+
+  const [userRevenue, setUserRevenue] =
+      useState<RevenueData | null>(null);
 
   useEffect(() => {
-    getDashboard()
-        .then((data) => {
-          setDashboard(data);
-        })
+    Promise.all([
+      getDashboard(),
+      getBorrowingRevenue(),
+      getReaderRevenue(),
+    ])
+        .then(
+            ([
+               dashboardData,
+               borrowingData,
+               userData,
+             ]) => {
+              setDashboard(dashboardData);
+
+              setBorrowingRevenue({
+                todayRevenue: Number(
+                    borrowingData?.todayRevenue ?? 0
+                ),
+                monthlyRevenue: Number(
+                    borrowingData?.monthlyRevenue ?? 0
+                ),
+              });
+
+              setUserRevenue({
+                todayRevenue: Number(
+                    userData?.todayRevenue ?? 0
+                ),
+                monthlyRevenue: Number(
+                    userData?.monthlyRevenue ?? 0
+                ),
+              });
+            }
+        )
         .catch((error) => {
-          console.error("Failed to load dashboard:", error);
+          console.error(
+              "Failed to load dashboard:",
+              error
+          );
         });
   }, []);
 
@@ -24,7 +72,7 @@ export default function Home() {
         <div className="min-h-screen bg-[#f7f8fa] p-6 sm:p-8 lg:p-10">
           <div className="mx-auto max-w-7xl space-y-6">
 
-            {/* ── Page Header ── */}
+            {/* Page Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-3">
@@ -33,9 +81,9 @@ export default function Home() {
                   </h1>
 
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600 ring-1 ring-inset ring-emerald-500/20">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-                    Live System
-                  </span>
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                  Live System
+                </span>
                 </div>
 
                 <p className="mt-1 text-sm text-slate-500">
@@ -58,11 +106,13 @@ export default function Home() {
                   />
                 </svg>
 
-                <span>Library Management Hub</span>
+                <span>
+                Library Management Hub
+              </span>
               </div>
             </div>
 
-            {/* ── Main Statistics ── */}
+            {/* Main Statistics */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
               {/* Books */}
@@ -220,88 +270,270 @@ export default function Home() {
                   </div>
                 </div>
               </button>
-
             </div>
 
-            {/* ── Revenue ── */}
-            <div className="grid gap-4 lg:grid-cols-2">
+            {/* Revenue */}
+            <div className="space-y-4">
 
-              {/* Today's Revenue */}
-              <button
-                  type="button"
-                  onClick={() => router.push("/borrowings")}
-                  className="w-full rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              {/* TODAY */}
+              <div>
+                <div className="mb-3">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">
+                    Today&apos;s Revenue
+                  </h2>
 
-                      <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                        Today&apos;s Revenue
-                      </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Revenue collected today by source.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+
+                  {/* Borrow Revenue */}
+                  <button
+                      type="button"
+                      onClick={() => router.push("/borrowings")}
+                      className="w-full rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+
+                          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                            Borrow Revenue
+                          </p>
+                        </div>
+
+                        <div className="mt-3 flex items-baseline gap-1.5">
+                        <span className="text-2xl font-bold tracking-tight text-slate-900">
+                          {(
+                              borrowingRevenue?.todayRevenue ?? 0
+                          ).toLocaleString("vi-VN")}
+                        </span>
+
+                          <span className="text-sm font-semibold text-slate-500">
+                          VND
+                        </span>
+                        </div>
+
+                        <p className="mt-1.5 text-xs text-slate-400">
+                          Fines and renewal fees collected today
+                        </p>
+                      </div>
+
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-sm font-bold text-emerald-600">
+                        ₫
+                      </div>
                     </div>
+                  </button>
 
-                    <div className="mt-3 flex items-baseline gap-1.5">
-                      <span className="text-3xl font-bold tracking-tight text-slate-900">
-                        {(dashboard?.todayRevenue ?? 0).toLocaleString("vi-VN")}
-                      </span>
+                  {/* User Revenue */}
+                  <button
+                      type="button"
+                      onClick={() => router.push("/readers")}
+                      className="w-full rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
 
-                      <span className="text-sm font-semibold text-slate-500">
-                        VND
-                      </span>
+                          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                            User Revenue
+                          </p>
+                        </div>
+
+                        <div className="mt-3 flex items-baseline gap-1.5">
+                        <span className="text-2xl font-bold tracking-tight text-slate-900">
+                          {(
+                              userRevenue?.todayRevenue ?? 0
+                          ).toLocaleString("vi-VN")}
+                        </span>
+
+                          <span className="text-sm font-semibold text-slate-500">
+                          VND
+                        </span>
+                        </div>
+
+                        <p className="mt-1.5 text-xs text-slate-400">
+                          Library card fees collected today
+                        </p>
+                      </div>
+
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-sm font-bold text-violet-600">
+                        ₫
+                      </div>
                     </div>
+                  </button>
 
-                    <p className="mt-1.5 text-xs text-slate-400">
-                      Total revenue collected today
-                    </p>
-                  </div>
+                  {/* Total Revenue */}
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
 
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-lg font-bold text-emerald-600">
-                    ₫
+                          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                            Total Revenue
+                          </p>
+                        </div>
+
+                        <div className="mt-3 flex items-baseline gap-1.5">
+                        <span className="text-2xl font-bold tracking-tight text-slate-900">
+                          {(
+                              dashboard?.todayRevenue ?? 0
+                          ).toLocaleString("vi-VN")}
+                        </span>
+
+                          <span className="text-sm font-semibold text-slate-500">
+                          VND
+                        </span>
+                        </div>
+
+                        <p className="mt-1.5 text-xs text-slate-400">
+                          Borrow and library card revenue today
+                        </p>
+                      </div>
+
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sm font-bold text-sky-600">
+                        ₫
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </button>
+              </div>
 
-              {/* This Month's Revenue */}
-              <button
-                  type="button"
-                  onClick={() => router.push("/borrowings")}
-                  className="w-full rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+              {/* THIS MONTH */}
+              <div>
+                <div className="mb-3">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">
+                    This Month&apos;s Revenue
+                  </h2>
 
-                      <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                        This Month&apos;s Revenue
-                      </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Revenue collected this month by source.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+
+                  {/* Borrow Revenue */}
+                  <button
+                      type="button"
+                      onClick={() => router.push("/borrowings")}
+                      className="w-full rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+
+                          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                            Borrow Revenue
+                          </p>
+                        </div>
+
+                        <div className="mt-3 flex items-baseline gap-1.5">
+                        <span className="text-2xl font-bold tracking-tight text-slate-900">
+                          {(
+                              borrowingRevenue?.monthlyRevenue ?? 0
+                          ).toLocaleString("vi-VN")}
+                        </span>
+
+                          <span className="text-sm font-semibold text-slate-500">
+                          VND
+                        </span>
+                        </div>
+
+                        <p className="mt-1.5 text-xs text-slate-400">
+                          Fines and renewal fees collected this month
+                        </p>
+                      </div>
+
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-sm font-bold text-emerald-600">
+                        ₫
+                      </div>
                     </div>
+                  </button>
 
-                    <div className="mt-3 flex items-baseline gap-1.5">
-                      <span className="text-3xl font-bold tracking-tight text-slate-900">
-                        {(dashboard?.monthlyRevenue ?? 0).toLocaleString("vi-VN")}
-                      </span>
+                  {/* User Revenue */}
+                  <button
+                      type="button"
+                      onClick={() => router.push("/readers")}
+                      className="w-full rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
 
-                      <span className="text-sm font-semibold text-slate-500">
-                        VND
-                      </span>
+                          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                            User Revenue
+                          </p>
+                        </div>
+
+                        <div className="mt-3 flex items-baseline gap-1.5">
+                        <span className="text-2xl font-bold tracking-tight text-slate-900">
+                          {(
+                              userRevenue?.monthlyRevenue ?? 0
+                          ).toLocaleString("vi-VN")}
+                        </span>
+
+                          <span className="text-sm font-semibold text-slate-500">
+                          VND
+                        </span>
+                        </div>
+
+                        <p className="mt-1.5 text-xs text-slate-400">
+                          Library card fees collected this month
+                        </p>
+                      </div>
+
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-sm font-bold text-violet-600">
+                        ₫
+                      </div>
                     </div>
+                  </button>
 
-                    <p className="mt-1.5 text-xs text-slate-400">
-                      Total revenue collected this month
-                    </p>
-                  </div>
+                  {/* Total Revenue */}
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
 
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-lg font-bold text-sky-600">
-                    ₫
+                          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                            Total Revenue
+                          </p>
+                        </div>
+
+                        <div className="mt-3 flex items-baseline gap-1.5">
+                        <span className="text-2xl font-bold tracking-tight text-slate-900">
+                          {(
+                              dashboard?.monthlyRevenue ?? 0
+                          ).toLocaleString("vi-VN")}
+                        </span>
+
+                          <span className="text-sm font-semibold text-slate-500">
+                          VND
+                        </span>
+                        </div>
+
+                        <p className="mt-1.5 text-xs text-slate-400">
+                          Borrow and library card revenue this month
+                        </p>
+                      </div>
+
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sm font-bold text-sky-600">
+                        ₫
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </button>
+              </div>
 
             </div>
-
           </div>
         </div>
       </RoleGuard>

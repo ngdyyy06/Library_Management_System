@@ -392,9 +392,22 @@ export async function getStaffDashboard() {
     });
 
     if (!response.ok) {
-        const errorData = await response.json();
+        const text = await response.text();
+
+        let errorData: any = null;
+
+        if (text) {
+            try {
+                errorData = JSON.parse(text);
+            } catch {
+                errorData = null;
+            }
+        }
+
         throw new Error(
-            errorData.message || "Failed to get staff dashboard"
+            errorData?.message ||
+            text ||
+            "Failed to get staff dashboard"
         );
     }
 
@@ -1782,3 +1795,40 @@ export async function getBorrowingRevenue() {
 
     return response.json();
 }
+
+export async function getBorrowingsByReaderId(readerId: number) {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+        `${API_URL}/borrowings/reader/${readerId}`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    const text = await response.text();
+
+    let result: any = null;
+
+    if (text) {
+        try {
+            result = JSON.parse(text);
+        } catch {
+            result = null;
+        }
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            result?.message ||
+            text ||
+            "Failed to get borrowing history."
+        );
+    }
+
+    return result;
+}
+

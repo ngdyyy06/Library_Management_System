@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import RoleGuard from "@/app/components/RoleGuard";
+import BorrowingPrintSlip from "@/app/components/borrowing/BorrowingPrintSlip";
 import {
     getBorrowingById,
     getBorrowingDetails,
@@ -30,12 +31,6 @@ export default function BorrowingDetailPage() {
 
     /*
      * Store condition for each book being returned.
-     *
-     * Example:
-     * {
-     *   0: "GOOD",
-     *   1: "DAMAGED"
-     * }
      */
     const [returnConditions, setReturnConditions] = useState<
         Record<number, ReturnCondition>
@@ -62,6 +57,13 @@ export default function BorrowingDetailPage() {
 
         loadData();
     }, [id]);
+
+    /*
+     * Print borrowing slip.
+     */
+    const handlePrintSlip = () => {
+        window.print();
+    };
 
     const renderStatusBadge = (status?: string) => {
         const normalized = (status || "").toUpperCase();
@@ -107,9 +109,6 @@ export default function BorrowingDetailPage() {
     /*
      * Calculate how many books from this detail
      * have already been returned.
-     *
-     * Backend stores only aggregate quantities:
-     * goodQuantity + damagedQuantity + lostQuantity
      */
     const getReturnedQuantity = (detail: any) => {
         return (
@@ -137,9 +136,6 @@ export default function BorrowingDetailPage() {
             return;
         }
 
-        /*
-         * By default, return one book at a time.
-         */
         const initialQuantity = 1;
 
         const initialConditions: Record<number, ReturnCondition> = {};
@@ -177,13 +173,6 @@ export default function BorrowingDetailPage() {
 
         setReturnQuantity(safeQuantity);
 
-        /*
-         * Rebuild the condition list according to
-         * the new return quantity.
-         *
-         * Existing selected conditions are preserved
-         * where possible.
-         */
         setReturnConditions((prev) => {
             const next: Record<number, ReturnCondition> = {};
 
@@ -206,8 +195,7 @@ export default function BorrowingDetailPage() {
     };
 
     /*
-     * Count the conditions of the books being returned
-     * in the current operation.
+     * Count the conditions of the books being returned.
      */
     const getConditionCounts = () => {
         if (!selectedDetail) {
@@ -251,9 +239,6 @@ export default function BorrowingDetailPage() {
      * Calculate overdue fine.
      *
      * 5,000 VND / overdue day.
-     *
-     * The fine is applied to the books being returned
-     * in the current operation.
      */
     const calculateOverdueFine = () => {
         if (!borrowing?.dueDate) return 0;
@@ -303,13 +288,6 @@ export default function BorrowingDetailPage() {
     /*
      * Deposit belonging only to the books
      * being returned in this operation.
-     *
-     * Example:
-     *
-     * Book price = 250,000
-     * Return quantity = 2
-     *
-     * Returned deposit = 500,000
      */
     const calculateReturnedDeposit = () => {
         if (!selectedDetail) return 0;
@@ -334,8 +312,7 @@ export default function BorrowingDetailPage() {
         calculateLostFine();
 
     /*
-     * Total fine for the books being returned
-     * in the current operation.
+     * Total fine for the books being returned.
      */
     const totalCurrentFine =
         currentOverdueFine +
@@ -345,8 +322,6 @@ export default function BorrowingDetailPage() {
     /*
      * Refund only the deposit of the books
      * being returned now.
-     *
-     * It cannot be negative.
      */
     const refundAmount = Math.max(
         0,
@@ -355,14 +330,6 @@ export default function BorrowingDetailPage() {
 
     /*
      * Confirm return.
-     *
-     * Backend receives aggregate quantities:
-     *
-     * {
-     *   goodQuantity: 1,
-     *   damagedQuantity: 1,
-     *   lostQuantity: 0
-     * }
      */
     const handleConfirmReturn = async () => {
         if (!selectedDetail) return;
@@ -400,9 +367,6 @@ export default function BorrowingDetailPage() {
         try {
             setReturning(true);
 
-            /*
-             * New backend request format.
-             */
             await returnBook(
                 selectedDetail.id,
                 {
@@ -472,13 +436,29 @@ export default function BorrowingDetailPage() {
                             </p>
                         </div>
 
-                        <button
-                            type="button"
-                            onClick={() => router.back()}
-                            className="shrink-0 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-                        >
-                            ← Back to List
-                        </button>
+                        <div className="flex shrink-0 items-center gap-2">
+                            {/* Print Slip */}
+                            <button
+                                type="button"
+                                onClick={handlePrintSlip}
+                                disabled={
+                                    !borrowing ||
+                                    details.length === 0
+                                }
+                                className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                Print Slip
+                            </button>
+
+                            {/* Back */}
+                            <button
+                                type="button"
+                                onClick={() => router.back()}
+                                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                            >
+                                ← Back to List
+                            </button>
+                        </div>
                     </div>
 
                     {/* Overview */}
@@ -645,11 +625,11 @@ export default function BorrowingDetailPage() {
                                             {/* Quantity */}
                                             <td className="px-5 py-3.5 text-xs text-gray-600">
                                                 <div>
-                                                    <span>
-                                                        {detail.quantity ??
-                                                            0}{" "}
-                                                        total
-                                                    </span>
+                                                        <span>
+                                                            {detail.quantity ??
+                                                                0}{" "}
+                                                            total
+                                                        </span>
 
                                                     {returnedQuantity >
                                                         0 && (
@@ -691,26 +671,26 @@ export default function BorrowingDetailPage() {
                                                         : "Returned"
                                                 ) : (
                                                     <span className="text-amber-500">
-                                                        Pending
-                                                    </span>
+                                                            Pending
+                                                        </span>
                                                 )}
                                             </td>
 
                                             {/* Fine */}
                                             <td className="px-5 py-3.5 text-xs font-medium">
-                                                <span
-                                                    className={
-                                                        totalFine >
-                                                        0
-                                                            ? "text-rose-600"
-                                                            : "text-gray-400"
-                                                    }
-                                                >
-                                                    {totalFine.toLocaleString(
-                                                        "vi-VN"
-                                                    )}{" "}
-                                                    VND
-                                                </span>
+                                                    <span
+                                                        className={
+                                                            totalFine >
+                                                            0
+                                                                ? "text-rose-600"
+                                                                : "text-gray-400"
+                                                        }
+                                                    >
+                                                        {totalFine.toLocaleString(
+                                                            "vi-VN"
+                                                        )}{" "}
+                                                        VND
+                                                    </span>
                                             </td>
 
                                             {/* Action */}
@@ -729,8 +709,8 @@ export default function BorrowingDetailPage() {
                                                     </button>
                                                 ) : (
                                                     <span className="text-xs text-gray-400">
-                                                        Returned
-                                                    </span>
+                                                            Returned
+                                                        </span>
                                                 )}
                                             </td>
                                         </tr>
@@ -754,6 +734,12 @@ export default function BorrowingDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Print-only Borrowing Slip */}
+            <BorrowingPrintSlip
+                borrowing={borrowing}
+                details={details}
+            />
 
             {/* Return Modal */}
             {selectedDetail && (
@@ -972,17 +958,17 @@ export default function BorrowingDetailPage() {
                                 {conditionCounts.damaged >
                                     0 && (
                                         <div className="flex items-center justify-between gap-4">
-                                        <span className="text-xs text-gray-500">
-                                            Damage Fine
-                                        </span>
+                                            <span className="text-xs text-gray-500">
+                                                Damage Fine
+                                            </span>
 
                                             <span className="text-sm font-medium text-rose-600">
-                                            -
+                                                -
                                                 {currentDamageFine.toLocaleString(
                                                     "vi-VN"
                                                 )}{" "}
                                                 VND
-                                        </span>
+                                            </span>
                                         </div>
                                     )}
 
@@ -990,17 +976,17 @@ export default function BorrowingDetailPage() {
                                 {conditionCounts.lost >
                                     0 && (
                                         <div className="flex items-center justify-between gap-4">
-                                        <span className="text-xs text-gray-500">
-                                            Lost Fine
-                                        </span>
+                                            <span className="text-xs text-gray-500">
+                                                Lost Fine
+                                            </span>
 
                                             <span className="text-sm font-medium text-rose-600">
-                                            -
+                                                -
                                                 {currentLostFine.toLocaleString(
                                                     "vi-VN"
                                                 )}{" "}
                                                 VND
-                                        </span>
+                                            </span>
                                         </div>
                                     )}
 
@@ -1008,17 +994,17 @@ export default function BorrowingDetailPage() {
                                 {currentOverdueFine >
                                     0 && (
                                         <div className="flex items-center justify-between gap-4">
-                                        <span className="text-xs text-gray-500">
-                                            Overdue Fine
-                                        </span>
+                                            <span className="text-xs text-gray-500">
+                                                Overdue Fine
+                                            </span>
 
                                             <span className="text-sm font-medium text-rose-600">
-                                            -
+                                                -
                                                 {currentOverdueFine.toLocaleString(
                                                     "vi-VN"
                                                 )}{" "}
                                                 VND
-                                        </span>
+                                            </span>
                                         </div>
                                     )}
 
@@ -1026,17 +1012,17 @@ export default function BorrowingDetailPage() {
                                 {totalCurrentFine >
                                     0 && (
                                         <div className="flex items-center justify-between gap-4">
-                                        <span className="text-xs font-medium text-gray-600">
-                                            Total Fine
-                                        </span>
+                                            <span className="text-xs font-medium text-gray-600">
+                                                Total Fine
+                                            </span>
 
                                             <span className="text-sm font-semibold text-rose-600">
-                                            -
+                                                -
                                                 {totalCurrentFine.toLocaleString(
                                                     "vi-VN"
                                                 )}{" "}
                                                 VND
-                                        </span>
+                                            </span>
                                         </div>
                                     )}
 

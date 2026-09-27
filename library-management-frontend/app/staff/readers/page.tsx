@@ -570,104 +570,6 @@ export default function StaffReadersPage() {
                         </div>
                     </div>
 
-                    {/* Card Revenue */}
-                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-
-                        {/* Today's Card Revenue */}
-                        <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-                            <div className="flex items-start justify-between">
-
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-
-                                        <p className="text-sm font-medium uppercase tracking-wide text-slate-500">
-                                            Today's Card Revenue
-                                        </p>
-                                    </div>
-
-                                    <div className="mt-2 flex items-baseline gap-2">
-                                        <p className="text-2xl font-semibold tracking-tight text-slate-900">
-                                            {revenue.todayRevenue.toLocaleString("vi-VN")}
-                                        </p>
-
-                                        <span className="text-sm font-medium text-emerald-600">
-                        VND
-                    </span>
-                                    </div>
-
-                                    <p className="mt-1.5 text-xs text-slate-400">
-                                        Library card fees collected today
-                                    </p>
-                                </div>
-
-                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50">
-                                    <svg
-                                        className="h-5 w-5 text-emerald-600"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={1.5}
-                                            d="M12 8c-1.657 0-3 1.12-3 2.5S10.343 13 12 13s3 1.12 3 2.5S13.657 18 12 18m0-10V6m0 12v-2m0-10a6 6 0 100 12 6 6 0 000-12z"
-                                        />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-
-
-                        {/* Monthly Card Revenue */}
-                        <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-                            <div className="flex items-start justify-between">
-
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="h-2 w-2 rounded-full bg-blue-500" />
-
-                                        <p className="text-sm font-medium uppercase tracking-wide text-slate-500">
-                                            Monthly Card Revenue
-                                        </p>
-                                    </div>
-
-                                    <div className="mt-2 flex items-baseline gap-2">
-                                        <p className="text-2xl font-semibold tracking-tight text-slate-900">
-                                            {revenue.monthlyRevenue.toLocaleString("vi-VN")}
-                                        </p>
-
-                                        <span className="text-sm font-medium text-blue-600">
-                                            VND
-                                        </span>
-                                    </div>
-
-                                    <p className="mt-1.5 text-xs text-slate-400">
-                                        Library card fees collected this month
-                                    </p>
-                                </div>
-
-                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50">
-                                    <svg
-                                        className="h-5 w-5 text-blue-600"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={1.5}
-                                            d="M3 3v18h18M7 16l3-4 3 2 5-7"
-                                        />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
                     {/* Main Container */}
                     <div className="rounded-xl border border-slate-200/80 bg-white shadow-xs">
 
@@ -1057,12 +959,48 @@ export default function StaffReadersPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex justify-end border-t border-slate-100 px-6 py-3.5">
+                                    <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-6 py-3.5">
                                         <button
                                             type="button"
-                                            onClick={
-                                                closeLibraryCardModal
-                                            }
+                                            onClick={() => {
+                                                const readerId =
+                                                    selectedLibraryCard.reader?.id;
+
+                                                if (!readerId) {
+                                                    setError(
+                                                        "Reader information is not available."
+                                                    );
+                                                    return;
+                                                }
+
+                                                closeLibraryCardModal();
+
+                                                router.push(
+                                                    `/readers/${readerId}/borrowings`
+                                                );
+                                            }}
+                                            className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-slate-800"
+                                        >
+                                            <svg
+                                                className="h-4 w-4"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={1.5}
+                                                    d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                />
+                                            </svg>
+
+                                            View Borrowing History
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={closeLibraryCardModal}
                                             className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50"
                                         >
                                             Close

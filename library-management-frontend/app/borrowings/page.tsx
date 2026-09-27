@@ -10,7 +10,6 @@ import {
     getBooks,
     createBorrowing,
     renewBorrowing,
-    getBorrowingRevenue,
 } from "@/app/lib/api";
 
 type Reader = {
@@ -59,10 +58,6 @@ type SelectedBook = {
     quantity: number;
 };
 
-type BorrowingRevenue = {
-    todayRevenue: number;
-    monthlyRevenue: number;
-};
 
 export default function BorrowingsPage() {
     const router = useRouter();
@@ -71,8 +66,6 @@ export default function BorrowingsPage() {
     const [readers, setReaders] = useState<Reader[]>([]);
     const [books, setBooks] = useState<Book[]>([]);
 
-    const [revenue, setRevenue] =
-        useState<BorrowingRevenue | null>(null);
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -132,12 +125,10 @@ export default function BorrowingsPage() {
                 borrowingData,
                 readerData,
                 bookData,
-                revenueData,
             ] = await Promise.all([
                 getBorrowings().catch(() => []),
                 getReaders().catch(() => []),
                 getBooks().catch(() => []),
-                getBorrowingRevenue().catch(() => null),
             ]);
 
             const rawBorrowings =
@@ -202,23 +193,6 @@ export default function BorrowingsPage() {
                     : []
             );
 
-            if (revenueData) {
-                setRevenue({
-                    todayRevenue:
-                        Number(
-                            revenueData.todayRevenue ??
-                            0
-                        ),
-
-                    monthlyRevenue:
-                        Number(
-                            revenueData.monthlyRevenue ??
-                            0
-                        ),
-                });
-            } else {
-                setRevenue(null);
-            }
         } catch (err: any) {
             console.error(
                 "Failed to load circulation records:",
@@ -835,83 +809,6 @@ export default function BorrowingsPage() {
 
                     </div>
 
-                    {/* Revenue */}
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-
-                        {/* Today Revenue */}
-                        <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs">
-                            <div className="flex items-start justify-between">
-
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-
-                                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                                            Today&apos;s Revenue
-                                        </p>
-                                    </div>
-
-                                    <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-                                        {(
-                                            revenue?.todayRevenue ??
-                                            0
-                                        ).toLocaleString(
-                                            "vi-VN"
-                                        )}{" "}
-                                        <span className="text-sm font-medium text-emerald-600">
-                                            VND
-                                        </span>
-                                    </p>
-
-                                    <p className="mt-1 text-[11px] text-slate-400">
-                                        Fines and renewal fees collected today
-                                    </p>
-                                </div>
-
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-sm font-semibold text-emerald-600">
-                                    ₫
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Monthly Revenue */}
-                        <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs">
-                            <div className="flex items-start justify-between">
-
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-
-                                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                                            Monthly Revenue
-                                        </p>
-                                    </div>
-
-                                    <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-                                        {(
-                                            revenue?.monthlyRevenue ??
-                                            0
-                                        ).toLocaleString(
-                                            "vi-VN"
-                                        )}{" "}
-                                        <span className="text-sm font-medium text-blue-600">
-                                            VND
-                                        </span>
-                                    </p>
-
-                                    <p className="mt-1 text-[11px] text-slate-400">
-                                        Fines and renewal fees collected this month
-                                    </p>
-                                </div>
-
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-sm font-semibold text-blue-600">
-                                    ₫
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
                     {/* Main Container */}
                     <div className="rounded-xl border border-slate-200/80 bg-white shadow-xs">
 
@@ -1219,25 +1116,25 @@ export default function BorrowingsPage() {
                                                     <td className="px-5 py-3.5">
                                                         <span
                                                             className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                                                isReturned
-                                                                    ? "bg-emerald-50 text-emerald-700"
-                                                                    : isBorrowing
-                                                                        ? "bg-amber-50 text-amber-700"
-                                                                        : isOverdue
-                                                                            ? "bg-rose-50 text-rose-700"
-                                                                            : "bg-slate-100 text-slate-600"
-                                                            }`}
+    isReturned
+        ? "bg-emerald-50 text-emerald-700"
+        : isBorrowing
+            ? "bg-amber-50 text-amber-700"
+            : isOverdue
+                ? "bg-rose-50 text-rose-700"
+                : "bg-slate-100 text-slate-600"
+}`}
                                                         >
                                                             <span
                                                                 className={`h-1.5 w-1.5 rounded-full ${
-                                                                    isReturned
-                                                                        ? "bg-emerald-500"
-                                                                        : isBorrowing
-                                                                            ? "bg-amber-500"
-                                                                            : isOverdue
-                                                                                ? "bg-rose-500"
-                                                                                : "bg-slate-400"
-                                                                }`}
+    isReturned
+        ? "bg-emerald-500"
+        : isBorrowing
+            ? "bg-amber-500"
+            : isOverdue
+                ? "bg-rose-500"
+                : "bg-slate-400"
+}`}
                                                             />
 
                                                             {
@@ -1578,10 +1475,10 @@ export default function BorrowingsPage() {
                                                                     book.id
                                                                 }
                                                                 className={`flex items-center justify-between gap-4 p-3 transition-colors ${
-                                                                    isSelected
-                                                                        ? "bg-slate-50"
-                                                                        : "hover:bg-slate-50/60"
-                                                                }`}
+    isSelected
+        ? "bg-slate-50"
+        : "hover:bg-slate-50/60"
+}`}
                                                             >
 
                                                                 <div className="min-w-0 flex-1">
