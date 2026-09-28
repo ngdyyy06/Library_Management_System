@@ -594,19 +594,6 @@ This project is developed for educational purposes to apply knowledge of:
 
 ---
 
-## 22. Contributors
-
-Add project members here:
-
-| Name     | Role               |
-| -------- | ------------------ |
-| Member 1 | Backend / Database |
-| Member 2 | Frontend           |
-| Member 3 | Backend            |
-| Member 4 | Testing            |
-
----
-
-## 23. License
+## 22. License
 
 This project is developed for educational purposes.
