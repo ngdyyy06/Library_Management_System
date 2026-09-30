@@ -9,6 +9,8 @@ import {
     getBooks,
     getAuthors,
     getCategories,
+    createAuthor,
+    createCategory,
     createImportReceipt,
     updateImportReceipt,
     activateImportReceipt,
@@ -128,6 +130,11 @@ export default function ImportReceiptsPage() {
     // Lỗi riêng của form
     const [formError, setFormError] = useState("");
 
+    const [newAuthorNames, setNewAuthorNames] = useState<Record<number, string>>({});
+    const [newCategoryNames, setNewCategoryNames] = useState<Record<number, string>>({});
+    const [creatingAuthorIndex, setCreatingAuthorIndex] = useState<number | null>(null);
+    const [creatingCategoryIndex, setCreatingCategoryIndex] = useState<number | null>(null);
+
     useEffect(() => {
         loadData();
     }, []);
@@ -168,6 +175,10 @@ export default function ImportReceiptsPage() {
         setDetails([createEmptyDetail()]);
         setEditingId(null);
         setFormError("");
+        setNewAuthorNames({});
+        setNewCategoryNames({});
+        setCreatingAuthorIndex(null);
+        setCreatingCategoryIndex(null);
     }
 
     function openCreateForm() {
@@ -341,6 +352,134 @@ export default function ImportReceiptsPage() {
                 };
             })
         );
+    }
+
+    async function handleCreateAuthor(index: number) {
+        const name = (newAuthorNames[index] || "").trim();
+
+        if (!name) {
+            setFormError("Please enter an author name.");
+            return;
+        }
+
+        try {
+            setFormError("");
+            setCreatingAuthorIndex(index);
+
+            const createdAuthor = await createAuthor({ name });
+
+            if (!createdAuthor?.id) {
+                throw new Error("Failed to create author: invalid response from server.");
+            }
+
+            const author: Author = {
+                id: Number(createdAuthor.id),
+                name: createdAuthor.name || name,
+                status: createdAuthor.status || "ACTIVE",
+            };
+
+            setAuthors((currentAuthors) => {
+                if (currentAuthors.some((item) => item.id === author.id)) {
+                    return currentAuthors;
+                }
+
+                return [...currentAuthors, author];
+            });
+
+            setDetails((currentDetails) =>
+                currentDetails.map((detail, currentIndex) => {
+                    if (currentIndex !== index) {
+                        return detail;
+                    }
+
+                    const authorId = String(author.id);
+
+                    return {
+                        ...detail,
+                        newBook: {
+                            ...detail.newBook,
+                            authorIds: detail.newBook.authorIds.includes(authorId)
+                                ? detail.newBook.authorIds
+                                : [...detail.newBook.authorIds, authorId],
+                        },
+                    };
+                })
+            );
+
+            setNewAuthorNames((currentNames) => {
+                const nextNames = { ...currentNames };
+                delete nextNames[index];
+                return nextNames;
+            });
+        } catch (error: any) {
+            setFormError(error.message || "Failed to create author.");
+        } finally {
+            setCreatingAuthorIndex(null);
+        }
+    }
+
+    async function handleCreateCategory(index: number) {
+        const name = (newCategoryNames[index] || "").trim();
+
+        if (!name) {
+            setFormError("Please enter a category name.");
+            return;
+        }
+
+        try {
+            setFormError("");
+            setCreatingCategoryIndex(index);
+
+            const createdCategory = await createCategory(name);
+
+            if (!createdCategory?.id) {
+                throw new Error("Failed to create category: invalid response from server.");
+            }
+
+            const category: Category = {
+                id: Number(createdCategory.id),
+                name: createdCategory.name || name,
+                status: createdCategory.status || "ACTIVE",
+            };
+
+            setCategories((currentCategories) => {
+                if (currentCategories.some((item) => item.id === category.id)) {
+                    return currentCategories;
+                }
+
+                return [...currentCategories, category];
+            });
+
+            setDetails((currentDetails) =>
+                currentDetails.map((detail, currentIndex) => {
+                    if (currentIndex !== index) {
+                        return detail;
+                    }
+
+                    const categoryId = String(category.id);
+
+                    return {
+                        ...detail,
+                        newBook: {
+                            ...detail.newBook,
+                            categoryIds: detail.newBook.categoryIds.includes(categoryId)
+                                ? detail.newBook.categoryIds
+                                : [...detail.newBook.categoryIds, categoryId],
+                        },
+                    };
+                })
+            );
+
+            setNewCategoryNames((currentNames) => {
+                const nextNames = { ...currentNames };
+                delete nextNames[index];
+                return nextNames;
+            });
+        } catch (error: any) {
+            setFormError(error.message || "Failed to create category.");
+        } finally {
+            setCreatingCategoryIndex(null);
+        }
     }
 
     function calculateTotal() {
@@ -1766,6 +1905,30 @@ export default function ImportReceiptsPage() {
                                                                                 </div>
                                                                             </div>
 
+                                                                            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={newAuthorNames[index] || ""}
+                                                                                    onChange={(event) => {
+                                                                                        setFormError("");
+                                                                                        setNewAuthorNames((currentNames) => ({
+                                                                                            ...currentNames,
+                                                                                            [index]: event.target.value,
+                                                                                        }));
+                                                                                    }}
+                                                                                    placeholder="Enter new author name..."
+                                                                                    className="h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                                                                                />
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => handleCreateAuthor(index)}
+                                                                                    disabled={creatingAuthorIndex === index}
+                                                                                    className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#183b63] disabled:cursor-not-allowed disabled:opacity-50"
+                                                                                >
+                                                                                    {creatingAuthorIndex === index ? "Adding..." : "Add Author"}
+                                                                                </button>
+                                                                            </div>
+
                                                                             {/* Categories */}
                                                                             <div>
                                                                                 <label className="mb-2 block text-xs font-medium text-slate-700">
@@ -1844,6 +2007,30 @@ export default function ImportReceiptsPage() {
                                                                                     )}
 
                                                                                 </div>
+                                                                            </div>
+
+                                                                            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={newCategoryNames[index] || ""}
+                                                                                    onChange={(event) => {
+                                                                                        setFormError("");
+                                                                                        setNewCategoryNames((currentNames) => ({
+                                                                                            ...currentNames,
+                                                                                            [index]: event.target.value,
+                                                                                        }));
+                                                                                    }}
+                                                                                    placeholder="Enter new category name..."
+                                                                                    className="h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
+                                                                                />
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => handleCreateCategory(index)}
+                                                                                    disabled={creatingCategoryIndex === index}
+                                                                                    className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#183b63] disabled:cursor-not-allowed disabled:opacity-50"
+                                                                                >
+                                                                                    {creatingCategoryIndex === index ? "Adding..." : "Add Category"}
+                                                                                </button>
                                                                             </div>
 
                                                                             {/* Primary Category */}

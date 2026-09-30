@@ -783,322 +783,334 @@ export default function BooksPage() {
                             </p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[1450px] text-left text-xs">
+                        <div className="w-full overflow-x-auto">
+                            <table className="w-full min-w-[1050px] table-fixed text-left text-xs">
 
-                                <thead className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                                {/* ===================================================== */}
+                                {/* COLUMN WIDTHS                                         */}
+                                {/* ===================================================== */}
+
+                                <colgroup>
+                                    <col className="w-[55px]" />
+                                    <col className="w-[24%]" />
+                                    <col className="w-[14%]" />
+                                    <col className="w-[14%]" />
+                                    <col className="w-[12%]" />
+                                    <col className="w-[7%]" />
+                                    <col className="w-[8%]" />
+                                    <col className="w-[10%]" />
+                                    <col className="w-[230px]" />
+                                </colgroup>
+
+                                {/* ===================================================== */}
+                                {/* HEADER                                                */}
+                                {/* ===================================================== */}
+
+                                <thead className="border-b border-slate-200 bg-slate-50/70 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                                 <tr>
-                                    <th className="py-3.5 pl-6 pr-3">
+                                    <th className="py-3 pl-4 pr-2">
                                         ID
                                     </th>
 
-                                    <th className="px-4 py-3.5">
+                                    <th className="px-2.5 py-3">
                                         Title
                                     </th>
 
-                                    <th className="px-4 py-3.5">
-                                        ISBN
-                                    </th>
-
-                                    <th className="px-4 py-3.5">
+                                    <th className="px-2.5 py-3">
                                         Publisher
                                     </th>
 
-                                    <th className="px-4 py-3.5">
+                                    <th className="px-2.5 py-3">
                                         Primary Category
                                     </th>
 
-                                    <th className="px-4 py-3.5">
+                                    <th className="px-2.5 py-3">
                                         Shelf
                                     </th>
 
-                                    <th className="px-4 py-3.5">
-                                        Year
-                                    </th>
-
-                                    <th className="px-4 py-3.5 text-center">
+                                    <th className="px-2 py-3 text-center">
                                         Total
                                     </th>
 
-                                    <th className="px-4 py-3.5 text-center">
+                                    <th className="px-2 py-3 text-center">
                                         Available
                                     </th>
 
-                                    <th className="px-4 py-3.5 text-center">
+                                    <th className="px-2 py-3 text-center">
                                         Status
                                     </th>
 
-                                    <th className="py-3.5 pl-4 pr-6 text-right">
+                                    <th className="py-3 pl-2 pr-4 text-right">
                                         Actions
                                     </th>
                                 </tr>
                                 </thead>
 
+                                {/* ===================================================== */}
+                                {/* BODY                                                  */}
+                                {/* ===================================================== */}
+
                                 <tbody className="divide-y divide-slate-100">
-                                {filteredBooks.map(
-                                    (book) => {
-                                        const isActive =
-                                            book.status ===
-                                            "ACTIVE" ||
-                                            book.active === true;
+                                {filteredBooks.map((book) => {
+                                    const isActive =
+                                        book.status === "ACTIVE" ||
+                                        book.active === true;
 
-                                        const hasStock =
-                                            (book.availableQuantity ||
-                                                0) > 0;
+                                    const hasStock =
+                                        (book.availableQuantity || 0) > 0;
 
-                                        return (
-                                            <tr
-                                                key={book.id}
-                                                className="transition-colors hover:bg-slate-50/60"
-                                            >
-                                                {/* ID */}
+                                    return (
+                                        <tr
+                                            key={book.id}
+                                            className="transition-colors hover:bg-slate-50/60"
+                                        >
+                                            {/* ================================================= */}
+                                            {/* ID                                                */}
+                                            {/* ================================================= */}
 
-                                                <td className="py-4 pl-6 pr-3 align-top">
-                                                    <span className="font-mono text-xs font-medium text-slate-400">
-                                                        #{book.id}
-                                                    </span>
-                                                </td>
+                                            <td className="py-3.5 pl-4 pr-2 align-top">
+                                <span className="font-mono text-[11px] font-medium text-slate-400">
+                                    #{book.id}
+                                </span>
+                                            </td>
 
-                                                {/* Title */}
+                                            {/* ================================================= */}
+                                            {/* TITLE                                              */}
+                                            {/* ================================================= */}
 
-                                                <td className="max-w-sm px-4 py-4 align-top">
-                                                    <div
+                                            <td className="px-2.5 py-3.5 align-top">
+                                                <div
+                                                    onClick={() =>
+                                                        router.push(
+                                                            `/books/${book.id}`
+                                                        )
+                                                    }
+                                                    className="group flex min-w-0 cursor-pointer items-start gap-2"
+                                                >
+                                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 transition group-hover:border-slate-300 group-hover:bg-white group-hover:text-slate-900">
+                                                        <svg
+                                                            className="h-3.5 w-3.5"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            stroke="currentColor"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth="1.6"
+                                                                d="M6 4.5A2.5 2.5 0 0 1 8.5 2H20v17H8.5A2.5 2.5 0 0 0 6 21.5m0-17A2.5 2.5 0 0 0 3.5 7v12A2.5 2.5 0 0 0 6 21.5"
+                                                            />
+                                                        </svg>
+                                                    </div>
+
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="truncate text-sm font-semibold text-slate-900 transition group-hover:text-slate-600">
+                                                            {book.title}
+                                                        </div>
+
+                                                        {book.description ? (
+                                                            <p className="mt-0.5 truncate text-[10px] leading-4 text-slate-400">
+                                                                {book.description}
+                                                            </p>
+                                                        ) : (
+                                                            <span className="mt-0.5 block text-[10px] text-slate-400">
+                                                Click to view details
+                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            {/* ================================================= */}
+                                            {/* PUBLISHER                                          */}
+                                            {/* ================================================= */}
+
+                                            <td className="px-2.5 py-3.5 align-top">
+                                                <div className="line-clamp-2 text-[11px] leading-4 text-slate-600">
+                                                    {book.publisher?.name || (
+                                                        <span className="italic text-slate-400">
+                                            —
+                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+
+                                            {/* ================================================= */}
+                                            {/* PRIMARY CATEGORY                                   */}
+                                            {/* ================================================= */}
+
+                                            <td className="px-2.5 py-3.5 align-top">
+                                                {book.primaryCategory ? (
+                                                    <div className="min-w-0">
+                                        <span className="inline-flex max-w-full truncate rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-700">
+                                            {
+                                                book.primaryCategory
+                                                    .name
+                                            }
+                                        </span>
+
+                                                        {book.categories &&
+                                                        book.categories.length >
+                                                        1 ? (
+                                                            <p className="mt-0.5 truncate text-[9px] text-slate-400">
+                                                                +
+                                                                {book.categories
+                                                                        .length -
+                                                                    1}{" "}
+                                                                other categor
+                                                                {book.categories
+                                                                    .length -
+                                                                1 ===
+                                                                1
+                                                                    ? "y"
+                                                                    : "ies"}
+                                                            </p>
+                                                        ) : null}
+                                                    </div>
+                                                ) : (
+                                                    <span className="italic text-[11px] text-slate-400">
+                                        Not assigned
+                                    </span>
+                                                )}
+                                            </td>
+
+                                            {/* ================================================= */}
+                                            {/* SHELF                                              */}
+                                            {/* ================================================= */}
+
+                                            <td className="px-2.5 py-3.5 align-top">
+                                                {book.shelf ? (
+                                                    <div className="min-w-0">
+                                        <span className="font-mono text-[10px] font-semibold text-slate-700">
+                                            {
+                                                book.shelf
+                                                    .shelfCode
+                                            }
+                                        </span>
+
+                                                        <p className="mt-0.5 truncate text-[10px] text-slate-500">
+                                                            {
+                                                                book.shelf.name
+                                                            }
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <span className="italic text-[10px] text-slate-400">
+                                        Not assigned
+                                    </span>
+                                                )}
+                                            </td>
+
+                                            {/* ================================================= */}
+                                            {/* TOTAL                                              */}
+                                            {/* ================================================= */}
+
+                                            <td className="px-2 py-3.5 text-center align-top">
+                                <span className="font-semibold text-slate-800">
+                                    {book.totalQuantity || 0}
+                                </span>
+                                            </td>
+
+                                            {/* ================================================= */}
+                                            {/* AVAILABLE                                          */}
+                                            {/* ================================================= */}
+
+                                            <td className="px-2 py-3.5 text-center align-top">
+                                <span
+                                    className={`inline-flex min-w-7 justify-center rounded-md px-2 py-1 text-[11px] font-semibold ${
+                                        !isActive
+                                            ? "bg-slate-100 text-slate-400"
+                                            : hasStock
+                                                ? "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/15"
+                                                : "bg-rose-50 text-rose-600 ring-1 ring-inset ring-rose-600/15"
+                                    }`}
+                                >
+                                    {isActive
+                                        ? book.availableQuantity ??
+                                        0
+                                        : 0}
+                                </span>
+                                            </td>
+
+                                            {/* ================================================= */}
+                                            {/* STATUS                                             */}
+                                            {/* ================================================= */}
+
+                                            <td className="px-2 py-3.5 text-center align-top">
+                                <span
+                                    className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[10px] font-semibold ${
+                                        isActive
+                                            ? "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/15"
+                                            : "bg-slate-100 text-slate-500 ring-1 ring-inset ring-slate-500/15"
+                                    }`}
+                                >
+                                    <span
+                                        className={`h-1.5 w-1.5 rounded-full ${
+                                            isActive
+                                                ? "bg-emerald-500"
+                                                : "bg-slate-400"
+                                        }`}
+                                    />
+
+                                    {isActive
+                                        ? "ACTIVE"
+                                        : "INACTIVE"}
+                                </span>
+                                            </td>
+
+                                            {/* ================================================= */}
+                                            {/* ACTIONS                                            */}
+                                            {/* ================================================= */}
+
+                                            <td className="py-3.5 pl-2 pr-4 align-top">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button
                                                         onClick={() =>
                                                             router.push(
                                                                 `/books/${book.id}`
                                                             )
                                                         }
-                                                        className="group flex cursor-pointer items-start gap-3"
+                                                        className="whitespace-nowrap rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[10px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
                                                     >
-                                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition group-hover:border-slate-300 group-hover:bg-white group-hover:text-slate-900">
-                                                            <svg
-                                                                className="h-4 w-4"
-                                                                fill="none"
-                                                                viewBox="0 0 24 24"
-                                                                stroke="currentColor"
-                                                            >
-                                                                <path
-                                                                    strokeLinecap="round"
-                                                                    strokeLinejoin="round"
-                                                                    strokeWidth="1.6"
-                                                                    d="M6 4.5A2.5 2.5 0 0 1 8.5 2H20v17H8.5A2.5 2.5 0 0 0 6 21.5m0-17A2.5 2.5 0 0 0 3.5 7v12A2.5 2.5 0 0 0 6 21.5"
-                                                                />
-                                                            </svg>
-                                                        </div>
+                                                        Detail
+                                                    </button>
 
-                                                        <div className="min-w-0">
-                                                            <div className="truncate text-sm font-semibold text-slate-900 transition group-hover:text-slate-600">
-                                                                {book.title}
-                                                            </div>
-
-                                                            {book.description ? (
-                                                                <p className="mt-1 line-clamp-1 text-[11px] leading-4 text-slate-400">
-                                                                    {book.description}
-                                                                </p>
-                                                            ) : (
-                                                                <span className="mt-1 block text-[11px] text-slate-400">
-                                                                    Click to view details
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </td>
-
-                                                {/* ISBN */}
-
-                                                <td className="px-4 py-4 align-top">
-                                                    <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-[11px] text-slate-600">
-                                                        {book.isbn || "—"}
-                                                    </span>
-                                                </td>
-
-                                                {/* Publisher */}
-
-                                                <td className="px-4 py-4 align-top text-slate-600">
-                                                    {book.publisher?.name || (
-                                                        <span className="italic text-slate-400">
-                                                            —
-                                                        </span>
-                                                    )}
-                                                </td>
-
-                                                {/* Primary Category */}
-
-                                                <td className="px-4 py-4 align-top">
-                                                    {book.primaryCategory ? (
-                                                        <div>
-                                                            <span className="inline-flex rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
-                                                                {
-                                                                    book
-                                                                        .primaryCategory
-                                                                        .name
-                                                                }
-                                                            </span>
-
-                                                            {book.categories &&
-                                                            book.categories.length >
-                                                            1 ? (
-                                                                <p className="mt-1 text-[10px] text-slate-400">
-                                                                    +
-                                                                    {book
-                                                                            .categories
-                                                                            .length -
-                                                                        1}{" "}
-                                                                    other categor
-                                                                    {book
-                                                                        .categories
-                                                                        .length -
-                                                                    1 ===
-                                                                    1
-                                                                        ? "y"
-                                                                        : "ies"}
-                                                                </p>
-                                                            ) : null}
-                                                        </div>
-                                                    ) : (
-                                                        <span className="italic text-slate-400">
-                                                            Not assigned
-                                                        </span>
-                                                    )}
-                                                </td>
-
-                                                {/* Shelf */}
-
-                                                <td className="px-4 py-4 align-top">
-                                                    {book.shelf ? (
-                                                        <div>
-                                                            <span className="font-mono text-[11px] font-semibold text-slate-700">
-                                                                {
-                                                                    book
-                                                                        .shelf
-                                                                        .shelfCode
-                                                                }
-                                                            </span>
-
-                                                            <p className="mt-1 text-[11px] text-slate-500">
-                                                                {
-                                                                    book
-                                                                        .shelf
-                                                                        .name
-                                                                }
-                                                            </p>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="italic text-slate-400">
-                                                            Not assigned
-                                                        </span>
-                                                    )}
-                                                </td>
-
-                                                {/* Year */}
-
-                                                <td className="px-4 py-4 align-top font-medium text-slate-600">
-                                                    {book.publishYear || "—"}
-                                                </td>
-
-                                                {/* Total */}
-
-                                                <td className="px-4 py-4 text-center align-top">
-                                                    <span className="font-semibold text-slate-800">
-                                                        {book.totalQuantity || 0}
-                                                    </span>
-                                                </td>
-
-                                                {/* Available */}
-
-                                                <td className="px-4 py-4 text-center align-top">
-                                                    <span
-                                                        className={`inline-flex min-w-8 justify-center rounded-md px-2.5 py-1 text-xs font-semibold ${
-                                                            !isActive
-                                                                ? "bg-slate-100 text-slate-400"
-                                                                : hasStock
-                                                                    ? "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/15"
-                                                                    : "bg-rose-50 text-rose-600 ring-1 ring-inset ring-rose-600/15"
-                                                        }`}
+                                                    <button
+                                                        onClick={() =>
+                                                            handleEditClick(
+                                                                book
+                                                            )
+                                                        }
+                                                        className="whitespace-nowrap rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[10px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
                                                     >
-                                                        {isActive
-                                                            ? book.availableQuantity ??
-                                                            0
-                                                            : 0}
-                                                    </span>
-                                                </td>
+                                                        Edit
+                                                    </button>
 
-                                                {/* Status */}
-
-                                                <td className="px-4 py-4 text-center align-top">
-                                                    <span
-                                                        className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                                                    <button
+                                                        onClick={() =>
                                                             isActive
-                                                                ? "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/15"
-                                                                : "bg-slate-100 text-slate-500 ring-1 ring-inset ring-slate-500/15"
-                                                        }`}
-                                                    >
-                                                        <span
-                                                            className={`h-1.5 w-1.5 rounded-full ${
-                                                                isActive
-                                                                    ? "bg-emerald-500"
-                                                                    : "bg-slate-400"
-                                                            }`}
-                                                        />
-
-                                                        {isActive
-                                                            ? "ACTIVE"
-                                                            : "INACTIVE"}
-                                                    </span>
-                                                </td>
-
-                                                {/* Actions */}
-
-                                                <td className="py-4 pl-4 pr-6 align-top">
-                                                    <div className="flex items-center justify-end gap-1.5">
-                                                        <button
-                                                            onClick={() =>
-                                                                router.push(
-                                                                    `/books/${book.id}`
-                                                                )
-                                                            }
-                                                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                                                        >
-                                                            Detail
-                                                        </button>
-
-                                                        <button
-                                                            onClick={() =>
-                                                                handleEditClick(
+                                                                ? handleDeactivate(
                                                                     book
                                                                 )
-                                                            }
-                                                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                                                        >
-                                                            Edit
-                                                        </button>
-
-                                                        <button
-                                                            onClick={() =>
-                                                                isActive
-                                                                    ? handleDeactivate(
-                                                                        book
-                                                                    )
-                                                                    : handleActivate(
-                                                                        book
-                                                                    )
-                                                            }
-                                                            className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition focus:outline-none ${
-                                                                isActive
-                                                                    ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 focus:ring-2 focus:ring-rose-500/15"
-                                                                    : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 focus:ring-2 focus:ring-emerald-500/15"
-                                                            }`}
-                                                        >
-                                                            {isActive
-                                                                ? "Deactivate"
-                                                                : "Activate"}
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    }
-                                )}
+                                                                : handleActivate(
+                                                                    book
+                                                                )
+                                                        }
+                                                        className={`whitespace-nowrap rounded-md border px-2 py-1.5 text-[10px] font-semibold transition focus:outline-none ${
+                                                            isActive
+                                                                ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 focus:ring-2 focus:ring-rose-500/15"
+                                                                : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 focus:ring-2 focus:ring-emerald-500/15"
+                                                        }`}
+                                                    >
+                                                        {isActive
+                                                            ? "Deactivate"
+                                                            : "Activate"}
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                                 </tbody>
                             </table>
                         </div>

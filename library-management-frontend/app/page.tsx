@@ -157,7 +157,7 @@ export default function Home() {
               {/* Returns Today */}
               <button
                   type="button"
-                  onClick={() => router.push("/borrowings")}
+                  onClick={() => router.push("/staff/return-history")}
                   className="w-full rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
               >
                 <div className="flex items-start justify-between">
