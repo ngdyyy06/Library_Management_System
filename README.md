@@ -1,761 +1,359 @@
 # Library Management System
 
-A backend REST API application for managing library operations, including books, book copies, readers, borrowing, returning, renewing, reservations, fines, and user access control.
+A web-based Library Management System designed to support library staff and administrators in managing books, book copies, readers, borrowing, returning, library cards, payments, and user accounts.
 
-## 1. Project Overview
+## 1. Introduction
 
-**Library Management System** is a Java-based backend application designed to manage the core operations of a library.
+The Library Management System is developed to digitalize and simplify common library management operations.
 
-The system is developed using **Spring Boot** and provides RESTful APIs for managing library resources and handling business processes.
+The system provides separate access permissions for **Admin** and **Staff** users. Administrators can manage the system and access management information, while Staff users focus on day-to-day library operations.
 
-The project focuses on implementing real-world library business logic rather than only basic CRUD operations.
-
-### Main objectives
-
-* Manage books and physical book copies
-* Manage library readers
-* Manage borrowing and returning processes
-* Support book renewal
-* Calculate overdue fines
-* Manage book reservations
-* Authenticate users
-* Authorize users based on roles
-* Validate input data
-* Handle exceptions consistently
-* Provide RESTful APIs for client applications
+The system consists of a **Spring Boot backend**, **Next.js frontend**, and **MySQL database**.
 
 ---
 
-# 2. Features
+## 2. Features
 
-The system consists of the following main functional modules:
+### Authentication & Authorization
 
-### 1. Book Management
+* User login
+* User registration
+* JWT-based authentication
+* Role-based authorization
+* Password encryption using BCrypt
+* Separate permissions for Admin and Staff
 
-Manage information about books available in the library.
+### User Management
 
-* Create a book
-* View all books
-* View book details
-* Update book information
-* Delete a book
-* Search and lookup books
-* Manage ISBN
-* Track book quantity
+* Create users
+* View users
+* Update users
+* Manage user roles
+* Activate/deactivate user accounts
+* Manage account status
 
-### 2. Book Copy Management
+### Reader Management
 
-A `Book` represents a book title, while a `BookCopy` represents an individual physical copy.
-
-Example:
-
-```text
-Clean Code
-│
-├── COPY-001 → AVAILABLE
-├── COPY-002 → BORROWED
-├── COPY-003 → LOST
-└── COPY-004 → AVAILABLE
-```
-
-Functions:
-
-* Manage individual book copies
-* View copies belonging to a book
-* Track copy status
-* Update copy status
-* Track available quantity
-* Handle lost copies
-
-### 3. Reader Management
-
-Manage readers who use the library.
-
-Functions:
-
-* Create reader
-* View all readers
-* View reader details
+* Create readers
+* View reader information
 * Update reader information
+* Search and manage readers
 * Manage reader status
-* Check reader borrowing information
+* Validate duplicate reader codes
 
-Reader information includes:
+### Book Management
 
-* Reader code
-* Full name
-* Email
-* Phone
-* Address
-* Date of birth
-* Status
+* Manage books
+* Manage book information
+* Manage book copies
+* Track book copy status
+* Manage book inventory
 
-### 4. Borrowing Management
+### Book Shelf Management
 
-Manage the process of borrowing books.
+* Manage library shelves
+* Assign books to shelves
+* Manage shelf categories
+* Check shelf capacity
 
-Functions:
+### Borrowing Management
 
 * Create borrowing records
-* Check book availability
-* Check reader eligibility
-* Select available book copies
-* Set due date
-* Update book copy status
-* Enforce borrowing limits
+* Manage borrowed books
+* Track borrowing status
+* Renew borrowing periods
+* Return books
+* Handle partially returned borrowings
+* Calculate overdue fines
 
-A reader can borrow a maximum of:
+### Library Card Management
 
-```text
-5 book copies
-```
+* Create and manage library cards
+* Manage library card status
+* Track card information
+* Manage card-related payments
 
-### 5. Returning Management
+### Payment Management
 
-Manage the process of returning books.
+* Record library card payments
+* Manage payment information
+* Track payment history
+* Calculate applicable fees
 
-Functions:
+### Revenue Management
 
-* Return borrowed books
-* Record return date
-* Update borrowing status
-* Update book copy status
-* Update available quantity
-* Detect overdue books
-* Calculate fines
+* View library revenue information
+* View revenue generated from applicable payments
 
-Borrowing statuses include:
-
-```text
-BORROWED
-PARTIALLY_RETURNED
-RETURNED
-```
-
-### 6. Fine Management
-
-The system calculates fines when books are returned after the due date.
-
-Fine calculation:
-
-```text
-Fine = Overdue Days × 5,000 VND
-```
-
-Example:
-
-```text
-Overdue Days = 3
-
-Fine = 3 × 5,000
-     = 15,000 VND
-```
-
-### 7. Book Renewal
-
-Readers can renew active borrowing records.
-
-Example:
-
-```text
-Original Due Date: 20/09/2026
-
-Renewal:
-+4 days
-
-New Due Date: 24/09/2026
-```
-
-The system supports repeated renewals according to the defined business rules.
-
-Endpoint example:
-
-```http
-PATCH /api/borrowings/{id}/renew
-```
-
-### 8. Book Reservation
-
-Readers can reserve books that are currently unavailable.
-
-Example:
-
-```text
-Clean Code
-│
-├── COPY-001 → BORROWED
-├── COPY-002 → BORROWED
-└── COPY-003 → BORROWED
-
-Reservation Queue:
-1. Reader A
-2. Reader B
-3. Reader C
-```
-
-Functions:
-
-* Create reservation
-* View reservations
-* Cancel reservation
-* Manage reservation status
-* Process reservations when books become available
-
-### 9. Book Search & Lookup
-
-The system provides book lookup capabilities.
-
-Users can search for books based on available book information such as:
-
-* Title
-* ISBN
-* Author
-* Category
-* Availability
-
-The system can also display the current status and available quantity of book copies.
-
-### 10. Authentication & Authorization
-
-The system provides authentication and role-based authorization.
-
-User information includes:
-
-* Username
-* Password
-* Full name
-* Email
-* Role
-* Status
-
-The system uses role-based access control to restrict administrative operations.
-
-Example:
-
-```text
-ADMIN
-│
-├── Manage Users
-├── Manage Books
-├── Manage Book Copies
-├── Manage Readers
-└── Manage Library Operations
-```
+Revenue information is available to authorized Admin users and is not displayed to Staff users.
 
 ---
 
-# 3. Business Rules
+## 3. User Roles
 
-The system implements several important business rules.
+The system currently provides two main roles:
 
-## Maximum Borrowing Limit
+| Role    | Description                                                                                   |
+| ------- | --------------------------------------------------------------------------------------------- |
+| `ADMIN` | Manages the system and has access to administrative functions, including revenue information. |
+| `STAFF` | Handles daily library operations but does not have access to revenue information.             |
 
-A reader can borrow a maximum of:
-
-```text
-5 book copies
-```
-
-If the reader has already reached the limit, another borrowing request is rejected.
-
-## Book Copy Availability
-
-A book can only be borrowed when an available physical copy exists.
-
-```text
-Book
- ↓
-BookCopy
- ↓
-AVAILABLE
- ↓
-Borrow
-```
-
-After borrowing:
-
-```text
-AVAILABLE
-    ↓
-BORROWED
-```
-
-After returning:
-
-```text
-BORROWED
-    ↓
-AVAILABLE
-```
-
-## Lost Book
-
-A lost book copy is not considered available:
-
-```text
-LOST ≠ AVAILABLE
-```
-
-Therefore, it cannot be selected for borrowing.
-
-## Partial Return
-
-A borrowing record may contain multiple book copies.
-
-If only some copies are returned:
-
-```text
-Borrowing
-├── Copy 1 → RETURNED
-├── Copy 2 → RETURNED
-└── Copy 3 → BORROWED
-```
-
-The borrowing status becomes:
-
-```text
-PARTIALLY_RETURNED
-```
-
-When all copies are returned:
-
-```text
-RETURNED
-```
-
-## Fine Calculation
-
-For overdue books:
-
-```text
-Fine = Overdue Days × 5,000 VND
-```
-
-The system calculates the overdue period based on the due date and actual return date.
+Access to APIs and frontend pages is controlled based on the authenticated user's role.
 
 ---
 
-# 4. Technology Stack
+## 4. Business Rules
 
-| Technology      | Purpose                         |
-| --------------- | ------------------------------- |
-| Java 21         | Programming language            |
-| Spring Boot     | Backend framework               |
-| Spring Web      | REST API development            |
-| Spring Data JPA | Data access layer               |
-| Hibernate       | ORM                             |
-| MySQL           | Relational database             |
-| Maven           | Build and dependency management |
-| Postman         | API testing                     |
-| IntelliJ IDEA   | Development environment         |
+The system implements several important library business rules:
 
-### Template Engine
-
-```text
-None
-```
-
-The application is implemented as a **REST API Backend** and does not use Thymeleaf, JSP, FreeMarker, or another server-side template engine.
+* A reader can borrow a maximum of **5 book copies** at a time.
+* Only available book copies can be borrowed.
+* When a book copy is returned, its status is changed back to `AVAILABLE`.
+* The available quantity of a book is updated when copies are borrowed or returned.
+* Borrowing records can be renewed.
+* A borrowing can be fully or partially returned.
+* Overdue books generate a fine based on the number of overdue days.
+* The overdue fine is calculated at **5,000 VND per overdue day**.
+* Reader codes must be unique.
+* User roles determine access to protected resources.
+* Staff users cannot access revenue information.
 
 ---
 
-# 5. Architecture
+## 5. Technologies
 
-The application follows a layered architecture:
-
-```text
-Client / Postman
-       │
-       ▼
-   Controller
-       │
-       ▼
-     Service
-       │
-       ▼
-   Repository
-       │
-       ▼
-   JPA / Hibernate
-       │
-       ▼
-     MySQL
-```
-
-## Controller Layer
-
-Responsible for:
-
-* Receiving HTTP requests
-* Validating request parameters
-* Calling service methods
-* Returning HTTP responses
-
-Example:
-
-```text
-BookController
-ReaderController
-BorrowingController
-UserController
-```
-
-## Service Layer
-
-Contains the main business logic.
-
-Examples:
-
-```text
-BookService
-ReaderService
-BorrowingService
-UserService
-```
-
-This layer handles rules such as:
-
-* Maximum borrowing limit
-* Book availability
-* Return processing
-* Fine calculation
-* Renewal validation
-
-## Repository Layer
-
-Responsible for database access using Spring Data JPA.
-
-Examples:
-
-```text
-BookRepository
-ReaderRepository
-BorrowingRepository
-UserRepository
-```
-
-## Entity Layer
-
-Contains JPA entities representing database tables.
-
-Examples:
-
-```text
-User
-Book
-BookCopy
-Reader
-Borrowing
-BorrowingDetail
-Fine
-Reservation
-```
-
-## DTO Layer
-
-Data Transfer Objects are used to define request and response data between the client and backend.
-
-## Exception Layer
-
-The project uses centralized exception handling with:
-
-```java
-@RestControllerAdvice
-```
-
-This allows the application to return consistent error responses.
-
----
-
-# 6. Project Structure
-
-```text
-library-management/
-│
-├── src/
-│   ├── main/
-│   │   ├── java/
-│   │   │   └── com/
-│   │   │       └── library/
-│   │   │           └── management/
-│   │   │               ├── config/
-│   │   │               ├── controller/
-│   │   │               ├── service/
-│   │   │               ├── repository/
-│   │   │               ├── entity/
-│   │   │               ├── dto/
-│   │   │               ├── exception/
-│   │   │               └── LibraryManagementApplication.java
-│   │   │
-│   │   └── resources/
-│   │       └── application.properties
-│   │
-│   └── test/
-│
-├── pom.xml
-└── README.md
-```
-
----
-
-# 7. Database
-
-The application uses **MySQL** as the primary relational database.
-
-The database is designed around the main library entities and their relationships.
-
-Simplified relationship:
-
-```text
-User
- │
- └── Role
-
-Book
- │
- └── BookCopy
-       │
-       └── BorrowingDetail
-              │
-              └── Borrowing
-                    │
-                    └── Reader
-
-Reader
- │
- ├── Borrowing
- └── Reservation
-
-Borrowing
- │
- └── Fine
-```
-
-The database design supports relationships between:
-
-* Users and roles
-* Books and book copies
-* Readers and borrowings
-* Borrowings and book copies
-* Readers and reservations
-* Borrowings and fines
-
----
-
-# 8. REST API
-
-The application exposes RESTful endpoints under:
-
-```text
-/api
-```
-
-## Authentication
-
-```http
-POST /api/auth/login
-```
-
-## Users
-
-```http
-GET    /api/users
-GET    /api/users/{id}
-POST   /api/users
-PUT    /api/users/{id}
-DELETE /api/users/{id}
-```
-
-## Books
-
-```http
-GET    /api/books
-GET    /api/books/{id}
-POST   /api/books
-PUT    /api/books/{id}
-DELETE /api/books/{id}
-```
-
-## Readers
-
-```http
-GET    /api/readers
-GET    /api/readers/{id}
-POST   /api/readers
-PUT    /api/readers/{id}
-```
-
-## Borrowings
-
-```http
-GET    /api/borrowings
-GET    /api/borrowings/{id}
-POST   /api/borrowings
-PATCH  /api/borrowings/{id}/renew
-```
-
-Additional endpoints are implemented for book copies, returning, reservations, and fines according to the corresponding business requirements.
-
----
-
-# 9. Authentication & Security
-
-The system protects API endpoints using authentication and role-based authorization.
-
-Public endpoint:
-
-```text
-/api/auth/login
-```
-
-Administrative operations require an administrator role.
-
-Example:
-
-```text
-ROLE_ADMIN
-```
-
-Passwords are stored using password hashing rather than plain-text storage.
-
----
-
-# 10. Validation & Exception Handling
-
-The project validates input data before processing business operations.
-
-Examples:
-
-* Required fields
-* Duplicate reader codes
-* Invalid book information
-* Invalid borrowing requests
-* Invalid user information
-* Unauthorized access
-
-Global exception handling is implemented using:
-
-```java
-@RestControllerAdvice
-```
-
-Example error response:
-
-```json
-{
-  "status": 400,
-  "message": "Reader code already exists"
-}
-```
-
----
-
-# 11. API Testing
-
-**Postman** is used to test the REST APIs.
-
-Testing includes:
-
-* Authentication
-* Authorization
-* CRUD operations
-* Input validation
-* Book management
-* Reader management
-* Borrowing
-* Returning
-* Renewing
-* Fine calculation
-* Reservation
-* Exception handling
-
-Example request:
-
-```http
-GET http://localhost:8080/api/books
-```
-
----
-
-# 12. Installation
-
-## Requirements
-
-Before running the project, install:
+### Backend
 
 * Java 21
+* Spring Boot
+* Spring Data JPA
+* Spring Security
+* JWT
 * Maven
-* MySQL 8.x
+* BCrypt Password Encoder
+
+### Frontend
+
+* Next.js
+* React
+* TypeScript
+* CSS
+
+### Database
+
+* MySQL
+
+### Development & Testing Tools
+
 * IntelliJ IDEA
+* Visual Studio Code
+* MySQL / XAMPP
 * Postman
+* Git
+* GitHub
 
-## Step 1: Clone the repository
+---
 
-```bash
-git clone <repository-url>
-cd library-management
+## 6. System Architecture
+
+The application follows a client-server architecture.
+
+```text
+┌─────────────────────────────┐
+│          Frontend           │
+│       Next.js / React       │
+└──────────────┬──────────────┘
+               │ HTTP / REST API
+               ▼
+┌─────────────────────────────┐
+│          Backend            │
+│       Spring Boot           │
+│                             │
+│ Controller                  │
+│ Service                     │
+│ Repository                  │
+│ Security / JWT              │
+│ Exception Handling          │
+└──────────────┬──────────────┘
+               │ JPA / Hibernate
+               ▼
+┌─────────────────────────────┐
+│          Database           │
+│           MySQL             │
+└─────────────────────────────┘
 ```
 
-## Step 2: Create the database
+---
 
-Open MySQL and create the database:
+## 7. Project Structure
 
-```sql
-CREATE DATABASE library_management;
+### Backend
+
+The backend is organized following a layered architecture:
+
+```text
+src/
+└── main/
+    ├── java/
+    │   └── com/
+    │       └── library/
+    │           └── management/
+    │               ├── controller/
+    │               ├── dto/
+    │               ├── entity/
+    │               ├── exception/
+    │               ├── repository/
+    │               ├── security/
+    │               ├── service/
+    │               └── ...
+    │
+    └── resources/
+        └── application.properties
 ```
 
-## Step 3: Configure database connection
+### Main packages
 
-Open:
+| Package      | Responsibility                                                        |
+| ------------ | --------------------------------------------------------------------- |
+| `controller` | Handles HTTP requests and exposes REST APIs.                          |
+| `service`    | Contains application and business logic.                              |
+| `repository` | Provides database access using Spring Data JPA.                       |
+| `entity`     | Defines database entities and their relationships.                    |
+| `dto`        | Defines objects used to transfer data between the client and server.  |
+| `security`   | Handles authentication, JWT processing, and authorization.            |
+| `exception`  | Handles application errors and provides standardized error responses. |
+
+---
+
+## 8. Main Entities
+
+The system contains several entities representing the main library operations:
+
+* User
+* Reader
+* Book
+* Book Copy
+* Book Shelf
+* Borrowing
+* Library Card
+* Library Card Payment
+
+These entities are connected through relationships that represent the actual operations of a library.
+
+---
+
+## 9. Database
+
+The project uses **MySQL** as the database management system.
+
+Database name:
+
+```text
+library_management
+```
+
+The database stores information related to:
+
+* Users
+* Readers
+* Books
+* Book copies
+* Book shelves
+* Borrowings
+* Library cards
+* Payments
+
+---
+
+## 10. Backend Configuration
+
+Database connection settings are configured in:
 
 ```text
 src/main/resources/application.properties
 ```
 
-Configure:
+Example:
 
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/library_management
 spring.datasource.username=root
 spring.datasource.password=your_password
-
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
 ```
 
-Replace:
+Replace the database username and password with the credentials configured on the local development environment.
 
-```text
-your_password
-```
+---
 
-with your MySQL password.
+## 11. Requirements
 
-## Step 4: Install dependencies
+Before running the project, install the following:
 
-Run:
+* JDK 21 or later
+* Maven
+* MySQL
+* Node.js
+* npm
+* Git
+
+Recommended development tools:
+
+* IntelliJ IDEA
+* Visual Studio Code
+* Postman
+* XAMPP
+
+---
+
+## 12. Installation
+
+### Step 1: Clone the repository
 
 ```bash
-mvn clean install
+git clone <repository-url>
 ```
 
-## Step 5: Run the application
+### Step 2: Open the backend project
 
-Run:
+Open the backend project using IntelliJ IDEA or another Java IDE.
+
+### Step 3: Create the database
+
+Create a MySQL database:
+
+```sql
+CREATE DATABASE library_management;
+```
+
+### Step 4: Configure the database
+
+Update the database connection information in:
+
+```text
+application.properties
+```
+
+### Step 5: Install frontend dependencies
+
+Open the frontend project directory and run:
+
+```bash
+npm install
+```
+
+---
+
+## 13. Running the Backend
+
+From the backend project directory, run:
 
 ```bash
 mvn spring-boot:run
 ```
 
-Or run:
+Alternatively, run the main Spring Boot application from IntelliJ IDEA.
 
-```text
-LibraryManagementApplication.java
-```
-
-from IntelliJ IDEA.
-
-The application will normally start at:
+The backend API is available at:
 
 ```text
 http://localhost:8080
@@ -763,87 +361,239 @@ http://localhost:8080
 
 ---
 
-# 13. Example Workflow
+## 14. Running the Frontend
 
-A typical borrowing workflow:
+From the frontend project directory:
+
+```bash
+npm install
+```
+
+Then start the development server:
+
+```bash
+npm run dev
+```
+
+The frontend application is available at:
 
 ```text
+http://localhost:3000
+```
+
+---
+
+## 15. API Overview
+
+The backend provides REST APIs for the main system modules.
+
+### Authentication
+
+```text
+POST /api/auth/login
+POST /api/auth/register
+```
+
+### Users
+
+```text
+/api/users/**
+```
+
+User APIs are protected and require appropriate authorization.
+
+### Readers
+
+```text
+GET    /api/readers
+POST   /api/readers
+GET    /api/readers/{id}
+PUT    /api/readers/{id}
+```
+
+### Borrowings
+
+The borrowing module provides APIs for:
+
+* Creating borrowings
+* Viewing borrowing records
+* Renewing borrowings
+* Returning books
+* Managing borrowing status
+
+Example renewal endpoint:
+
+```text
+PATCH /api/borrowings/{id}/renew
+```
+
+---
+
+## 16. Authentication & Security
+
+The application uses **Spring Security** for authentication and authorization.
+
+JWT is used to authenticate API requests after login.
+
+The authentication flow is:
+
+```text
+User
+  │
+  ▼
 Login
   │
   ▼
+Spring Security
+  │
+  ▼
+Validate username/password
+  │
+  ▼
+Generate JWT
+  │
+  ▼
+Client stores JWT
+  │
+  ▼
+JWT sent with subsequent requests
+  │
+  ▼
+JWT Filter validates token
+  │
+  ▼
+Authorize request based on role
+```
+
+Passwords are encrypted using `BCryptPasswordEncoder`.
+
+Protected endpoints require an authenticated user and may require a specific role.
+
+---
+
+## 17. Error Handling
+
+The backend provides centralized exception handling using Spring's `@RestControllerAdvice`.
+
+Validation errors and application exceptions are returned using a standardized error response.
+
+Example structure:
+
+```json
+{
+    "status": 400,
+    "message": "Reader code already exists"
+}
+```
+
+This allows the frontend to display meaningful error messages to users.
+
+---
+
+## 18. Testing
+
+The REST APIs can be tested using **Postman**.
+
+Testing covers major system operations such as:
+
+* Login
+* User management
+* Reader management
+* Book management
+* Book copy management
+* Borrowing
+* Book renewal
+* Returning books
+* Library card management
+* Payment management
+* Authorization
+
+Example reader API test:
+
+```text
+POST /api/readers
+```
+
+The system validates business rules such as duplicate reader codes and returns an appropriate HTTP status and error message when validation fails.
+
+---
+
+## 19. Frontend
+
+The frontend provides a web interface for library administrators and staff.
+
+Main interface areas include:
+
+* Login
+* Dashboard
+* User Management
+* Reader Management
+* Book Management
+* Book Shelf Management
+* Borrowing Management
+* Library Card Management
+* Payment Management
+
+The interface displays different functions according to the authenticated user's role.
+
+For example, revenue information is available to Admin users but is not displayed to Staff users.
+
+---
+
+## 20. Project Workflow
+
+A typical library borrowing workflow is:
+
+```text
 Reader
   │
   ▼
-Search Book
+Select Book
   │
   ▼
-Check Available BookCopy
+Check Book Availability
   │
   ▼
 Create Borrowing
   │
   ▼
-BookCopy → BORROWED
+Book Copy → BORROWED
   │
   ▼
-Reader uses the book
+Reader keeps the book
   │
-  ▼
-Return Book
+  ├── Renew
   │
-  ├── On time → No fine
-  │
-  └── Overdue → Calculate fine
-  │
-  ▼
-BookCopy → AVAILABLE
+  └── Return
+        │
+        ▼
+   Book Copy → AVAILABLE
+        │
+        ▼
+Calculate overdue fine if applicable
 ```
 
 ---
 
-# 14. Project Goals
+## 21. Development Purpose
 
-The project is developed for educational purposes with the following goals:
+This project is developed for educational purposes to apply knowledge of:
 
-* Practice Java backend development
-* Understand Spring Boot architecture
-* Build RESTful APIs
-* Apply Object-Oriented Programming
-* Design relational databases
-* Implement real-world business rules
-* Practice JPA and Hibernate
-* Implement authentication and authorization
-* Improve API testing skills
-* Develop a complete backend application
-
----
-
-# 15. Future Improvements
-
-Possible future improvements include:
-
-* Frontend web application
-* JWT-based authentication
-* Advanced book search and filtering
-* Library dashboard
-* Borrowing statistics
-* Revenue/fine reports
-* Email notifications
-* Reservation expiration
-* Automated scheduled tasks
-* Docker deployment
-* API documentation with Swagger / OpenAPI
+* Java programming
+* Spring Boot
+* REST API development
+* Spring Security
+* JWT authentication
+* Database design
+* MySQL
+* JPA / Hibernate
+* Frontend development
+* Role-based authorization
+* Software testing
+* Git and GitHub
 
 ---
 
-# 16. Author
+## 22. License
 
-**Duy Nguyen**
-
-IT Student
-
----
-
-# 17. License
-
-This project is developed for educational and academic purposes.
+This project is developed for educational purposes.
