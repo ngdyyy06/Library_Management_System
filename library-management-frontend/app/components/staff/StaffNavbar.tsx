@@ -208,7 +208,7 @@ export default function StaffNavbar() {
                 {/* Nav Links */}
                 <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
                     <p className="mb-2 px-3 text-[11px] font-medium tracking-wider text-slate-400 uppercase">
-                        Quản lý
+                        Staff
                     </p>
 
                     {navItems.map((item) => {
@@ -271,8 +271,7 @@ export default function StaffNavbar() {
                             d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                         />
                     </svg>
-
-                    <span>Đăng xuất</span>
+                    <span>Log Out</span>
                 </button>
             </div>
         </aside>

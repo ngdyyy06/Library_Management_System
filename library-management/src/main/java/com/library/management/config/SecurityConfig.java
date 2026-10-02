@@ -62,7 +62,6 @@ public class SecurityConfig {
                         // All remaining APIs require authentication
                         .anyRequest().authenticated()
                 );
-
         return http.build();
     }
 

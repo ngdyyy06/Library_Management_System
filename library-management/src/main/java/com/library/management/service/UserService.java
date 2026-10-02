@@ -45,6 +45,8 @@ public class UserService {
             throw new RuntimeException("Email already exists");
         }
 
+
+
         Role role = roleRepository.findById(request.getRoleId())
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Role not found"));

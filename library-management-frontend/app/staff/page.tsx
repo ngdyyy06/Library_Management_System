@@ -314,11 +314,11 @@ export default function StaffHomePage() {
 
                                     <div>
                                         <span className="block text-xs font-semibold text-slate-900 sm:text-sm">
-                                            Add Book
+                                            Book Management
                                         </span>
 
                                         <span className="block text-[11px] text-slate-400">
-                                            Add a new book to catalog
+                                            Management all the books
                                         </span>
                                     </div>
                                 </div>
