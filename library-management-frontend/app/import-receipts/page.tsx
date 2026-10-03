@@ -1764,38 +1764,6 @@ export default function ImportReceiptsPage() {
                                                                                     />
                                                                                 </div>
 
-                                                                                <div>
-                                                                                    <label className="mb-2 block text-xs font-medium text-slate-700">
-                                                                                        Book Price
-                                                                                        <span className="ml-1 text-red-500">
-                                                                                            *
-                                                                                        </span>
-                                                                                    </label>
-
-                                                                                    <input
-                                                                                        type="number"
-                                                                                        min="0"
-                                                                                        value={
-                                                                                            detail
-                                                                                                .newBook
-                                                                                                .price
-                                                                                        }
-                                                                                        onChange={(
-                                                                                            event
-                                                                                        ) =>
-                                                                                            updateNewBook(
-                                                                                                index,
-                                                                                                "price",
-                                                                                                event
-                                                                                                    .target
-                                                                                                    .value
-                                                                                            )
-                                                                                        }
-                                                                                        placeholder="0"
-                                                                                        className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#183b63] focus:ring-2 focus:ring-[#183b63]/10"
-                                                                                    />
-                                                                                </div>
-
                                                                                 <div className="md:col-span-2">
                                                                                     <label className="mb-2 block text-xs font-medium text-slate-700">
                                                                                         Description

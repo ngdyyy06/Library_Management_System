@@ -1446,6 +1446,9 @@ export async function updateMyStaffProfile(data: {
     phone: string;
     address: string;
     dateOfBirth: string;
+    currentPassword?: string;
+    newPassword?: string;
+    confirmPassword?: string;
 }) {
     const token = localStorage.getItem("token");
 
@@ -1461,16 +1464,27 @@ export async function updateMyStaffProfile(data: {
         }
     );
 
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
+    const text = await response.text();
 
+    let result: any = null;
+
+    if (text) {
+        try {
+            result = JSON.parse(text);
+        } catch {
+            result = null;
+        }
+    }
+
+    if (!response.ok) {
         throw new Error(
-            errorData?.message ||
+            result?.message ||
+            text ||
             "Failed to update staff profile"
         );
     }
 
-    return response.json();
+    return result;
 }
 
 export async function getReturnHistory() {
@@ -1831,4 +1845,3 @@ export async function getBorrowingsByReaderId(readerId: number) {
 
     return result;
 }
-

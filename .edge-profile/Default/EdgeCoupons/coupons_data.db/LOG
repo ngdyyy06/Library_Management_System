@@ -1,6 +1,0 @@
-2026/10/03-22:44:26.349 5090 Reusing MANIFEST D:\Users\ADMIN\Documents\Project\library-management\.edge-profile\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
-2026/10/03-22:44:26.349 5090 Recovering log #19
-2026/10/03-22:44:26.349 5090 Reusing old log D:\Users\ADMIN\Documents\Project\library-management\.edge-profile\Default\EdgeCoupons/coupons_data.db/000019.log 
-2026/10/03-22:44:26.441 7544 Level-0 table #24: started
-2026/10/03-22:44:26.445 7544 Level-0 table #24: 683444 bytes OK
-2026/10/03-22:44:26.448 7544 Delete type=0 #19

@@ -47,6 +47,9 @@ export default function StaffProfilePage() {
         phone: "",
         address: "",
         dateOfBirth: "",
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
     });
 
     useEffect(() => {
@@ -68,6 +71,9 @@ export default function StaffProfilePage() {
                 phone: data.phone || "",
                 address: data.address || "",
                 dateOfBirth: data.dateOfBirth || "",
+                currentPassword: "",
+                newPassword: "",
+                confirmPassword: "",
             });
 
         } catch (error) {
@@ -96,6 +102,15 @@ export default function StaffProfilePage() {
         }));
     }
 
+    function resetPasswordFields() {
+        setForm((prev) => ({
+            ...prev,
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: "",
+        }));
+    }
+
     function handleCancel() {
         if (!staff) return;
 
@@ -105,6 +120,9 @@ export default function StaffProfilePage() {
             phone: staff.phone || "",
             address: staff.address || "",
             dateOfBirth: staff.dateOfBirth || "",
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: "",
         });
 
         setEditing(false);
@@ -118,6 +136,10 @@ export default function StaffProfilePage() {
             setErrorMessage("");
             setSuccessMessage("");
 
+            /*
+             * Nếu Staff không muốn đổi password,
+             * gửi chuỗi rỗng cho 3 field.
+             */
             const updated =
                 await updateMyStaffProfile(form);
 
@@ -134,9 +156,13 @@ export default function StaffProfilePage() {
                     updated.address || "",
                 dateOfBirth:
                     updated.dateOfBirth || "",
+                currentPassword: "",
+                newPassword: "",
+                confirmPassword: "",
             });
 
             setEditing(false);
+
             setSuccessMessage(
                 "Profile updated successfully."
             );
@@ -422,6 +448,96 @@ export default function StaffProfilePage() {
 
                             </div>
                         </div>
+
+                        {/* Change Password */}
+                        {editing && (
+                            <div className="overflow-hidden rounded-xl border border-gray-200">
+
+                                <div className="border-b border-gray-100 bg-gray-50 px-6 py-4">
+                                    <h2 className="text-sm font-semibold text-gray-900">
+                                        Change Password
+                                    </h2>
+
+                                    <p className="mt-0.5 text-xs text-gray-400">
+                                        Leave all password fields empty if you do not want to change your password.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-x-8 gap-y-5 p-6 sm:grid-cols-2">
+
+                                    {/* Current Password */}
+                                    <div>
+                                        <label
+                                            htmlFor="currentPassword"
+                                            className="text-xs font-medium text-gray-400"
+                                        >
+                                            Current Password
+                                        </label>
+
+                                        <input
+                                            id="currentPassword"
+                                            name="currentPassword"
+                                            type="password"
+                                            value={form.currentPassword}
+                                            onChange={handleChange}
+                                            autoComplete="current-password"
+                                            placeholder="Enter current password"
+                                            className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-gray-400"
+                                        />
+                                    </div>
+
+                                    {/* New Password */}
+                                    <div>
+                                        <label
+                                            htmlFor="newPassword"
+                                            className="text-xs font-medium text-gray-400"
+                                        >
+                                            New Password
+                                        </label>
+
+                                        <input
+                                            id="newPassword"
+                                            name="newPassword"
+                                            type="password"
+                                            value={form.newPassword}
+                                            onChange={handleChange}
+                                            autoComplete="new-password"
+                                            placeholder="Enter new password"
+                                            className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-gray-400"
+                                        />
+                                    </div>
+
+                                    {/* Confirm Password */}
+                                    <div>
+                                        <label
+                                            htmlFor="confirmPassword"
+                                            className="text-xs font-medium text-gray-400"
+                                        >
+                                            Confirm New Password
+                                        </label>
+
+                                        <input
+                                            id="confirmPassword"
+                                            name="confirmPassword"
+                                            type="password"
+                                            value={form.confirmPassword}
+                                            onChange={handleChange}
+                                            autoComplete="new-password"
+                                            placeholder="Confirm new password"
+                                            className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-gray-400"
+                                        />
+                                    </div>
+
+                                    {/* Password Note */}
+                                    <div className="flex items-end">
+                                        <p className="text-xs leading-5 text-gray-400">
+                                            Password must be at least 6 characters.
+                                        </p>
+                                    </div>
+
+                                </div>
+                            </div>
+                        )}
 
                         {/* Action Buttons */}
                         {editing && (

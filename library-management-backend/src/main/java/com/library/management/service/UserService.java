@@ -240,6 +240,7 @@ public class UserService {
                                 "Staff profile not found"
                         ));
 
+        // Check email
         if (request.getEmail() != null
                 && !request.getEmail().isBlank()
                 && !request.getEmail().equals(user.getEmail())
@@ -250,12 +251,86 @@ public class UserService {
             throw new RuntimeException("Email already exists");
         }
 
+        // Update profile information
         user.setFullName(request.getFullName());
         user.setEmail(request.getEmail());
 
         staff.setPhone(request.getPhone());
         staff.setAddress(request.getAddress());
         staff.setDateOfBirth(request.getDateOfBirth());
+
+        /*
+         * Change password
+         *
+         * Nếu cả 3 field đều trống -> không đổi password.
+         */
+        String currentPassword = request.getCurrentPassword();
+        String newPassword = request.getNewPassword();
+        String confirmPassword = request.getConfirmPassword();
+
+        boolean hasCurrentPassword =
+                currentPassword != null && !currentPassword.isBlank();
+
+        boolean hasNewPassword =
+                newPassword != null && !newPassword.isBlank();
+
+        boolean hasConfirmPassword =
+                confirmPassword != null && !confirmPassword.isBlank();
+
+        boolean changingPassword =
+                hasCurrentPassword || hasNewPassword || hasConfirmPassword;
+
+        if (changingPassword) {
+
+            // Phải nhập đủ cả 3 field
+            if (!hasCurrentPassword
+                    || !hasNewPassword
+                    || !hasConfirmPassword) {
+
+                throw new RuntimeException(
+                        "Please enter current password, new password and confirm password"
+                );
+            }
+
+            // Kiểm tra password hiện tại
+            if (!passwordEncoder.matches(
+                    currentPassword,
+                    user.getPassword())) {
+
+                throw new RuntimeException(
+                        "Current password is incorrect"
+                );
+            }
+
+            // Kiểm tra password mới và confirm password
+            if (!newPassword.equals(confirmPassword)) {
+                throw new RuntimeException(
+                        "New password and confirm password do not match"
+                );
+            }
+
+            // Password tối thiểu 6 ký tự
+            if (newPassword.length() < 6) {
+                throw new RuntimeException(
+                        "New password must be at least 6 characters"
+                );
+            }
+
+            // Không cho đổi thành password cũ
+            if (passwordEncoder.matches(
+                    newPassword,
+                    user.getPassword())) {
+
+                throw new RuntimeException(
+                        "New password must be different from current password"
+                );
+            }
+
+            // Encode password mới
+            user.setPassword(
+                    passwordEncoder.encode(newPassword)
+            );
+        }
 
         userRepository.save(user);
 

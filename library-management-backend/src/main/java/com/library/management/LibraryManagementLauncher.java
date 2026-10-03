@@ -20,11 +20,19 @@ public class LibraryManagementLauncher {
         Path backendPath = projectRoot.resolve("library-management-backend");
         Path frontendPath = projectRoot.resolve("library-management-frontend");
 
+        Path backendJar = backendPath.resolve(
+                "target/library-management-0.0.1-SNAPSHOT.jar"
+        );
+
         if (!Files.exists(backendPath)) {
             return;
         }
 
         if (!Files.exists(frontendPath)) {
+            return;
+        }
+
+        if (!Files.exists(backendJar)) {
             return;
         }
 
@@ -44,29 +52,27 @@ public class LibraryManagementLauncher {
             Thread.sleep(1000);
 
             // ========================================
-            // 1. START BACKEND
+            // 1. START BACKEND JAR
             // ========================================
 
             backendProcess = new ProcessBuilder(
-                    "cmd",
-                    "/c",
-                    "mvnw.cmd",
-                    "spring-boot:run"
+                    "java",
+                    "-jar",
+                    backendJar.toString()
             )
                     .directory(backendPath.toFile())
                     .inheritIO()
                     .start();
 
             // ========================================
-            // 2. START FRONTEND
+            // 2. START FRONTEND PRODUCTION
             // ========================================
 
             frontendProcess = new ProcessBuilder(
                     "cmd",
                     "/c",
                     "npm",
-                    "run",
-                    "dev"
+                    "start"
             )
                     .directory(frontendPath.toFile())
                     .inheritIO()
@@ -76,7 +82,7 @@ public class LibraryManagementLauncher {
             // WAIT FOR BACKEND
             // ========================================
 
-            if (!waitForPort(BACKEND_PORT, 120)) {
+            if (!waitForPort(BACKEND_PORT, 60)) {
                 return;
             }
 
@@ -84,7 +90,7 @@ public class LibraryManagementLauncher {
             // WAIT FOR FRONTEND
             // ========================================
 
-            if (!waitForPort(FRONTEND_PORT, 120)) {
+            if (!waitForPort(FRONTEND_PORT, 60)) {
                 return;
             }
 
@@ -98,7 +104,10 @@ public class LibraryManagementLauncher {
                 return;
             }
 
-            // Wait until Edge app is closed
+            // ========================================
+            // WAIT UNTIL EDGE IS CLOSED
+            // ========================================
+
             edgeProcess.waitFor();
 
         } catch (Exception ignored) {
@@ -129,7 +138,7 @@ public class LibraryManagementLauncher {
 
             try {
 
-                Thread.sleep(1000);
+                Thread.sleep(500);
 
             } catch (InterruptedException e) {
 
@@ -152,7 +161,7 @@ public class LibraryManagementLauncher {
 
             socket.connect(
                     new InetSocketAddress("localhost", port),
-                    500
+                    300
             );
 
             return true;
