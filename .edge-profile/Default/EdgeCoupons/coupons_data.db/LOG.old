@@ -1,0 +1,15 @@
+2026/10/03-22:39:53.929 3e0c Reusing MANIFEST D:\Users\ADMIN\Documents\Project\library-management\.edge-profile\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/10/03-22:39:53.929 3e0c Recovering log #16
+2026/10/03-22:39:53.929 3e0c Reusing old log D:\Users\ADMIN\Documents\Project\library-management\.edge-profile\Default\EdgeCoupons/coupons_data.db/000016.log 
+2026/10/03-22:39:53.981 508 Level-0 table #20: started
+2026/10/03-22:39:53.984 508 Level-0 table #20: 683444 bytes OK
+2026/10/03-22:39:53.986 508 Delete type=0 #16
+2026/10/03-22:39:53.987 508 Compacting 4@0 + 1@1 files
+2026/10/03-22:39:53.989 508 Generated table #21@0: 4 keys, 683351 bytes
+2026/10/03-22:39:53.989 508 Compacted 4@0 + 1@1 files => 683351 bytes
+2026/10/03-22:39:53.991 508 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/10/03-22:39:53.991 508 Delete type=2 #8
+2026/10/03-22:39:53.991 508 Delete type=2 #11
+2026/10/03-22:39:53.991 508 Delete type=2 #14
+2026/10/03-22:39:53.991 508 Delete type=2 #17
+2026/10/03-22:39:53.991 508 Delete type=2 #20
